@@ -87,14 +87,23 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 3. Select your Steam save slot from the dropdown and click **LOAD SAVE**.
 4. Make your edits and click **★ RE-SIGN & SAVE TO DISK**.
 
+## 📥 Download Standalone Executable
+
+No Python or terminal required! Just grab the latest standalone release:
+👉 **[Download CHANGE_OF_HEART_v1.0.1.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
+
+1. Download and extract `CHANGE_OF_HEART_v1.0.1.zip`.
+2. Double-click `P5R_Save_Editor.exe`.
+3. The editor will automatically detect your Steam saves and launch the studio!
+
 ---
 
 ## 🛠️ Running from Source / Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/j0nnyDiGITAL/p5r-save-editor.git
-cd p5r-save-editor
+git clone https://github.com/j0nnyDiGITAL/change-of-heart.git
+cd change-of-heart
 
 # Install dependencies
 pip install -r requirements.txt
