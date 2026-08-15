@@ -596,7 +596,8 @@ class SaveEditor:
     def set_equipped_persona(self, slot: int, persona_id: Optional[int] = None,
                              level: Optional[int] = None, trait_id: Optional[int] = None,
                              exp: Optional[int] = None, skills: Optional[List[int]] = None,
-                             stats: Optional[List[int]] = None) -> Dict[str, Any]:
+                             stats: Optional[List[int]] = None,
+                             flags: Optional[int] = None) -> Dict[str, Any]:
         """Write one member's equipped persona fields (VERIFIED block)."""
         if not self.is_real_save():
             return {"status": "noop", "message": "PC payload required"}
@@ -604,6 +605,8 @@ class SaveEditor:
         base = self.PC31_OFFSET_PARTY_BASE + slot * self.PC31_PARTY_STRIDE
         if base + self.PC31_PERSONA_STATS_OFF + 5 > len(d):
             return {"status": "noop", "message": "Slot out of range"}
+        if flags is not None:
+            struct.pack_into("<H", d, base + self.PC31_PERSONA_BASE_REL, max(0, flags))
         if persona_id is not None:
             struct.pack_into("<H", d, base + self.PC31_PERSONA_ID_OFF, max(0, persona_id))
         if level is not None:

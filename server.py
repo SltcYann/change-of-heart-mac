@@ -341,14 +341,39 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                         )
                         pers = member.get("persona")
                         if pers and "persona_id" in pers:
+                            # Safely extract skills
+                            raw_skills = pers.get("skills", [0]*8)
+                            parsed_skills = []
+                            for s in raw_skills:
+                                if isinstance(s, dict):
+                                    parsed_skills.append(int(s.get("id", 0)))
+                                else:
+                                    parsed_skills.append(int(s) if s is not None else 0)
+
+                            # Safely extract stats
+                            raw_stats = pers.get("stats", [10]*5)
+                            parsed_stats = []
+                            if isinstance(raw_stats, dict):
+                                parsed_stats = [
+                                    int(raw_stats.get("st", 10)),
+                                    int(raw_stats.get("ma", 10)),
+                                    int(raw_stats.get("en", 10)),
+                                    int(raw_stats.get("ag", 10)),
+                                    int(raw_stats.get("lu", 10))
+                                ]
+                            elif isinstance(raw_stats, list):
+                                parsed_stats = [int(st) if st is not None else 10 for st in raw_stats]
+                            else:
+                                parsed_stats = [10]*5
+
                             CURRENT_EDITOR.set_equipped_persona(
                                 slot,
                                 persona_id=int(pers.get("persona_id", 0)),
                                 level=int(pers.get("level", 1)),
                                 trait_id=int(pers.get("trait_id", 0)),
                                 exp=int(pers.get("exp", 0)),
-                                skills=[int(s) for s in pers.get("skills", [0]*8)],
-                                stats=[int(st) for st in pers.get("stats", [10]*5)],
+                                skills=parsed_skills,
+                                stats=parsed_stats,
                                 flags=int(pers.get("flags", 1))
                             )
 
@@ -358,6 +383,32 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                     s_slot = s_entry.get("slot")
                     if s_slot is not None and 0 <= s_slot < 12:
                         pid = int(s_entry.get("persona_id", 0))
+
+                        # Safely extract skills
+                        raw_skills = s_entry.get("skills", [0]*8)
+                        parsed_skills = []
+                        for s in raw_skills:
+                            if isinstance(s, dict):
+                                parsed_skills.append(int(s.get("id", 0)))
+                            else:
+                                parsed_skills.append(int(s) if s is not None else 0)
+
+                        # Safely extract stats
+                        raw_stats = s_entry.get("stats", [10]*5)
+                        parsed_stats = []
+                        if isinstance(raw_stats, dict):
+                            parsed_stats = [
+                                int(raw_stats.get("st", 10)),
+                                int(raw_stats.get("ma", 10)),
+                                int(raw_stats.get("en", 10)),
+                                int(raw_stats.get("ag", 10)),
+                                int(raw_stats.get("lu", 10))
+                            ]
+                        elif isinstance(raw_stats, list):
+                            parsed_stats = [int(st) if st is not None else 10 for st in raw_stats]
+                        else:
+                            parsed_stats = [10]*5
+
                         CURRENT_EDITOR.set_persona_stock_slot(
                             member_slot=0,
                             stock_k=s_slot,
@@ -365,8 +416,8 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                             level=int(s_entry.get("level", 1)),
                             trait_id=int(s_entry.get("trait_id", 0)),
                             exp=int(s_entry.get("exp", 0)),
-                            skills=[int(s) for s in s_entry.get("skills", [0]*8)],
-                            stats=[int(st) for st in s_entry.get("stats", [10]*5)],
+                            skills=parsed_skills,
+                            stats=parsed_stats,
                             flags=int(s_entry.get("flags", 1))
                         )
 
