@@ -997,13 +997,18 @@ class SaveEditor:
                     return {"status": "noop", "message": "Confidant not met yet; rank 0 left uninitialized"}
             if off < 0:
                 return {"status": "noop", "message": "Confidant entry not found (locked?)"}
-            struct.pack_into("<H", d, off + self.PC31_CONFIDANT_RANK_OFF, rank)
-            if write_points is not None:
-                struct.pack_into("<H", d, off + self.PC31_CONFIDANT_PTS_OFF,
-                                 max(0, min(write_points, 0xFFFF)))
+            if rank == 0:
+                # Revert slot to completely unallocated (all 16 bytes zero) so in-game menu hides them
+                for b_i in range(self.PC31_CONFIDANT_STRIDE):
+                    d[off + b_i] = 0
+            else:
+                struct.pack_into("<H", d, off + self.PC31_CONFIDANT_RANK_OFF, rank)
+                if write_points is not None:
+                    struct.pack_into("<H", d, off + self.PC31_CONFIDANT_PTS_OFF,
+                                     max(0, min(write_points, 0xFFFF)))
             self.parser.data_payload = bytes(d)
             return {"status": "success", "arcana_id": arcana_id, "rank": rank,
-                    "points": write_points, "romance": False}
+                    "points": write_points if rank > 0 else 0, "romance": False}
 
         if 0x10010 in self.parser.blocks_raw:
             raw = bytearray(self.parser.blocks_raw[0x10010])
