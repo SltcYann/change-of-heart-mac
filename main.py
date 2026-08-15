@@ -34,13 +34,28 @@ def start_background_server():
         pass  # Server already running on port
 
 
+def wait_for_server(host="127.0.0.1", port=5055, timeout=5.0):
+    """Actively poll until the local background HTTP server is accepting connections."""
+    import socket
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=0.2):
+                return True
+        except (OSError, ConnectionRefusedError):
+            time.sleep(0.05)
+    return False
+
+
 def launch_native_window():
     import webview
     
     # Start the server daemon in the background
     server_thread = threading.Thread(target=start_background_server, daemon=True)
     server_thread.start()
-    time.sleep(0.5)
+    
+    # Wait until socket is 100% verified listening (eliminates connection error race condition)
+    wait_for_server("127.0.0.1", 5055, timeout=5.0)
 
     icon_path = str(PROJECT_ROOT / "web-app" / "static" / "assets" / "joker_avatar.jpg")
     if not os.path.exists(icon_path):
@@ -76,7 +91,7 @@ def main():
             import webbrowser
             server_thread = threading.Thread(target=start_background_server, daemon=True)
             server_thread.start()
-            time.sleep(0.5)
+            wait_for_server("127.0.0.1", 5055, timeout=5.0)
             webbrowser.open("http://127.0.0.1:5055/")
             while True:
                 time.sleep(1)
@@ -84,3 +99,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
