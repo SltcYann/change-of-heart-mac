@@ -90,11 +90,25 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 ## 📥 Download Standalone Executable
 
 No Python or terminal required! Just grab the latest standalone release:
-👉 **[Download CHANGE_OF_HEART_v1.0.1.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
+👉 **[Download CHANGE_OF_HEART_v1.0.3.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
 
-1. Download and extract `CHANGE_OF_HEART_v1.0.1.zip`.
+1. Download and extract `CHANGE_OF_HEART_v1.0.3.zip`.
 2. Double-click `P5R_Save_Editor.exe`.
 3. The editor will automatically detect your Steam saves and launch the studio!
+
+---
+
+## 📋 Changelog
+
+### v1.0.3 (Hotfix)
+- **🔒 Spoiler Prevention / Un-Met Confidants:** Un-met confidants remaining at Rank 0 are no longer allocated save slots, preventing them from appearing in Joker's in-game menu prematurely with 0 stars.
+- **⚡ Save Re-signing Stability:** Hardened payload deserialization across all party members, skills, and stock slots.
+
+### v1.0.2
+- **💾 Persona Flags Argument Fix:** Fixed an argument mismatch in `set_equipped_persona()` during `/api/save` re-signing.
+
+### v1.0.1
+- **⚡ Socket Readiness Polling:** Added active socket polling in `main.py` to eliminate `127.0.0.1` connection refused race conditions.
 
 ---
 
