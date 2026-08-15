@@ -154,5 +154,11 @@ If this tool rescued your 100-hour playthrough or saved you from restarting for 
 
 ---
 
-## 📜 Disclaimer
+## 📜 Important Limitations & Disclaimer
+
+### ⚠️ Confidant Ranks & Romance Notes:
+- **Story Cutscenes & Calendar Timeline:** Modifying a Confidant's numerical rank modifies the rank stars and stat benefits in your menu. However, *Persona 5 Royal* tracks dialogue progression and romance choices via a permanent 43,000-bit narrative event matrix tied to specific calendar days.
+- **Rolling Back Ranks:** Lowering a Confidant's rank (e.g. from Rank 9 to Rank 8) will **not** replay already-completed story cutscenes if the in-game calendar has moved past that day. To redo branching dialogue choices (such as romance flags), always restore a save or automatic backup from before that hangout took place.
+
+### ⚖️ Trademark Disclaimer:
 *Persona 5 Royal* is a registered trademark of ATLUS / SEGA. This tool is a non-commercial, open-source community project and is not affiliated with or endorsed by ATLUS or SEGA. Always keep backups of your save files.
