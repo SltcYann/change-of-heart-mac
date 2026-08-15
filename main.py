@@ -19,22 +19,19 @@ else:
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
-def start_background_server():
-    from http.server import HTTPServer
-    web_app_dir = PROJECT_ROOT / "web-app"
-    if str(web_app_dir) not in sys.path:
-        sys.path.insert(0, str(web_app_dir))
-    import server as web_server
+import server as web_server
 
-    server_address = ("127.0.0.1", web_server.PORT)
+def start_background_server(port=5055):
+    from http.server import HTTPServer
+    server_address = ("127.0.0.1", port)
     try:
         httpd = HTTPServer(server_address, web_server.P5RWebHandler)
         httpd.serve_forever()
-    except OSError:
-        pass  # Server already running on port
+    except Exception as e:
+        print(f"[P5R Server Error] {e}")
 
 
-def wait_for_server(host="127.0.0.1", port=5055, timeout=5.0):
+def wait_for_server(host="127.0.0.1", port=5055, timeout=10.0):
     """Actively poll until the local background HTTP server is accepting connections."""
     import socket
     start_time = time.time()

@@ -38,6 +38,7 @@ a = Analysis(
     binaries=[],
     datas=data_files,
     hiddenimports=[
+        'server',
         'core',
         'core.crypto',
         'core.parser',
@@ -52,6 +53,7 @@ a = Analysis(
         'urllib.parse',
         'json',
         'base64',
+        'socket',
         'webbrowser',
         'threading',
         'tkinter',
