@@ -980,7 +980,7 @@ class SaveEditor:
             d = bytearray(self.parser.data_payload)
             off = self._confidant_entry(d, arcana_id)
             if off < 0:
-                if auto_unlock:
+                if auto_unlock and rank > 0:
                     # Slot not yet initialized in this early save; allocate the first empty slot
                     for i in range(23):
                         cand_off = self.PC31_OFFSET_CONFIDANTS + i * self.PC31_CONFIDANT_STRIDE
@@ -993,6 +993,8 @@ class SaveEditor:
                             struct.pack_into("<H", d, cand_off + self.PC31_CONFIDANT_ID_OFF, save_id)
                             off = cand_off
                             break
+                else:
+                    return {"status": "noop", "message": "Confidant not met yet; rank 0 left uninitialized"}
             if off < 0:
                 return {"status": "noop", "message": "Confidant entry not found (locked?)"}
             struct.pack_into("<H", d, off + self.PC31_CONFIDANT_RANK_OFF, rank)
