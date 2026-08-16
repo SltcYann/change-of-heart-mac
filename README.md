@@ -14,6 +14,9 @@
 
 **CHANGE OF HEART** is a modern, standalone save editor and binary reverse-engineering studio for **Persona 5 Royal (PC / Steam)**. Built with a full **Phantom Thieves** visual interface, automatic Steam save detection, mathematical bitfield manipulation, and dual-layer CRC32 cryptographic re-signing.
 
+> [!WARNING]
+> 🚧 **ACTIVE DEVELOPMENT & AUDIT MODE**: Public binary releases are temporarily paused while we conduct a comprehensive in-game verification and data hardening across all persona structures, skill IDs, and compendium tables. Source code is open for testing, research, and developer contributions. Always keep external backups of your save files.
+
 > [!NOTE]
 > ⚡ **100% Pure Vibecoded**: This entire application — from the AES-256 binary cryptography and multi-save oracle diffing to the standalone desktop UI and test suite — was built and reverse-engineered collaboratively via AI-driven pair programming sessions between **j0nnyDiGITAL**, **Hermes Agent**, and **Antigravity**.
 
