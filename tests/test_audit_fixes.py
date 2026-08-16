@@ -170,6 +170,23 @@ class TestSafetyValidation(unittest.TestCase):
         self.assertEqual(r["status"], "invalid")
         self.assertEqual(e.parser.data_payload, bytes(0x40000))
 
+    def test_set_money_does_not_corrupt_joker_exp(self):
+        """Regression test for v1.0.5: setting money must NOT overwrite offset 0x3C (Joker MC EXP)."""
+        e = make_pc_editor()
+        d = bytearray(e.parser.data_payload)
+        # Set Joker's EXP at 0x3C to 50,000 (Level ~25)
+        struct.pack_into("<I", d, 0x3C, 50000)
+        e.parser.data_payload = bytes(d)
+
+        # Set money to 9,999,999
+        res = e.set_money(9999999)
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(e.get_money(), 9999999)
+
+        # Verify Joker's EXP at 0x3C remained untouched
+        joker_exp = struct.unpack_from("<I", e.parser.data_payload, 0x3C)[0]
+        self.assertEqual(joker_exp, 50000, "set_money overwrote Joker's EXP at offset 0x3C!")
+
 
 if __name__ == "__main__":
     unittest.main()

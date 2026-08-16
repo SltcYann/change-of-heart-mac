@@ -269,7 +269,9 @@ class SaveEditor:
     # The old payload offsets 0x2C/0x30/0x38/0x3C are RETIRED garbage
     # (0x2C is actually Joker HP u16 = 256, which produced the fake "day 256").
     PC31_OFFSET_MONEY = 0x35C0      # u32 (authoritative game payload) — VERIFIED
-    PC31_OFFSET_MONEY_MIRROR = 0x3C  # u32 money mirror in Joker's party struct (0x2C+0x10) — VERIFIED
+    # NOTE: 0x3C (0x2C+0x10) is Joker's character EXP (u32), NOT a money mirror!
+    # Writing money to 0x3C corrupts Joker's EXP and causes instant Lv99.
+    # Money lives strictly at 0x35C0.
     # Social stats: 5x u16 LE POINTS (not ranks!) at 0x139E0, order:
     # [Knowledge, Charm, Proficiency, Guts, Kindness] — VERIFIED via 2-save diff
     # (craft +3 Prof, plant +2 Kind matched the game's note system exactly).
@@ -379,13 +381,12 @@ class SaveEditor:
         return out
 
     def set_money(self, amount: int):
-        """Set Yen / Money (capped at 9,999,999)."""
+        """Set Yen / Money (capped at 9,999,999). Writes strictly to 0x35C0."""
         amount = max(0, min(amount, 9999999))
         if self.is_real_save():
             d = bytearray(self.parser.data_payload)
             if len(d) >= 0x35C4:
                 struct.pack_into("<I", d, self.PC31_OFFSET_MONEY, amount)
-                struct.pack_into("<I", d, self.PC31_OFFSET_MONEY_MIRROR, amount)
                 self.parser.data_payload = bytes(d)
                 return {"status": "ok"}
             return {"status": "noop", "message": "Payload too short for money offset"}

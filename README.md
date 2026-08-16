@@ -8,7 +8,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Steam%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Tests](https://img.shields.io/badge/Tests-79%2F79%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
+[![Tests](https://img.shields.io/badge/Tests-80%2F80%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20j0nny%20DiGITAL-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
 
@@ -99,6 +99,13 @@ No Python or terminal required! Just grab the latest standalone release:
 ---
 
 ## 📋 Changelog
+
+### v1.0.5 (Hotfix)
+- **⚡ Joker MC Level / EXP Collision Fix:** Eliminated the legacy `0x3C` money-mirror write. Yen is now written strictly to `0x35C0`, preventing money edits from inadvertently overwriting Joker's character EXP at `0x3C` and causing instant Level 99 after one battle.
+- **🧪 80/80 Unit Tests Passing:** Added a dedicated regression test asserting Joker's EXP is preserved during money mutation.
+
+### v1.0.4 (Hotfix)
+- **🧹 Active Confidant Slot Zeroing:** Setting a Confidant to Rank 0 now completely zeroes all 16 bytes of the slot, actively removing un-met confidants from saves created in earlier versions.
 
 ### v1.0.3 (Hotfix)
 - **🔒 Spoiler Prevention / Un-Met Confidants:** Un-met confidants remaining at Rank 0 are no longer allocated save slots, preventing them from appearing in Joker's in-game menu prematurely with 0 stars.

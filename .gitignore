@@ -1,37 +1,61 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
 *.so
+
+# Distribution / packaging
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller build artefacts (keep the product .spec)
+PyInstaller-*.txt
+*.manifest
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.env
+.venv
 env/
 venv/
 ENV/
-build/
-*.egg-info/
+env.bak/
+venv.bak/
 
-# PyInstaller / Binaries (Don't commit large 50MB exe to repo source; use GitHub Releases instead)
-dist/
-*.spec.bak
-
-# Local Scratch / Temp / Diffs / Backups
-diff/scratch_roundtrip/
-*.DAT
-*.dat
-*.bak
-*.tmp
-*.zip
-
-# IDE & OS
+# IDEs
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
+*.swp
+*.swo
+*~
 
+# Local scratch dirs (not part of the product)
 diff/
 tools/
 scripts/
-build/
-*.pyc
-__pycache__/
+dev/
+research/
 
+# OS files
+.DS_Store
+Thumbs.db
+ desktop.ini
