@@ -4,7 +4,6 @@ from pathlib import Path
 
 block_cipher = None
 
-# Base directory
 SPEC_DIR = Path(SPECPATH).resolve()
 
 # Complete list of data files
@@ -19,16 +18,17 @@ data_files = [
     ('data/Royal_KeyItemNames.txt', 'data'),
     ('data/Skill Cards.txt', 'data'),
     ('data/Skill ID.txt', 'data'),
+    ('data/SkillMeta.txt', 'data'),
     ('data/Tools&materials.txt', 'data'),
     ('data/Traits.txt', 'data'),
     ('data/Treasure.txt', 'data'),
     ('data/Weapon melee.txt', 'data'),
     ('data/Weapon ranged.txt', 'data'),
+    ('data/compendium_templates.json', 'data'),
     ('web-app/templates', 'web-app/templates'),
     ('web-app/static', 'web-app/static'),
 ]
 
-# Include 3D game client if present
 if (SPEC_DIR / 'p5r-game-client').exists():
     data_files.append(('p5r-game-client', 'p5r-game-client'))
 
@@ -38,33 +38,31 @@ a = Analysis(
     binaries=[],
     datas=data_files,
     hiddenimports=[
+        'webview',
+        'webview.platforms.winforms',
+        'webview.platforms.edgechromium',
+        'clr',
+        'System',
+        'System.Windows.Forms',
+        'System.Threading',
         'server',
         'core',
         'core.crypto',
         'core.parser',
         'core.editor',
         'core.environment',
-        'gui',
-        'webview',
-        'clr_loader',
-        'pythonnet',
-        'bottle',
+        'core.instances',
         'http.server',
         'urllib.parse',
         'json',
         'base64',
         'socket',
-        'webbrowser',
         'threading',
-        'tkinter',
-        'tkinter.ttk',
-        'tkinter.messagebox',
-        'tkinter.filedialog',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['tkinter'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -88,7 +86,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # Windowed mode: launches clean desktop window without black terminal
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

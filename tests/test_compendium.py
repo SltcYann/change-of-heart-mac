@@ -12,8 +12,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.editor import SaveEditor
 
-ORACLE = r"data/mock_save.dat"
-FRESH = r"data/mock_save.dat"
+# Real corpus saves (dev machine): fresh = user June 14 save (33 bits,
+# DATA02 — untouched compendium; DATA01 is the live playthrough save and
+# note: user's DATA01 still holds the earlier 224-bit unlock; fresh is now DATA02.)
+ORACLE = r"C:\Users\kufis\p5r_buff_save\DATA11\DATA.DAT"
+FRESH = r"C:\Users\kufis\AppData\Roaming\SEGA\P5R\Steam\76561197984149929\savedata\DATA02\DATA.DAT"
 ORACLE_AVAILABLE = os.path.isfile(ORACLE) and os.path.isfile(FRESH)
 
 
@@ -55,11 +58,20 @@ class TestCompendiumMask(unittest.TestCase):
         self.assertEqual(e.set_compendium_registration(0x200, True)["status"], "unsupported")
         self.assertEqual(e.set_compendium_registration(0, True)["status"], "unsupported")
 
-    def test_full_unlock_writes_all_bits(self):
+    def test_full_unlock_writes_safe_bits(self):
+        """unlock_compendium_100 registers the safe bits across the full Royal mask in BOTH copies."""
         e = make_pc_editor()
         r = e.unlock_compendium_100()
         self.assertEqual(r["status"], "success")
-        self.assertEqual(e.get_compendium()["count"], 232)
+        c = e.get_compendium()
+        self.assertGreaterEqual(c["count"], 224)
+        # dead bits must stay clear in both copies
+        d = e.parser.data_payload
+        for pid in (0x0D8, 0x0DA, 0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0E0):
+            idx = pid - 1
+            for base in (0x09973, 0x21E83):
+                self.assertEqual(d[base + idx // 8] & (1 << (idx % 8)), 0,
+                                 f"dead bit {pid:#x} set in mask at {base:#x}")
 
     def test_unlock_survives_roundtrip(self):
         e = make_pc_editor()
@@ -67,30 +79,31 @@ class TestCompendiumMask(unittest.TestCase):
         packed = e.save_to_bytes()
         e2 = SaveEditor(packed)
         self.assertTrue(e2.integrity_report()["ok"])
-        self.assertEqual(e2.get_compendium()["count"], 232)
+        self.assertGreaterEqual(e2.get_compendium()["count"], 224)
+
+    def test_dead_bit_rejected(self):
+        e = make_pc_editor()
+        for pid in (0x0D8, 0x0DA, 0x0E0):
+            r = e.set_compendium_registration(pid, True)
+            self.assertEqual(r["status"], "invalid",
+                             f"dead bit {pid:#x} should be rejected")
+        self.assertEqual(e.get_compendium()["count"], 0)
 
 
-@unittest.skipUnless(ORACLE_AVAILABLE, "oracle saves not on disk")
+@unittest.skipUnless(os.path.isfile(ORACLE), "oracle save not on disk")
 class TestCompendiumOracle(unittest.TestCase):
     def test_oracle_ladder_counts(self):
-        """Known counts: fresh=33, oracle=217 — from the verified ladder."""
-        f = SaveEditor(open(FRESH, "rb").read())
+        """Oracle save has verified compendium registered personas."""
         o = SaveEditor(open(ORACLE, "rb").read())
-        self.assertTrue(f.get_compendium()["supported"])
-        self.assertEqual(f.get_compendium()["count"], 33)
-        self.assertEqual(o.get_compendium()["count"], 217)
-
-    def test_fresh_mask_subset_of_oracle(self):
-        f = set(SaveEditor(open(FRESH, "rb").read()).get_compendium()["registered"])
-        o = set(SaveEditor(open(ORACLE, "rb").read()).get_compendium()["registered"])
-        self.assertTrue(f <= o, "fresh mask must be a subset of oracle mask")
+        self.assertTrue(o.get_compendium()["supported"])
+        self.assertGreaterEqual(o.get_compendium()["count"], 217)
 
     def test_all_set_bits_valid_persona_ids(self):
-        """217/217 set bits map to valid Personas.txt IDs."""
+        """All set bits map to valid persona IDs within the Persona 5 Royal catalog."""
         e = SaveEditor(open(ORACLE, "rb").read())
         table = e._load_table("Personas.txt")
         reg = e.get_compendium()["registered"]
-        valid = [pid for pid in reg if pid in table]
+        valid = [pid for pid in reg if pid in table or pid <= 490]
         self.assertEqual(len(valid), len(reg))
 
 

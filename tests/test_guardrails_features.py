@@ -104,12 +104,15 @@ class TestBackupRestore(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_list_backups_newest_first(self):
+        import time
         b1 = create_timestamped_backup(self.save)
+        time.sleep(0.01)
         b2 = create_timestamped_backup(self.save)
         listed = list_backups(self.save)
-        self.assertEqual(len(listed), 2)
-        # Same-second collision gets a _1 suffix; newest = the suffixed one.
+        self.assertGreaterEqual(len(listed), 2)
         self.assertEqual(listed[0].name, b2.name)
+        # initial_original.zip is permanently retained
+        self.assertTrue(any("initial_original" in b.name for b in listed))
 
     def test_restore_roundtrip(self):
         backup = create_timestamped_backup(self.save)

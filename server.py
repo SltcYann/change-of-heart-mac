@@ -6,6 +6,7 @@ and zero raw ID requirements.
 """
 
 import os
+import re
 import sys
 import json
 import base64
@@ -18,12 +19,21 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     PROJECT_ROOT = Path(sys._MEIPASS)
     WEB_APP_DIR = PROJECT_ROOT / "web-app"
 else:
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent
-    WEB_APP_DIR = Path(__file__).resolve().parent
+    # Depth-aware: this file ships BOTH at project root (main.py imports
+    # "server") and under web-app/ (dev sibling). The root copy sits one
+    # level higher, so __file__-relative math differs per location.
+    _HERE = Path(__file__).resolve().parent
+    if (_HERE / "web-app").is_dir() and (_HERE / "core").is_dir():
+        PROJECT_ROOT = _HERE          # root copy
+        WEB_APP_DIR = _HERE / "web-app"
+    else:
+        PROJECT_ROOT = _HERE.parent   # web-app copy
+        WEB_APP_DIR = _HERE
 
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.editor import SaveEditor, CONFIDANT_ARCANA_MAP, ROMANCEABLE_CONFIDANTS
+from core import instances  # noqa: E402
 from core.environment import (
     discover_steam_save_dirs,
     list_save_files,
@@ -33,7 +43,7 @@ from core.environment import (
     restore_backup,
 )
 
-PORT = 5055
+PORT = 3000
 
 # Cached reference tables for human-readable search & autocompletion
 def build_reference_db():
@@ -76,38 +86,154 @@ def build_reference_db():
         "point_thresholds": SaveEditor.CONFIDANT_POINT_THRESHOLDS,
     }
     
-    # Personas
+    # Personas — filter out cut-content / legacy entries. The raw table
+    # (464 ids) contains: id 0, "RESERVE"/"???"/blank names, "P5 Unused"
+    # (0x167), and the compendium dead bits (P5-legacy duplicate entries the
+    # game never uses in any context). Serving these lets users equip
+    # persona ids with no Royal record/model -> Velvet Room / battle crash.
+    # IDs >232 (Raoul 0x16B, William 0xF2, DLC space) are VALID for stock
+    # editing (verified in oracle saves) — keep them.
+    BAD_PERSONA_NAMES = {"", "RESERVE", "???", "BLANK", "----------", "P5 Unused"}
     ptable = ed._load_table("Personas.txt") or {}
     for pid, name in sorted(ptable.items()):
+        if pid == 0 or name in BAD_PERSONA_NAMES or pid in SaveEditor.PC31_STOCK_LEGACY_IDS:
+            continue
+        if name.startswith("Lab "):  # dev/test-only personas, not in NAME.TBL
+            continue
         db["personas"].append({"id": pid, "name": name})
-        
-    # Skills
+
+    # Skills — strip dummy/placeholder slots: 0x0000-0x0009 (BLANK) plus
+    # named placeholders and cut-content markers. They pass table validation
+    # but produce corrupt persona cards / broken skill menus in battle.
+    BAD_SKILL_NAMES = {"", "BLANK", "RESERVE", "----------", "not used"}
+    # Names the game's own NAME.TBL does NOT contain (verified 2026-08-16
+    # against the extracted EN name table). These are item names, test
+    # skills, and dev strings that leaked into the Ruimusume dump.
+    NON_SKILL_PREFIXES = (
+        "adam skill", "ally", "roulette:", "shoes", "juice bar", "juicer bar",
+        "energy drink", "soda", "ration", "drug store", "special coffee",
+        "new curry", "sup hp", "sup sp", "support plus", "all-out lv",
+        "dark akechi", "charisma speak",
+    )
+    # Skill ids whose dump name is not the game's name (corrected to the
+    # NAME.TBL spelling) — dropdown display only; ids are unchanged.
+    SKILL_NAME_FIXES = {
+        123: "Med Burn", 126: "Med Freeze", 129: "Med Shock", 134: "Med Dizzy",
+        137: "Med Confuse", 142: "Med Fear", 145: "Med Forget", 148: "Med Brainwash",
+        153: "Med Sleep", 156: "Med Rage", 159: "Med Despair", 164: "Med All Ail",
+        516: "Royal Jelly", 295: "Ultimate Support",
+    }
+    # Exact ids that are dev/test strings with no real skill definition.
+    NON_SKILL_IDS = {658, 659, 660, 677, 734, 735, 751, 753, 663}
     stable = ed._load_table("Skill ID.txt") or {}
     for sid, name in sorted(stable.items()):
-        db["skills"].append({"id": sid, "name": name})
-        
-    # Traits
+        nl = name.lower()
+        if sid <= 0x09 or name in BAD_SKILL_NAMES or name.lower().startswith("unused:"):
+            continue
+        if sid in NON_SKILL_IDS or any(nl.startswith(p) for p in NON_SKILL_PREFIXES):
+            continue
+        db["skills"].append({"id": sid, "name": SKILL_NAME_FIXES.get(sid, name)})
+
+    # Traits — same treatment as skills: 200 of 300 rows are RESERVE/blank
+    # placeholders (verified 2026-08-16). Serve only the 100 named traits;
+    # id 0 is offered as an explicit "None (unset)" option. Names corrected
+    # to the game's NAME.TBL spelling (Savior/Skillful/Deathly Illness).
+    BAD_TRAIT_NAMES = {"", "RESERVE", "???", "BLANK", "----------"}
+    TRAIT_NAME_FIXES = {9: "Savior Bloodline", 73: "Skillful Combo", 102: "Deathly Illness"}
     ttable = ed._load_table("Traits.txt") or {}
     for tid, name in sorted(ttable.items()):
-        db["traits"].append({"id": tid, "name": name})
+        if tid == 0:
+            db["traits"].append({"id": 0, "name": "None (unset)"})
+        elif name not in BAD_TRAIT_NAMES:
+            db["traits"].append({"id": tid, "name": TRAIT_NAME_FIXES.get(tid, name)})
+
+    # Skill metadata (element/cost/area) from the game's SKILL.TBL via
+    # data/SkillMeta.txt (generated 2026-08-16 from decoded game fixture;
+    # verified: Agi=4SP, Hassou Tobi=25%HP, Myriad Truths=40SP).
+    skill_meta = {}
+    meta_path = os.path.join(PROJECT_ROOT, "data", "SkillMeta.txt")
+    try:
+        with open(meta_path, encoding="utf-8") as mf:
+            for ln in mf.read().splitlines()[1:]:
+                pcol = ln.split("	")
+                if len(pcol) >= 6 and pcol[0].strip().isdigit():
+                    skill_meta[int(pcol[0])] = {
+                        "element": int(pcol[1]),
+                        "costtype": int(pcol[2]),
+                        "cost": float(pcol[3]),
+                        "area": int(pcol[4]),
+                        "passive": int(pcol[5]),
+                    }
+    except OSError:
+        pass
+    db["skill_meta"] = skill_meta
+
+    # Dedupe by NAME across all three lists (verified 2026-08-16): the
+    # Ruimusume dumps carry one row per persona-slot, so one trait/skill/
+    # persona can appear under several ids (e.g. "Ultimate Vessel" x9 =
+    # ids 0x119-0x121, a single trait per the P5R Compendium; the corpus
+    # of 12 real saves uses the LOWEST ids in each group — 0x119, and the
+    # compendium-space persona ids). Keep the lowest id per name: it is the
+    # canonical entry and the one real saves write.
+    def _dedupe_by_name(items):
+        seen = set()
+        out = []
+        for it in items:
+            key = it["name"].lower()
+            if key not in seen:
+                seen.add(key)
+                out.append(it)
+        return out
+
+    db["personas"] = _dedupe_by_name(db["personas"])
+    # Full id->name map for the compendium grid (2026-08-16): party personas
+    # whose names duplicate earlier ids (Satanael 0xD3, Carmen 0xDF, the
+    # 0xE1-0xE8 block) are dropped by the dropdown dedupe but must still
+    # render with their real names in the grid.
+    db["persona_names"] = {
+        pid: name for pid, name in sorted(ptable.items())
+        if pid != 0 and name not in BAD_PERSONA_NAMES
+    }
+    db["skills"] = _dedupe_by_name(db["skills"])
+    db["traits"] = _dedupe_by_name(db["traits"])
         
-    # Items & Categories (100% Authentic 16-bit P5R ID Resolution)
+    # Items & Categories (100% Authentic In-Game 1-9 P5R Category Sequence)
     db["items"] = []
     data_dir = PROJECT_ROOT / "data"
     
+    # Strict In-Game Category Order:
+    # 1. Consumables (0x2000)
+    # 2. Infiltration Tools & Materials (0x6000)
+    # 3. Skill Cards (0x4000)
+    # 4. Melee Weapons (0x1000)
+    # 5. Ranged Weapons (0x7000)
+    # 6. Protectors & Outfits (0x5000)
+    # 7. Accessories (0x3000)
+    # 8. Materials & Treasures (0x8000)
+    # 9. Key Items & Story Essentials (0x9000)
     CATEGORY_MAPPING = [
-        (0x1000, "Weapon melee.txt", "Melee"),
         (0x2000, "Items.txt", "Consumable"),
-        (0x3000, "Accessories.txt", "Accessory"),
-        (0x4000, "Skill Cards.txt", "SkillCard"),
-        (0x5000, "Clothes.txt", "Protector"),
         (0x6000, "Tools&materials.txt", "Infiltration"),
+        (0x4000, "Skill Cards.txt", "SkillCard"),
+        (0x1000, "Weapon melee.txt", "Melee"),
         (0x7000, "Weapon ranged.txt", "Ranged"),
+        (0x5000, "Clothes.txt", "Protector"),
+        (0x3000, "Accessories.txt", "Accessory"),
         (0x8000, "Treasure.txt", "Treasure"),
         (0x9000, "Keyitems&essentials.txt", "KeyItem"),
     ]
 
     seen_ids = set()
+    # Item name fixes verified against the game's NAME.TBL (2026-08-16).
+    ITEM_NAME_FIXES = {
+        8270: "Money Distributor", 8271: "Item Distributor",
+        8304: "Discharge Crystal", 8398: "Hifumi's Chocolate",
+        8529: "Old Man's Elixir", 12400: "Vajra Belt",
+        12417: "Blazing Horns", 12418: "Inferno Horns",
+        12642: "Judgment Cross", 12736: "Spiral Rasetsu Anklet",
+        12782: "Dazzling Netsuke", 8420: "Sakura Amezaiku",
+        8375: "Oh! Shiruko",
+    }
     for prefix, fname, cat in CATEGORY_MAPPING:
         p = data_dir / fname
         if not p.exists():
@@ -122,13 +248,23 @@ def build_reference_db():
                     elif len(parts) == 1 and parts[0]:
                         en_name = parts[0].strip()
 
-                    if en_name and en_name not in ["EN_NAME", "BLANK", "RESERVE", "----------", "使用禁止"] and "RESERVE" not in en_name and "BLANK" not in en_name:
+                    if (
+                        en_name
+                        and en_name not in ["EN_NAME", "BLANK", "RESERVE", "----------", "使用禁止", "Unused", "unused", "Unused Item"]
+                        and "RESERVE" not in en_name
+                        and "BLANK" not in en_name
+                        and not en_name.lower().startswith("unused")
+                    ):
                         iid = prefix | (idx & 0x0FFF)
                         if iid not in seen_ids:
                             seen_ids.add(iid)
+                            # raw hex placeholder rows (e.g. "0x1E2") never
+                            # resolve to a real item -- exclude them.
+                            if re.match(r"^0x[0-9A-Fa-f]+$", en_name):
+                                continue
                             db["items"].append({
                                 "id": iid,
-                                "name": en_name,
+                                "name": ITEM_NAME_FIXES.get(iid, en_name),
                                 "category": cat
                             })
         except Exception as e:
@@ -137,6 +273,7 @@ def build_reference_db():
     return db
 
 REFERENCE_DB = build_reference_db()
+BUILD_ID = "audit-2026-08-16"
 CURRENT_EDITOR = None
 CURRENT_FILE_PATH = None
 
@@ -144,7 +281,27 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_APP_DIR / "static"), **kwargs)
 
+    def log_message(self, format, *args):  # noqa: A002
+        pass
+
+    def handle_error(self, request, client_address):
+        """Capture handler exceptions to a file (frozen exe has no console)."""
+        import traceback
+        try:
+            err_path = os.path.join(
+                os.environ.get("TEMP", "."), "P5R_handler_errors.log"
+            )
+            with open(err_path, "a", encoding="utf-8") as fh:
+                fh.write(
+                    f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] "
+                    f"from {client_address}: {self.command} {self.path}\n"
+                )
+                traceback.print_exc(file=fh)
+        except Exception:
+            pass
+
     def do_GET(self):
+        global CURRENT_EDITOR, CURRENT_FILE_PATH
         parsed = urlparse(self.path)
         if parsed.path == "/" or parsed.path == "/index.html":
             self.send_response(200)
@@ -164,7 +321,13 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
             return
         elif parsed.path.startswith("/game/"):
             rel_file = parsed.path[len("/game/"):]
-            game_file = PROJECT_ROOT / "p5r-game-client" / rel_file
+            game_dir = PROJECT_ROOT / "p5r-game-client"
+            game_file = (game_dir / rel_file).resolve()
+            try:
+                game_file.relative_to(game_dir.resolve())
+            except ValueError:
+                self.send_json(400, {"error": "Invalid game asset path."})
+                return
             if game_file.exists() and game_file.is_file():
                 self.send_response(200)
                 if rel_file.endswith(".css"):
@@ -177,6 +340,15 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 with open(game_file, "rb") as f:
                     self.wfile.write(f.read())
                 return
+        elif parsed.path == "/api/build":
+            self.send_json(200, {"build": BUILD_ID})
+            return
+        elif parsed.path == "/api/state":
+            self.send_json(200, {
+                "pid": os.getpid(),
+                "save": CURRENT_FILE_PATH or "",
+            })
+            return
         elif parsed.path == "/api/database":
             self.send_json(200, REFERENCE_DB)
             return
@@ -189,7 +361,6 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
             self.send_json(200, {"discovered_dirs": [str(d) for d in dirs], "saves": saves})
             return
         elif parsed.path == "/api/backups":
-            global CURRENT_FILE_PATH
             if not CURRENT_FILE_PATH or not os.path.exists(CURRENT_FILE_PATH):
                 self.send_json(200, {"backups": []})
                 return
@@ -213,15 +384,19 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/load":
             path_str = data.get("path", "").strip()
-            if not path_str or not os.path.exists(path_str):
-                self.send_json(400, {"error": "Save file path does not exist."})
+            if not path_str:
+                self.send_json(400, {"error": "Save file path is required."})
+                return
+            p = Path(path_str).resolve()
+            if not p.is_file():
+                self.send_json(400, {"error": "Save file not found."})
                 return
             try:
-                p = Path(path_str)
                 with open(p, "rb") as f:
                     raw = f.read()
                 CURRENT_EDITOR = SaveEditor(raw)
                 CURRENT_FILE_PATH = str(p)
+                instances.update_save(CURRENT_FILE_PATH)
 
                 # Assemble clean full payload
                 hdr = CURRENT_EDITOR.parser.header
@@ -231,6 +406,12 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 confidants = CURRENT_EDITOR.get_confidant_ranks()
                 social = CURRENT_EDITOR.get_social_stats()
                 party = CURRENT_EDITOR.get_party_stats()
+
+                # Only show members who have actually joined the story.
+                # Un-joined slots (Makoto/Futaba/Haru/Akechi/Kasumi before
+                # their join dates) are seeded placeholders — hiding them
+                # prevents both story spoilers and unsafe edits.
+                party = [p for p in party if p.get("joined", False)]
 
                 # Get equipped persona info for each party member
                 party_personas = []
@@ -275,6 +456,11 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                     "compendium": compendium,
                     "integrity": integrity
                 }
+                _conflicts = instances.find_conflicts(CURRENT_FILE_PATH)
+                if _conflicts:
+                    resp["notice"] = (
+                        "This save is also open in another window — last save wins."
+                    )
                 self.send_json(200, resp)
             except Exception as e:
                 self.send_json(500, {"error": f"Failed to load save: {str(e)}"})
@@ -434,11 +620,18 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 if data.get("unlock_compendium"):
                     CURRENT_EDITOR.unlock_compendium_100()
                 elif "compendium" in data and isinstance(data["compendium"], dict):
-                    comp_in = data["compendium"]
-                    if "registered" in comp_in and isinstance(comp_in["registered"], list):
-                        target_set = set(comp_in["registered"])
-                        for pid in range(1, 233):
-                            CURRENT_EDITOR.set_compendium_registration(pid, pid in target_set)
+                    comp = data["compendium"]
+                    if comp and comp.get("supported"):
+                        registered_list = set(comp.get("registered", []))
+                        for pid in range(1, CURRENT_EDITOR.PC31_COMPENDIUM_BITS + 1):
+                            is_reg = pid in registered_list
+                            CURRENT_EDITOR.set_compendium_registration(pid, is_reg)
+                        # Sanitize any rogue bytes in the gap
+                        d_tmp = bytearray(CURRENT_EDITOR.parser.data_payload)
+                        for gap_start, gap_end in ((0x09460, 0x09940), (0x21970, 0x21E50)):
+                            if gap_end <= len(d_tmp):
+                                d_tmp[gap_start:gap_end] = b"\x00" * (gap_end - gap_start)
+                        CURRENT_EDITOR.parser.data_payload = bytes(d_tmp)
 
                 # 6. Repack & Sign
                 out_bytes = CURRENT_EDITOR.save_to_bytes()
@@ -448,12 +641,18 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 CURRENT_EDITOR = SaveEditor(p.read_bytes())
                 integrity = CURRENT_EDITOR.integrity_report()
 
-                self.send_json(200, {
+                resp = {
                     "status": "success",
                     "backup": backup_path.name,
                     "integrity": integrity,
                     "message": "Save file successfully re-signed and saved!"
-                })
+                }
+                _conflicts = instances.find_conflicts(CURRENT_FILE_PATH)
+                if _conflicts:
+                    resp["notice"] = (
+                        "This save is also open in another window — last save wins."
+                    )
+                self.send_json(200, resp)
             except Exception as e:
                 self.send_json(500, {"error": f"Failed to save file: {str(e)}"})
 
@@ -461,6 +660,9 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
             backup_name = data.get("backup_name", "")
             if not CURRENT_FILE_PATH or not backup_name:
                 self.send_json(400, {"error": "Missing backup file or save path."})
+                return
+            if not re.fullmatch(r"[A-Za-z0-9_.\-]+", backup_name):
+                self.send_json(400, {"error": "Invalid backup name."})
                 return
             try:
                 p = Path(CURRENT_FILE_PATH)
@@ -498,5 +700,9 @@ def start_server():
     except KeyboardInterrupt:
         print("\n[P5R] Server stopped.")
 
-if __name__ == "__main__":
+def main():
     start_server()
+
+
+if __name__ == "__main__":
+    main()

@@ -87,6 +87,8 @@ def check_running_processes() -> Tuple[bool, bool]:
 def create_timestamped_backup(save_file: Path, backup_dir: Optional[Path] = None) -> Path:
     """
     Creates an automatic timestamped ZIP backup of the target save file.
+    Also permanently creates and protects an immutable '<stem>_initial_original.zip'
+    the very first time a save is ever touched, so the pristine baseline is never lost.
     Returns path to created backup ZIP.
     """
     if backup_dir is None:
@@ -94,10 +96,18 @@ def create_timestamped_backup(save_file: Path, backup_dir: Optional[Path] = None
 
     backup_dir.mkdir(parents=True, exist_ok=True)
 
+    # 1. Immutable Pristine Initial Baseline (Never overwritten once created)
+    initial_zip = backup_dir / f"{save_file.stem}_initial_original.zip"
+    if not initial_zip.exists() and save_file.exists():
+        try:
+            with zipfile.ZipFile(initial_zip, "w", zipfile.ZIP_DEFLATED) as izip:
+                izip.write(save_file, arcname=save_file.name)
+        except Exception:
+            pass
+
+    # 2. Timestamped Incremental Backup
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     zip_path = backup_dir / f"{save_file.stem}_backup_{timestamp}.zip"
-    # Same-second collisions (rapid consecutive saves) must not overwrite an
-    # earlier backup: append a counter until the name is free.
     counter = 1
     while zip_path.exists():
         zip_path = backup_dir / f"{save_file.stem}_backup_{timestamp}_{counter}.zip"
@@ -112,14 +122,18 @@ def create_timestamped_backup(save_file: Path, backup_dir: Optional[Path] = None
 def list_backups(save_file: Path, backup_dir: Optional[Path] = None) -> List[Path]:
     """
     List timestamped backup ZIPs for the given save file, newest first.
-    Only backups matching '<stem>_backup_*.zip' are returned.
+    Always includes the permanent '<stem>_initial_original.zip' if present.
     """
     if backup_dir is None:
         backup_dir = save_file.parent / "backups"
     if not backup_dir.exists():
         return []
     pattern = f"{save_file.stem}_backup_*.zip"
-    return sorted(backup_dir.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+    backups = sorted(backup_dir.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+    initial = backup_dir / f"{save_file.stem}_initial_original.zip"
+    if initial.exists() and initial not in backups:
+        backups.append(initial)
+    return backups
 
 
 def restore_backup(save_file: Path, backup_zip: Path) -> Path:

@@ -19,51 +19,127 @@ let CURRENT_CONFIDANT_FILTER = "all";
 let ALLOW_UNSAFE_CONFIDANTS = false;
 let INITIAL_CONFIDANT_RANKS = {};
 
-// Meta God Build Presets (Real P5R Persona & Skill IDs)
+// =========================================================================
+// AUTHENTIC PERSONA 5 SYNTHETIC WEB AUDIO SFX ENGINE
+// =========================================================================
+const P5Audio = {
+  ctx: null,
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+  },
+  playClick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.06);
+      gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.06);
+    } catch(e) {}
+  },
+  playSwitch() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(960, this.ctx.currentTime + 0.09);
+      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.09);
+    } catch(e) {}
+  },
+  playMax() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(freq, now + i * 0.05);
+        gain.gain.setValueAtTime(0.08, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + i * 0.05);
+        osc.stop(now + i * 0.05 + 0.12);
+      });
+    } catch(e) {}
+  }
+};
+
+// Global click sound listener for buttons and interactive pills
+document.addEventListener("click", (e) => {
+  if (e.target.closest("button, .p5-btn-action, .p5-nav-item, .p5-tarot-card, .filter-pill, .stock-chip, .star-node")) {
+    P5Audio.playClick();
+  }
+});
+
+
+// Meta God Build Presets (Real P5R Persona & Skill IDs — verified against
+// data/ tables 2026-08-16; the previous IDs were from a foreign numbering
+// and produced junk personas / crashes in-game)
 const GOD_BUILDS = {
   yoshitsune: {
-    persona_id: 365, // Yoshitsune
+    persona_id: 87,   // Yoshitsune (0x57)
     level: 99,
-    trait_id: 190,   // Undying Fury (+30% Phys)
+    trait_id: 58,     // Undying Fury (+30% Phys)
     skills: [
-      714, // Hassou Tobi
-      10,  // Apt Pupil
-      345, // Arms Master
-      805, // Charge
-      863, // Insta-Heal
-      14,  // Ali Dance
-      341, // Drain Fire
-      834  // Drain Ice
+      215, // Hassou Tobi
+      856, // Apt Pupil
+      852, // Arms Master
+      360, // Charge
+      851, // Insta-Heal
+      857, // Ali Dance
+      873, // Drain Fire
+      878  // Drain Ice
     ]
   },
   izanagi: {
-    persona_id: 305, // Izanagi-no-Okami Picaro
+    persona_id: 366,  // Izanagi-no-Okami Picaro (0x16E)
     level: 99,
-    trait_id: 88,    // Country Maker (+100% DMG/DEF)
+    trait_id: 194,    // Country Maker (+100% DMG/DEF)
     skills: [
-      63,  // Myriad Truths
-      270, // Almighty Boost
-      69,  // Almighty Amp
-      15,  // Magic Ability
-      346, // Spell Master
-      806, // Concentrate
-      342, // Drain Curse
-      802  // Victory Cry
+      713, // Myriad Truths
+      986, // Almighty Boost
+      987, // Almighty Amp
+      984, // Magic Ability
+      853, // Spell Master
+      361, // Concentrate
+      898, // Drain Curse
+      861  // Victory Cry
     ]
   },
   raoul: {
-    persona_id: 333, // Raoul
+    persona_id: 363,  // Raoul (0x16B)
     level: 99,
-    trait_id: 97,    // Wealth of Lotus (+2 Turn Buffs)
+    trait_id: 179,    // Wealth of Lotus (+2 Turn Buffs)
     skills: [
-      832, // Auto-Mataru
-      97,  // Auto-Maraku
-      192, // Auto-Masuku
-      620, // Phantom Show
-      807, // Debilitate
-      855, // Enduring Soul
-      863, // Insta-Heal
-      346  // Spell Master
+      841, // Auto-Mataru
+      844, // Auto-Maraku
+      847, // Auto-Masuku
+      716, // Phantom Show
+      348, // Debilitate
+      806, // Enduring Soul
+      851, // Insta-Heal
+      853  // Spell Master
     ]
   }
 };
@@ -240,6 +316,7 @@ async function loadSaveFile() {
 
     CURRENT_SAVE = data;
     CURRENT_FILE_PATH = path;
+    if (data.notice) renderSameSaveNotice(data.notice);
     INITIAL_CONFIDANT_RANKS = {};
     Object.entries(data.confidants || {}).forEach(([arc, c]) => {
       INITIAL_CONFIDANT_RANKS[arc] = c.rank || 0;
@@ -261,6 +338,27 @@ async function loadSaveFile() {
     console.error("Load save error:", err);
     setStatus("Error communicating with server.");
   }
+}
+
+// Same-save soft notice (2026-08-16): one-line banner, auto-dismissed.
+function renderSameSaveNotice(text) {
+  const existing = document.getElementById("sameSaveNotice");
+  if (existing) existing.remove();
+  const banner = document.createElement("div");
+  banner.id = "sameSaveNotice";
+  banner.textContent = "⚠ " + text;
+  banner.style.cssText = `
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    background: #3A2E1B; color: #FFD54F; border: 1px solid #FFD54F;
+    padding: 10px 20px; border-radius: 6px; z-index: 9999;
+    font-family: var(--font-p5); font-size: 13px; font-weight: 700;
+    box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => {
+    const el = document.getElementById("sameSaveNotice");
+    if (el) el.remove();
+  }, 8000);
 }
 
 // Render All Save Data
@@ -393,28 +491,82 @@ function setMaxYen() {
 // Party & Personas
 function renderPartySelector() {
   const select = document.getElementById("partyMemberSelect");
-  select.innerHTML = "";
+  if (select) select.innerHTML = "";
+
+  const ribbon = document.getElementById("phantomThiefRibbon");
+  if (ribbon) ribbon.innerHTML = "";
 
   (CURRENT_SAVE.party || []).forEach((m, idx) => {
-    const opt = document.createElement("option");
-    opt.value = idx;
-    opt.textContent = `${m.name} (LV ${m.level})`;
-    select.appendChild(opt);
+    if (select) {
+      const opt = document.createElement("option");
+      opt.value = idx;
+      opt.textContent = `${m.name} (LV ${m.level})`;
+      select.appendChild(opt);
+    }
+
+    if (ribbon) {
+      const placard = document.createElement("div");
+      placard.className = `thief-placard ${idx === ACTIVE_MEMBER_INDEX ? 'active' : ''}`;
+      placard.onclick = () => {
+        if (typeof P5Audio !== "undefined") P5Audio.playSwitch();
+        selectPartyMemberByIndex(idx);
+      };
+
+      placard.innerHTML = `
+        <span class="thief-placard-slot">#${m.slot}</span>
+        <span class="thief-placard-name">${m.name.toUpperCase()}</span>
+        <span style="font-size:11px; font-weight:800; opacity:0.8;">LV ${m.level || 1}</span>
+      `;
+      ribbon.appendChild(placard);
+    }
   });
+}
+
+function selectPartyMemberByIndex(idx) {
+  const select = document.getElementById("partyMemberSelect");
+  if (select) {
+    select.value = idx;
+  }
+  ACTIVE_MEMBER_INDEX = idx;
+  renderActiveMember();
+  renderPartySelector(); // re-sync active state on placards
 }
 
 function renderActiveMember() {
   const select = document.getElementById("partyMemberSelect");
-  ACTIVE_MEMBER_INDEX = parseInt(select.value) || 0;
+  if (select && select.value !== "") {
+    ACTIVE_MEMBER_INDEX = parseInt(select.value) || 0;
+  }
   const member = CURRENT_SAVE?.party ? CURRENT_SAVE.party[ACTIVE_MEMBER_INDEX] : null;
   if (!member) return;
 
   const isJoker = member.slot === 0;
 
+  const charNameEl = document.getElementById("characterStageName");
+  if (charNameEl) charNameEl.textContent = member.name.toUpperCase();
+
   document.getElementById("activeMemberBadge").textContent = `SLOT ${member.slot} // ${member.name.toUpperCase()}`;
   document.getElementById("memberLevel").value = member.level || 1;
   document.getElementById("memberHP").value = member.hp || 100;
   document.getElementById("memberSP").value = member.sp || 50;
+
+  // Dynamic Party Standee Image Mapping
+  const standeeImg = document.getElementById("partyMemberStandeeImg");
+  if (standeeImg) {
+    const nameKey = (member.name || "joker").toLowerCase().replace(/[^a-z]/g, "");
+    let standeeFile = "joker.png";
+    if (nameKey.includes("morgana") || nameKey.includes("mona")) standeeFile = "morgana.png";
+    else if (nameKey.includes("ryuji") || nameKey.includes("skull")) standeeFile = "ryuji.png";
+    else if (nameKey.includes("ann") || nameKey.includes("panther")) standeeFile = "ann.png";
+    else if (nameKey.includes("yusuke") || nameKey.includes("fox")) standeeFile = "yusuke.png";
+    else if (nameKey.includes("makoto") || nameKey.includes("queen")) standeeFile = "makoto.png";
+    else if (nameKey.includes("futaba") || nameKey.includes("navi")) standeeFile = "futaba.png";
+    else if (nameKey.includes("haru") || nameKey.includes("noir")) standeeFile = "haru.png";
+    else if (nameKey.includes("akechi") || nameKey.includes("crow")) standeeFile = "akechi.png";
+    else if (nameKey.includes("kasumi") || nameKey.includes("sumire") || nameKey.includes("violet")) standeeFile = "kasumi.png";
+    else if (isJoker) standeeFile = "joker.png";
+    standeeImg.src = `/assets/party/${standeeFile}?v=20260816e`;
+  }
 
   // Configure Deck header and stock chips visibility
   const deckHeader = document.getElementById("personaDeckHeader");
@@ -425,6 +577,9 @@ function renderActiveMember() {
     if (deckHeader) deckHeader.textContent = "🎭 EQUIPPED PERSONA & MOVESET";
     if (stockChipsBox) stockChipsBox.style.display = "flex";
     if (stockBadge) stockBadge.style.display = "inline";
+    const lockNote = document.getElementById("personaLockNote");
+    if (lockNote) lockNote.style.display = "none";
+    document.getElementById("personaSelect").disabled = false;
     renderStockChips();
     loadPersonaIntoDeck(ACTIVE_STOCK_SLOT);
   } else {
@@ -433,9 +588,21 @@ function renderActiveMember() {
     if (stockBadge) stockBadge.style.display = "none";
 
     const pers = member.persona || {};
-    document.getElementById("personaSelect").value = pers.persona_id || 1;
+    const personaSelect = document.getElementById("personaSelect");
+    personaSelect.value = pers.persona_id || 1;
     document.getElementById("personaLevel").value = pers.level || 1;
     document.getElementById("personaTraitSelect").value = pers.trait_id || 0;
+
+    // Teammate personas are story-locked: P5R forces each member's canonical
+    // persona (backend refuses persona_id changes for slots 1-9 since the
+    // 2026-08-16 audit). Disable the identity selector; level/stats/skills
+    // remain editable.
+    personaSelect.disabled = true;
+    const lockNote = document.getElementById("personaLockNote");
+    if (lockNote) {
+      lockNote.style.display = "block";
+      lockNote.textContent = `🔒 ${member.name}'s persona is story-locked — identity cannot be changed.`;
+    }
 
     const st = pers.stats || [10, 10, 10, 10, 10];
     document.getElementById("stat_st").value = st[0] || 10;
@@ -446,6 +613,19 @@ function renderActiveMember() {
 
     renderSkillsGrid(pers.skills || [0,0,0,0,0,0,0,0]);
     renderElementalAffinities(pers.persona_id || 1, pers.skills || [0,0,0,0,0,0,0,0]);
+
+    // Update Velvet Room Persona Showcase for locked teammate
+    const portraitEl = document.getElementById("velvetPersonaPortrait");
+    if (portraitEl) {
+      const pid = pers.persona_id || 1;
+      portraitEl.src = `/assets/personas/${pid}.png?v=20260816`;
+      portraitEl.style.display = "block";
+    }
+    const idBadge = document.getElementById("velvetPersonaIdBadge");
+    if (idBadge) {
+      const pid = pers.persona_id || 1;
+      idBadge.textContent = `ID: 0x${pid.toString(16).toUpperCase().padStart(3, '0')} (${pid})`;
+    }
   }
 }
 
@@ -518,7 +698,7 @@ function loadPersonaIntoDeck(stockIdx) {
   const portraitEl = document.getElementById("velvetPersonaPortrait");
   if (portraitEl) {
     if (!isEmpty && entry.persona_id > 0) {
-      portraitEl.src = `/assets/personas/${entry.persona_id}.png`;
+      portraitEl.src = `/assets/personas/${entry.persona_id}.png?v=20260816e`;
       portraitEl.style.display = "block";
     } else {
       portraitEl.style.display = "none";
@@ -531,7 +711,7 @@ function onPersonaSelectChange() {
   const portraitEl = document.getElementById("velvetPersonaPortrait");
   if (portraitEl) {
     if (pid > 0) {
-      portraitEl.src = `/assets/personas/${pid}.png`;
+      portraitEl.src = `/assets/personas/${pid}.png?v=20260816e`;
       portraitEl.style.display = "block";
     } else {
       portraitEl.style.display = "none";
@@ -643,9 +823,17 @@ function renderSkillsGrid(skills) {
     select.style.fontSize = "12px";
     select.onchange = () => saveCurrentDeckToActiveTarget();
 
+    const EL_NAMES = {0:"Phys",1:"Gun",2:"Fire",3:"Ice",4:"Elec",5:"Wind",6:"Psy",7:"Nuke",8:"Bless",9:"Curse",10:"Almighty"};
     let opts = `<option value="0">-- (Empty Skill) --</option>`;
     (DB.skills || []).forEach((sk) => {
-      opts += `<option value="${sk.id}" ${sk.id === curSkillId ? 'selected' : ''}>${sk.name}</option>`;
+      const meta = (DB.skill_meta || {})[sk.id];
+      let tag = "";
+      if (meta) {
+        const el = EL_NAMES[meta.element] || (meta.element === 255 ? "—" : `E${meta.element}`);
+        const cost = meta.cost > 0 ? (meta.costtype === 1 ? ` ${meta.cost}% HP` : meta.costtype === 2 ? ` ${meta.cost} SP` : "") : "";
+        if (el !== "—" || cost) tag = ` [${el}${cost}]`;
+      }
+      opts += `<option value="${sk.id}" ${sk.id === curSkillId ? 'selected' : ''}>${sk.name}${tag}</option>`;
     });
     select.innerHTML = opts;
     container.appendChild(select);
@@ -753,58 +941,6 @@ function renderElementalAffinities(personaId, skillsList) {
   });
 }
 
-// Hideout & Inventory Items
-function renderInventoryItems() {
-  const container = document.getElementById("itemListContainer");
-  if (!container) return;
-  container.innerHTML = "";
-
-  const items = DB.items || [];
-  const search = (document.getElementById("itemSearchInput")?.value || "").toLowerCase();
-
-  items.filter(it => !search || it.name.toLowerCase().includes(search)).slice(0, 80).forEach(it => {
-    const card = document.createElement("div");
-    card.style.background = "#181822";
-    card.style.border = "1px solid var(--p5-border)";
-    card.style.padding = "8px 12px";
-    card.style.borderRadius = "4px";
-    card.style.display = "flex";
-    card.style.justifyContent = "space-between";
-    card.style.alignItems = "center";
-
-    card.innerHTML = `
-      <div>
-        <div style="font-size:12px; font-weight:800; color:var(--p5-white);">${it.name}</div>
-        <span style="font-size:10px; color:var(--p5-muted);">Item ID: ${it.id}</span>
-      </div>
-      <button class="p5-btn-action secondary" style="padding:2px 8px; font-size:11px;" onclick="addSingleItem('${it.name}', ${it.id})">
-        <span>+ 99x</span>
-      </button>
-    `;
-    container.appendChild(card);
-  });
-}
-
-function filterItemList() {
-  renderInventoryItems();
-}
-
-function stockLeblancKitchen() {
-  alert("☕ 99x Master Curry & 99x Master Coffee added to inventory!");
-}
-
-function stockInfiltrationKit() {
-  alert("🔑 Eternal Lockpick & 99x Infiltration Tools added to inventory!");
-}
-
-function stockClinicMedicine() {
-  alert("💉 99x SP Adhesive 3 & Clinic Meds added to inventory!");
-}
-
-function addSingleItem(name, id) {
-  alert(`📦 Added 99x ${name} to inventory!`);
-}
-
 // Calendar-aware Date comparison helper (e.g. "6/15" vs "10/30")
 function isStoryUnlocked(currentDayStr, unlockDateStr) {
   if (!currentDayStr || !unlockDateStr) return true;
@@ -836,22 +972,17 @@ function filterConfidants(category, btn) {
 
 function updateFilterCounts() {
   const profiles = DB.confidant_profiles || {};
-  const currentDay = CURRENT_SAVE?.header?.day || "";
   let totalVisible = 0;
-  let romanceVisible = 0;
 
   Object.entries(CURRENT_SAVE?.confidants || {}).forEach(([arcana, info]) => {
-    const prof = profiles[arcana] || { unlock_date: "4/11", type: "social" };
     const isMet = info.rank > 0;
-    const isCalendarReady = isStoryUnlocked(currentDay, prof.unlock_date);
-    if (isMet || isCalendarReady || ALLOW_UNSAFE_CONFIDANTS) {
+    if (isMet || ALLOW_UNSAFE_CONFIDANTS) {
       totalVisible++;
-      if (prof.type === "romance" || prof.type === "romance_deadline") romanceVisible++;
     }
   });
 
   const allPill = document.getElementById("pillAll");
-  if (allPill) allPill.textContent = `Met / Active Arcana (${totalVisible})`;
+  if (allPill) allPill.textContent = `Met Confidants (${totalVisible})`;
 }
 
 // Spoiler-Safe Narrative Lore & Strategy Database
@@ -1122,10 +1253,7 @@ function renderConfidants() {
       if (CURRENT_CONFIDANT_FILTER === "social" && prof.type !== "social") return;
 
       const isMet = info.rank > 0;
-      const isCalendarReady = isStoryUnlocked(currentDay, prof.unlock_date);
-      const isLocked = !isMet && !isCalendarReady;
-
-      if (isLocked && !ALLOW_UNSAFE_CONFIDANTS) return;
+      if (!isMet && !ALLOW_UNSAFE_CONFIDANTS) return;
 
       matchingArcanas.push(arcana);
 
@@ -1134,13 +1262,13 @@ function renderConfidants() {
       const isDeadline = prof.type === "story_deadline" || prof.type === "romance_deadline";
       const isSelected = arcana === SELECTED_CONFIDANT_ARCANA;
 
-      card.className = `p5-tarot-card ${isRomanceable ? 'romance' : ''} ${isDeadline ? 'deadline' : ''} ${isLocked ? 'locked' : ''} ${isSelected ? 'active' : ''}`;
+      card.className = `p5-tarot-card ${isRomanceable ? 'romance' : ''} ${isDeadline ? 'deadline' : ''} ${!isMet ? 'locked' : ''} ${isSelected ? 'active' : ''}`;
       card.onclick = () => selectConfidantArcana(arcana);
 
-      const portraitSrc = prof.img ? `/assets/confidants/${prof.img}` : '/assets/joker_avatar.jpg';
+      const portraitSrc = prof.img ? `/assets/confidants/${prof.img}?v=20260816b` : '/assets/joker_avatar.jpg';
 
       card.innerHTML = `
-        <div class="tarot-rank-badge ${info.rank >= 10 ? 'max' : ''}">${isLocked ? '🔒' : `RK ${info.rank}`}</div>
+        <div class="tarot-rank-badge ${info.rank >= 10 ? 'max' : ''}">${!isMet ? '🔒' : `RK ${info.rank}`}</div>
         <img src="${portraitSrc}" class="tarot-thumb" alt="${prof.name}">
         <div style="flex:1; min-width:0;">
           <div class="tarot-arcana">${arcana.toUpperCase()} (${info.arcana_id})</div>
@@ -1188,7 +1316,11 @@ function renderActiveConfidantSpotlight(arcana) {
 
   const isRomanceable = romanceableList.includes(info.arcana_id);
   const isMaxed = info.rank >= 10;
-  const portraitSrc = prof.img ? `/assets/confidants/${prof.img}` : '/assets/joker_avatar.jpg';
+  
+  // Prefer full-body official standee if available
+  const standeeKey = prof.img ? prof.img.replace('.png', '') : '';
+  const fullStandeeSrc = `/assets/confidants_full/${standeeKey}.png?v=20260816`;
+  const portraitSrc = prof.img ? `/assets/confidants/${prof.img}?v=20260816b` : '/assets/joker_avatar.jpg';
 
   let deadlineAlert = "";
   if (arcana === "Councillor") {
@@ -1225,9 +1357,9 @@ function renderActiveConfidantSpotlight(arcana) {
   spotlight.innerHTML = `
     <!-- Top Hero Banner with Huge Slanted Portrait & Nameplate -->
     <div class="spotlight-header-card">
-      <div class="spotlight-portrait-frame" onclick="openPortraitModal('${portraitSrc}', '${prof.name.replace(/'/g, "\\'")}', '${prof.role.replace(/'/g, "\\'")}')" title="Click to view full portrait">
-        <img src="${portraitSrc}" class="spotlight-full-portrait" alt="${prof.name}">
-        <div class="spotlight-zoom-hint">🔍 CLICK TO ENLARGE</div>
+      <div class="spotlight-portrait-frame" onclick="openPortraitModal('${fullStandeeSrc}', '${prof.name.replace(/'/g, "\\'")}', '${prof.role.replace(/'/g, "\\'")}')" title="Click to view full portrait">
+        <img src="${fullStandeeSrc}" onerror="this.src='${portraitSrc}'" class="spotlight-full-portrait" alt="${prof.name}">
+        <div class="spotlight-zoom-hint">🔍 FULL STANDEE</div>
       </div>
 
       <div class="spotlight-identity-block">
@@ -1416,9 +1548,25 @@ let ORIGINAL_COMPENDIUM_REGISTERED = [];
 let COMPENDIUM_FILTER_MODE = "all"; // "all" | "registered" | "unregistered"
 let COMPENDIUM_SEARCH_QUERY = "";
 
-// Known DLC & Treasure Demon IDs in the 232 mask
-const DLC_PERSONA_IDS = [190, 191, 192, 193, 194, 195, 196, 197, 198]; // Orpheus, Izanagi, Asterius, Ariadne, etc.
+// Known DLC & Treasure Demon IDs in P5R
+const DLC_PERSONA_IDS = [181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 362, 363, 366, 367, 368, 369, 370, 371];
 const TREASURE_DEMON_IDS = [106, 107, 108, 109, 110, 111, 112, 113, 114]; // Regent, Queen's Necklace, Stone of Scone, Koh-i-Noor, Orlov, Emperor's Amulet, Hope Diamond, Crystal Skull, Orichalcum
+// Mask bits the game NEVER sets (verified across real saves + NG++ 100% oracle).
+const STUB_COMPENDIUM_IDS = new Set([1, 219, 220, 221, 222, 224]);
+const STORY_COMPENDIUM_IDS = new Set([216, 218]);
+// Party-member personas: the game registers these mask bits as members
+// join, but they can never be summoned from the compendium. Rendered with
+// a PARTY badge, non-interactive.
+const PARTY_COMPENDIUM_IDS = new Set([
+  170, 199, 202, 203, 204, 205, 206, 207, 208, 209, 210,
+  212, 213, 214, 215, 217, 223, 225, 226, 227, 228, 231, 232,
+  233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244,
+  245, 246, 247, 248, 249, 250
+]);
+const UNNAMED_PERSONA_NAMES = new Set([
+  "", "RESERVE", "???", "BLANK", "----------", "P5 Unused", "P6 Unused",
+  "チャレンジ用フロスト", "チャレンジ用エンジェル", "タイマン用シンデレラ"
+]);
 
 function renderCompendium() {
   if (!COMPENDIUM_DATA && CURRENT_SAVE?.compendium) {
@@ -1427,11 +1575,19 @@ function renderCompendium() {
   }
   if (!COMPENDIUM_DATA || !COMPENDIUM_DATA.supported) return;
 
-  const total = 232;
+  // Only real, named, registerable personas count toward progress.
+  const regIds = (DB.personas || [])
+    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
+    .map(p => p.id)
+    .filter(id => id >= 1 && id <= 437
+      && !STUB_COMPENDIUM_IDS.has(id)
+      && !STORY_COMPENDIUM_IDS.has(id)
+      && !PARTY_COMPENDIUM_IDS.has(id));
+  const total = regIds.length;
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
-  const count = regSet.size;
+  const count = regIds.filter(id => regSet.has(id)).length;
   COMPENDIUM_DATA.count = count;
-  const pct = Math.round((count / total) * 100);
+  const pct = total ? Math.round((count / total) * 100) : 0;
 
   const counter = document.getElementById("compendiumCounter");
   if (counter) counter.textContent = `${count} / ${total} REGISTERED (${pct}%)`;
@@ -1453,19 +1609,43 @@ function filterCompendiumGrid() {
   const query = (searchInput ? searchInput.value : "").trim().toLowerCase();
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
   const personas = DB.personas || [];
+  // Full id->name map first (2026-08-16): party personas whose names
+  // duplicate earlier ids (Satanael 0xD3, Carmen 0xDF, 0xE1-0xE8) are
+  // dropped by the dropdown dedupe but must still render named here.
+  const byId = { ...(DB.persona_names || {}) };
+  for (const p of personas) byId[p.id] = p.name;
 
   grid.innerHTML = "";
   let visibleCount = 0;
 
-  for (let pid = 1; pid <= 232; pid++) {
-    const isReg = regSet.has(pid);
-    
-    // Status filter
-    if (COMPENDIUM_FILTER_MODE === "registered" && !isReg) continue;
-    if (COMPENDIUM_FILTER_MODE === "unregistered" && isReg) continue;
+  // Render only real, named personas (registerable) + the two STORY cards.
+  const regIds = personas
+    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
+    .map(p => p.id)
+    .filter(id => id >= 1 && id <= 437
+      && !STUB_COMPENDIUM_IDS.has(id)
+      && !STORY_COMPENDIUM_IDS.has(id)
+      && !PARTY_COMPENDIUM_IDS.has(id));
+  const renderIds = regIds
+    .concat([...STORY_COMPENDIUM_IDS])
+    .concat([...PARTY_COMPENDIUM_IDS])
+    .sort((a, b) => a - b);
 
-    const pObj = personas.find(p => p.id === pid);
-    const name = pObj ? pObj.name : `Persona #${pid}`;
+  const allBtn = document.getElementById("filterCompAll");
+  if (allBtn) allBtn.textContent = `ALL (${renderIds.length})`;
+
+  for (const pid of renderIds) {
+    const isStory = STORY_COMPENDIUM_IDS.has(pid);
+    const isParty = PARTY_COMPENDIUM_IDS.has(pid);
+    const isReg = !isStory && !isParty && regSet.has(pid);
+
+    // Status filter (story/party cards always render; they cannot be toggled)
+    if (!isStory && !isParty) {
+      if (COMPENDIUM_FILTER_MODE === "registered" && !isReg) continue;
+      if (COMPENDIUM_FILTER_MODE === "unregistered" && isReg) continue;
+    }
+
+    const name = byId[pid] || "?";
     const hexId = "0x" + pid.toString(16).toUpperCase().padStart(2, "0");
 
     // Search query filter
@@ -1477,32 +1657,72 @@ function filterCompendiumGrid() {
     const isDlc = DLC_PERSONA_IDS.includes(pid);
     const isTreasure = TREASURE_DEMON_IDS.includes(pid);
 
+    const isSpecial = isStory || isParty;
     const card = document.createElement("div");
     card.style.cssText = `
-      background: ${isReg ? "linear-gradient(135deg, #1C1226, #0E0B16)" : "#09090D"};
-      border: 1px solid ${isReg ? "#E040FB" : "#222"};
-      border-left: 6px solid ${isReg ? "#00E676" : "#444"};
+      background: ${isSpecial ? "#0B0B10" : isReg ? "linear-gradient(135deg, #1C1226, #0E0B16)" : "#09090D"};
+      border: 1px solid ${isSpecial ? "#2A2A35" : isReg ? "#E040FB" : "#222"};
+      border-left: 6px solid ${isSpecial ? "#4A4A5A" : isReg ? "#00E676" : "#444"};
       padding: 10px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
+      cursor: ${isSpecial ? "default" : "pointer"};
       border-radius: 4px;
+      opacity: ${isSpecial ? "0.75" : "1"};
       transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-      box-shadow: ${isReg ? "0 4px 15px rgba(0,230,118,0.1)" : "none"};
+      box-shadow: ${isReg && !isSpecial ? "0 4px 15px rgba(0,230,118,0.1)" : "none"};
     `;
-    card.title = `Click to ${isReg ? "un-register" : "register"} ${name} (ID: ${hexId})`;
+    card.title = isStory
+      ? `${name} — story-exclusive persona; cannot be registered`
+      : isParty
+        ? `${name} — party-member persona; cannot be summoned`
+        : `Click to ${isReg ? "un-register" : "register"} ${name} (ID: ${hexId})`;
 
-    card.onmouseenter = () => { card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 6px 20px rgba(0,0,0,0.8)"; };
-    card.onmouseleave = () => { card.style.transform = "translateY(0)"; card.style.boxShadow = isReg ? "0 4px 15px rgba(0,230,118,0.1)" : "none"; };
-    card.onclick = () => togglePersonaRegistration(pid);
+    card.onmouseenter = (e) => {
+      if (!isSpecial) {
+        card.style.transform = "translateY(-3px)";
+        card.style.boxShadow = "0 6px 20px rgba(0,0,0,0.8)";
+      }
+      const spot = document.getElementById("personaArtSpotlight");
+      const img = document.getElementById("personaSpotlightImg");
+      const title = document.getElementById("personaSpotlightTitle");
+      const sub = document.getElementById("personaSpotlightSub");
+      if (spot && img && title && sub) {
+        img.src = `/assets/personas/${pid}.png`;
+        img.onerror = () => { spot.style.display = "none"; };
+        img.onload = () => {
+          title.textContent = name;
+          sub.textContent = `${hexId} (#${pid}) ${isDlc ? '• DLC' : isTreasure ? '• TREASURE DEMON' : ''}`;
+          spot.style.display = "block";
+          const rect = card.getBoundingClientRect();
+          let leftPos = rect.right + 12;
+          if (leftPos + 290 > window.innerWidth) leftPos = rect.left - 300;
+          let topPos = Math.max(10, rect.top - 40);
+          if (topPos + 340 > window.innerHeight) topPos = window.innerHeight - 350;
+          spot.style.left = leftPos + "px";
+          spot.style.top = topPos + "px";
+        };
+      }
+    };
+    card.onmouseleave = () => {
+      card.style.transform = "translateY(0)";
+      card.style.boxShadow = isReg ? "0 4px 15px rgba(0,230,118,0.1)" : "none";
+      const spot = document.getElementById("personaArtSpotlight");
+      if (spot) spot.style.display = "none";
+    };
+    card.onclick = () => {
+      if (!isSpecial) togglePersonaRegistration(pid);
+      const spot = document.getElementById("personaArtSpotlight");
+      if (spot) spot.style.display = "none";
+    };
 
     const left = document.createElement("div");
     left.style.cssText = "display:flex; align-items:center; gap:12px;";
     left.innerHTML = `
-      <img src="/assets/personas/${pid}.png" onerror="this.style.display='none'" style="width:56px; height:56px; object-fit:contain; background:#0B0B10; border:1px solid #333; padding:3px; border-radius:4px; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7)); flex-shrink:0;">
+      <img src="/assets/personas/${pid}.png" onerror="this.style.display='none'" style="width:56px; height:56px; object-fit:contain; background:#0B0B10; border:1px solid #333; padding:3px; border-radius:4px; filter:${isSpecial ? 'grayscale(0.6) opacity(0.7)' : 'drop-shadow(0 2px 6px rgba(0,0,0,0.7))'}; flex-shrink:0;">
       <div>
-        <div style="font-family:var(--font-p5); font-size:15px; letter-spacing:0.5px; color:${isReg ? '#FFF' : '#777'};">
+        <div style="font-family:var(--font-p5); font-size:15px; letter-spacing:0.5px; color:${isSpecial ? '#888' : isReg ? '#FFF' : '#777'};">
           ${name} ${isDlc ? '<span style="font-size:9px; font-family:var(--font-body); font-weight:900; background:#FF2A6D; color:#FFF; padding:2px 5px; border-radius:2px;">DLC</span>' : ''} ${isTreasure ? '<span style="font-size:9px; font-family:var(--font-body); font-weight:900; background:#FFE600; color:#000; padding:2px 5px; border-radius:2px;">DEMON</span>' : ''}
         </div>
         <div style="font-size:11px; color:var(--p5-muted); font-family:monospace; margin-top:2px;">ID: ${hexId} <span style="color:#555;">(#${pid})</span></div>
@@ -1515,11 +1735,11 @@ function filterCompendiumGrid() {
       font-weight: 900;
       padding: 3px 8px;
       font-family: var(--font-p5);
-      background: ${isReg ? "#00E676" : "#222"};
-      color: ${isReg ? "#000" : "#666"};
-      border: 1px solid ${isReg ? "#00E676" : "#333"};
+      background: ${isSpecial ? "#3A3A4A" : isReg ? "#00E676" : "#222"};
+      color: ${isSpecial ? "#BBB" : isReg ? "#000" : "#666"};
+      border: 1px solid ${isSpecial ? "#3A3A4A" : isReg ? "#00E676" : "#333"};
     `;
-    statusBadge.textContent = isReg ? "REGISTERED" : "LOCKED";
+    statusBadge.textContent = isStory ? "STORY" : isParty ? "PARTY" : (isReg ? "REGISTERED" : "NOT REGISTERED");
 
     card.appendChild(left);
     card.appendChild(statusBadge);
@@ -1527,7 +1747,7 @@ function filterCompendiumGrid() {
   }
 
   const countLabel = document.getElementById("compendiumFilterCount");
-  if (countLabel) countLabel.textContent = `Showing ${visibleCount} of 232 Personas`;
+  if (countLabel) countLabel.textContent = `Showing ${visibleCount} Personas`;
 
   if (visibleCount === 0) {
     grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--p5-muted);">No Personas match current filter or search criteria.</div>`;
@@ -1543,6 +1763,14 @@ function setCompendiumFilter(mode, btnEl) {
 
 function togglePersonaRegistration(pid) {
   if (!COMPENDIUM_DATA) return;
+  if (STORY_COMPENDIUM_IDS.has(pid)) {
+    alert(`⚠ ${pid === 216 ? "Anat" : "Prometheus"} is a story-exclusive persona — the game never registers it.`);
+    return;
+  }
+  if (PARTY_COMPENDIUM_IDS.has(pid)) {
+    alert(`⚠ That is a party-member persona — it cannot be summoned or toggled in the compendium.`);
+    return;
+  }
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
   if (regSet.has(pid)) {
     regSet.delete(pid);
@@ -1555,13 +1783,18 @@ function togglePersonaRegistration(pid) {
 }
 
 function unlockFullCompendium() {
-  if (!confirm("Unlock ALL 232 personas in the Compendium?\n\nThis registers all Personas in the matrix. Remember to RE-SIGN SAVE.")) return;
-  const allIds = [];
-  for (let i = 1; i <= 232; i++) allIds.push(i);
-  COMPENDIUM_DATA.registered = allIds;
-  COMPENDIUM_DATA.count = 232;
+  const regIds = (DB.personas || [])
+    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
+    .map(p => p.id)
+    .filter(id => id >= 1 && id <= 437
+      && !STUB_COMPENDIUM_IDS.has(id)
+      && !STORY_COMPENDIUM_IDS.has(id)
+      && !PARTY_COMPENDIUM_IDS.has(id));
+  if (!confirm(`Unlock ALL ${regIds.length} registerable personas in the Compendium?\n\nStory-exclusive & Party personas are excluded — the game never registers them.\n\nRemember to RE-SIGN SAVE.`)) return;
+  COMPENDIUM_DATA.registered = regIds.slice();
+  COMPENDIUM_DATA.count = regIds.length;
   renderCompendium();
-  setStatus("★ All 232 Personas registered in Compendium matrix. Click RE-SIGN SAVE to write to disk.");
+  setStatus(`★ All ${regIds.length} registerable Personas registered in Compendium matrix. Click RE-SIGN SAVE to write to disk.`);
 }
 
 function unlockDlcPersonas() {
@@ -1593,288 +1826,548 @@ function resetCompendiumToOriginal() {
 // =========================================================================
 // STAGE 3.5: INVENTORY & POUCH STUDIO LOGIC (TWO-PANEL INTUITIVE UI)
 // =========================================================================
-let CURRENT_POUCH_POCKET = "All";
-let CURRENT_VAULT_CATEGORY = "All";
-let VAULT_SEARCH_QUERY = "";
+// STAGE 3.5: PERSONA 5 ROYAL UNIFIED ITEM STUDIO & LIVE DOSSIER
+// =========================================================================
+let CURRENT_UNIFIED_CATEGORY = "Consumable";
+let UNIFIED_SEARCH_QUERY = "";
+let SELECTED_ITEM_ID = null;
 let INVENTORY_ITEM_COUNTS = {}; // id -> qty (1..99)
 
-function filterPouchPocket(pocket, btnEl) {
-  CURRENT_POUCH_POCKET = pocket;
-  document.querySelectorAll("#pouchPocketTabs .filter-pill").forEach(el => el.classList.remove("active"));
+// Canonical Category Visual Themes & Glyph Badges
+const P5R_CATEGORY_THEMES = {
+  Consumable:   { glyph: "HP",   color: "#00E5FF", bg: "#002B33", name: "Consumable / Healing" },
+  Infiltration: { glyph: "TOOL", color: "#FFD600", bg: "#332B00", name: "Infiltration Tool" },
+  SkillCard:    { glyph: "CARD", color: "#E040FB", bg: "#2E0033", name: "Skill Card" },
+  Melee:        { glyph: "BLD",  color: "#FF3D00", bg: "#330D00", name: "Melee Weapon" },
+  Ranged:       { glyph: "GUN",  color: "#76FF03", bg: "#133300", name: "Firearm / Gun" },
+  Protector:    { glyph: "ARM",  color: "#2979FF", bg: "#001733", name: "Protector / Armor" },
+  Accessory:    { glyph: "ACC",  color: "#FF4081", bg: "#330018", name: "Accessory / Ring" },
+  Treasure:     { glyph: "GEM",  color: "#00E676", bg: "#003318", name: "Material & Loot" },
+  KeyItem:      { glyph: "KEY",  color: "#FFAB00", bg: "#332200", name: "Key & Story Item" }
+};
+
+// In-Game Item Descriptions & Effect Dictionary
+const P5R_ITEM_DESCRIPTIONS = {
+  'Life Stone': 'Restores 30% HP to one ally.',
+  'Lifestone': 'Restores 30% HP to one ally.',
+  'Protein': 'Greatly increases HP / Muscle training workout item for the gym.',
+  'Moist Protein': 'High-grade workout protein. Increases max HP during gym sessions.',
+  'Imported Protein': 'Exclusive high-protein supplement from overseas.',
+  'Recov-R: 50 mg': 'Restores 50 HP to one ally. Developed by Tae Takemi.',
+  'Recov-R: 100 mg': 'Restores 100 HP to one ally. Developed by Tae Takemi.',
+  'Takemedic': 'Restores 200 HP to one ally. Developed by Tae Takemi.',
+  'Peppery Nikuman': 'Restores 80 HP to one ally. A spicy Tokyo street food snack.',
+  'Juicy Nikuman': 'Restores 100 HP to one ally. Steaming hot and filled with broth.',
+  'Napolitan Nikuman': 'Restores 120 HP to one ally. Western-style street snack.',
+  'Foreign Nikuman': 'Restores 150 HP to one ally. Exotic street food.',
+  'Bead': 'Fully restores HP to one ally.',
+  'Party in a Can': 'Restores 50 HP to all allies. Carbonated celebratory soft drink.',
+  'Corned Beef Special': 'Restores 100 HP to one ally. Premium canned ration.',
+  'Takemedic-All': 'Restores 100 HP to all allies. Tae Takemi clinical prescription.',
+  'Takemedic-All V': 'Restores 200 HP to all allies. Tae Takemi advanced clinical medicine.',
+  'Takemedic-All Z': 'Restores 300 HP to all allies. Tae Takemi master formula.',
+  'Bead Chain': 'Fully restores HP to all allies.',
+  'Soul Drop': 'Restores 10 SP to one ally.',
+  'Snuff Soul': 'Restores 50 SP to one ally.',
+  'Chewing Soul': 'Restores 100 SP to one ally.',
+  'Soul Food': 'Fully restores SP to one ally.',
+  'Revival Bead': 'Revives one fallen ally with 50% HP.',
+  'Balm of Life': 'Revives one fallen ally with full HP.',
+  'Nohar-M': 'Cleanses Dizzy, Forget, Sleep, and Hunger from one ally.',
+  'Relax Gel': 'Cleanses Confuse, Fear, and Despair from one ally.',
+  'Alert Capsule': 'Cleanses Rage and Brainwash from one ally.',
+  'Amrita Soda': 'Cleanses all non-special status ailments for one ally.',
+  'Soma': 'Fully restores HP and SP of all allies. Cleanses negative status effects.',
+  'Leblanc Coffee': 'Restores 30 SP to one ally. Brewed at Café Leblanc.',
+  'Master Coffee': 'Restores 100 SP to one ally. Brewed with Sojiro’s master beans.',
+  'Leblanc Curry': 'Restores 20 SP to all allies. Homemade spiced curry.',
+  'Master Curry': 'Restores 50 SP to all allies. Masterfully aged secret recipe.',
+  'Lockpick': 'Picks standard Palace and Mementos locked treasure chests.',
+  'Eternal Lockpick': 'Infinite use lockpick. Opens any Palace locked chest without breaking.',
+  'Vanish Ball': 'Guarantees immediate escape from standard shadow encounters in Palaces.',
+  'Spotlight': 'Draws enemy attacks to the user for 3 turns.',
+  'Goho-M': 'Instantly teleports the party back to the Palace safe room entrance.',
+  'Megido Bomb': 'Deals 150 Almighty damage to all foes.',
+  'SP Adhesive 3': 'Accessory. Automatically restores 7 SP at the start of every combat turn.',
+  'Omnipotent Orb': 'Legendary accessory. Nullifies all magical and physical attacks except Almighty.',
+  'Crystal of Greed': 'Will Seed ring. Grants Attack Master and Charge to the wearer.',
+  'Blank Card': 'A blank skill card that Yusuke Kitagawa can duplicate any skill onto.'
+};
+
+function getItemDescription(item) {
+  if (P5R_ITEM_DESCRIPTIONS[item.name]) {
+    return P5R_ITEM_DESCRIPTIONS[item.name];
+  }
+  if (item.category === "SkillCard") return `Skill Card: Teaches ${item.name} to any Persona.`;
+  if (item.category === "Melee") return `Melee weapon equipment. Equippable by specific Phantom Thief.`;
+  if (item.category === "Ranged") return `Firearm equipment. Fires high-potency elemental/standard rounds.`;
+  if (item.category === "Protector") return `Protective armor equipment. Enhances Defense and Magic Evade.`;
+  if (item.category === "Accessory") return `Accessory. Grants passive buffs or active combat skills.`;
+  if (item.category === "Infiltration") return `Infiltration tool crafted at Joker’s hideout workdesk.`;
+  if (item.category === "Treasure") return `Valuable shadow loot item. Sellable to Iwai at Untouchable for yen.`;
+  if (item.category === "KeyItem") return `Story essential item, book, or confidant bond keepsake.`;
+  return `Persona 5 Royal consumable inventory item.`;
+}
+
+function switchItemCategory(cat, btnEl) {
+  CURRENT_UNIFIED_CATEGORY = cat;
+  document.querySelectorAll("#unifiedItemTabs .filter-pill").forEach(el => el.classList.remove("active"));
   if (btnEl) btnEl.classList.add("active");
-  renderCurrentPouch();
+  renderUnifiedItemList();
 }
 
-function filterVaultCategory(cat, btnEl) {
-  CURRENT_VAULT_CATEGORY = cat;
-  document.querySelectorAll("#stage-inventory .filter-pill").forEach(el => {
-    if (el.closest("#pouchPocketTabs")) return;
-    el.classList.remove("active");
-  });
-  if (btnEl) btnEl.classList.add("active");
-  renderVaultResults();
+function onUnifiedSearchInput() {
+  UNIFIED_SEARCH_QUERY = (document.getElementById("unifiedItemSearchBox")?.value || "").toLowerCase().trim();
+  renderUnifiedItemList();
 }
 
-function onVaultSearchInput() {
-  VAULT_SEARCH_QUERY = (document.getElementById("vaultSearchBox")?.value || "").toLowerCase().trim();
-  renderVaultResults();
-}
-
-// 1. Render Joker's Active Carried Items (The Pouch)
-function renderCurrentPouch() {
-  const container = document.getElementById("currentPouchContainer");
-  if (!container) return;
-
+function updateCategoryTabBadges() {
   const allOwned = Object.entries(INVENTORY_ITEM_COUNTS)
     .map(([idStr, qty]) => {
       const id = parseInt(idStr);
-      const item = (DB.items || []).find(it => it.id === id) || { id, name: `Royal Item #0x${id.toString(16).toUpperCase()}`, category: "Consumable" };
+      const item = (DB.items || []).find(it => it.id === id) || { id, category: "Consumable" };
       return { ...item, qty: parseInt(qty) };
     })
     .filter(it => it.qty > 0);
 
-  // Update Pocket Badge Counters
   const countByCat = (c) => allOwned.filter(it => it.category === c).length;
-  const countGear = allOwned.filter(it => ["Melee", "Ranged", "Protector"].includes(it.category)).length;
 
-  if (document.getElementById("pouchBadgeAll")) document.getElementById("pouchBadgeAll").textContent = allOwned.length;
-  if (document.getElementById("pouchBadgeConsumable")) document.getElementById("pouchBadgeConsumable").textContent = countByCat("Consumable");
-  if (document.getElementById("pouchBadgeInfiltration")) document.getElementById("pouchBadgeInfiltration").textContent = countByCat("Infiltration");
-  if (document.getElementById("pouchBadgeSkillCard")) document.getElementById("pouchBadgeSkillCard").textContent = countByCat("SkillCard");
-  if (document.getElementById("pouchBadgeAccessory")) document.getElementById("pouchBadgeAccessory").textContent = countByCat("Accessory");
-  if (document.getElementById("pouchBadgeEquipment")) document.getElementById("pouchBadgeEquipment").textContent = countGear;
-  if (document.getElementById("pouchBadgeKeyItem")) document.getElementById("pouchBadgeKeyItem").textContent = countByCat("KeyItem") + countByCat("Treasure");
+  if (document.getElementById("catBadgeConsumable")) document.getElementById("catBadgeConsumable").textContent = countByCat("Consumable");
+  if (document.getElementById("catBadgeInfiltration")) document.getElementById("catBadgeInfiltration").textContent = countByCat("Infiltration");
+  if (document.getElementById("catBadgeSkillCard")) document.getElementById("catBadgeSkillCard").textContent = countByCat("SkillCard");
+  if (document.getElementById("catBadgeMelee")) document.getElementById("catBadgeMelee").textContent = countByCat("Melee");
+  if (document.getElementById("catBadgeRanged")) document.getElementById("catBadgeRanged").textContent = countByCat("Ranged");
+  if (document.getElementById("catBadgeProtector")) document.getElementById("catBadgeProtector").textContent = countByCat("Protector");
+  if (document.getElementById("catBadgeAccessory")) document.getElementById("catBadgeAccessory").textContent = countByCat("Accessory");
+  if (document.getElementById("catBadgeTreasure")) document.getElementById("catBadgeTreasure").textContent = countByCat("Treasure");
+  if (document.getElementById("catBadgeKeyItem")) document.getElementById("catBadgeKeyItem").textContent = countByCat("KeyItem");
 
-  const slotCounter = document.getElementById("pouchSlotCounter");
-  if (slotCounter) {
-    slotCounter.textContent = `${allOwned.length} / 30 SLOTS USED`;
-    slotCounter.style.color = allOwned.length >= 30 ? "var(--p5-crimson)" : "var(--p5-yellow)";
+  const totalDistinct = allOwned.length;
+  const globalCounter = document.getElementById("globalOwnedCounter");
+  if (globalCounter) {
+    globalCounter.textContent = `${totalDistinct} DISTINCT ITEMS IN BAG`;
   }
+}
 
-  // Filter for active pocket tab
-  const displayed = allOwned.filter(item => {
-    if (CURRENT_POUCH_POCKET === "All") return true;
-    if (CURRENT_POUCH_POCKET === "Equipment") return ["Melee", "Ranged", "Protector"].includes(item.category);
-    if (CURRENT_POUCH_POCKET === "KeyItem") return ["KeyItem", "Treasure"].includes(item.category);
-    return item.category === CURRENT_POUCH_POCKET;
-  });
+// Authentic In-Game Effect Sort Priority (Matches In-Game Screenshots 1:1)
+const P5R_ITEM_SORT_PRIORITY = {
+  // 1. HP Single-Target Recovery & Protein Items (Top of In-Game Screen)
+  'Life Stone': 100, 'Lifestone': 100, 'Protein': 101, 'Moist Protein': 102, 'Imported Protein': 103,
+  'Recov-R: 50 mg': 104, 'Recov-R: 100 mg': 105, 'Takemedic': 106,
+  'Peppery Nikuman': 107, 'Juicy Nikuman': 108, 'Napolitan Nikuman': 109, 'Foreign Nikuman': 110,
+  'Bead': 111, 'Party in a Can': 112, 'Corned Beef Special': 113, 'Sandwich': 114, 'Surprise Sando': 115,
+  'Dipped Katsu Sando': 116, 'Fruit Danish': 117, 'Yakisoba Pan': 118, 'Fried Bread': 119, 'Jam Bread': 120,
+  'Melon Pan': 121, 'Big Bang Burger': 122, 'Earth Burger': 123, 'Moon Burger': 124, 'Supernova Burger': 125,
+  'Saturn Fries': 126, 'Karaage King': 127, 'Spring Fruit Pack': 128, 'Phantom Wafers': 129, 'Soothing Soba': 130,
+  'Agodashi Oden': 131, 'Nostalgic Steak': 132, 'Sincere Omelette': 133, 'Angel Tart': 134, 'Moon Dango': 135,
+  'Mixed Nuts': 136, 'Beni-Azuma': 137, 'Legendary Yaki-Imo': 138, 'Ann Cream Puffs': 139, 'Makoto Donuts': 140,
+  'Sadayo Taiyaki': 141, 'Ryuji Dog': 142, 'Strawberry Daifuku': 143, 'Bland Cheese': 144, 'Sharp Cheese': 145,
+  'Rich Cheese': 146, 'Pumpkin Soup': 147, 'Devil Fruit': 148,
+
+  // 2. HP Party-Target Recovery
+  'Takemedic-All': 200, 'Takemedic-All V': 201, 'Takemedic-All Z': 202, 'Bead Chain': 203, 'Salvation S': 204,
+
+  // 3. SP Recovery (Single & Party)
+  'Soul Drop': 300, 'Snuff Soul': 301, 'Chewing Soul': 302, 'Soul Food': 303, 'Amateur Coffee': 304,
+  'Harsh Coffee': 305, 'Relaxing Coffee': 306, 'Leblanc Coffee': 307, 'Master Coffee': 308, 'Bitter Coffee': 309,
+  'Acidic Coffee': 310, 'Decent Curry': 311, 'Leblanc Curry': 312, 'Master Curry': 313, 'Fire Curry': 314,
+  'Blaze Curry': 315, 'Inferno Curry': 316, 'Amateur Curry': 317, 'Strawberry Curry': 318, 'Moonlight Carrot': 319,
+  'Sun Tomato': 320, 'Earth Beans': 321, 'Star Onion': 322, 'Water of Rebirth': 323, 'Hogyoku Apple': 324,
+
+  // 4. Revival Items
+  'Revival Bead': 400, 'Balm of Life': 401, 'Band-Ace': 402, 'Reviv-All': 403, 'Renew-All': 404,
+
+  // 5. Status Ailments & Cleansers
+  'Nohar-M': 500, 'Relax Gel': 501, 'Alert Capsule': 502, 'Amrita Soda': 503, 'Soma': 504, 'Hiranya': 505,
+  'Muscle Drink': 506, 'Odd Morsel': 507, 'Rancid Gravy': 508, 'Kajaclear-R': 509, 'Kundaclear-R': 510,
+  'Magic Ointment': 511, 'Physical Ointment': 512, 'Rasetsu Ofuda': 513, 'Idaten Ofuda': 514, 'Kongou Ofuda': 515,
+  'Empowering Ofuda': 516, 'Debilitator Ofuda': 517, 'Invincible Ofuda': 518, 'Strength Up Ofuda': 519, 'Magic Up Ofuda': 520,
+
+  // 6. Battle Offense & Elemental Items
+  'Molotov Cocktail': 600, 'Blowtorch': 601, 'Freeze Spray': 602, 'Dry Ice': 603, 'Air Cannon': 604,
+  'Vacuum Cutter': 605, 'Stun Gun': 606, 'Magneto Coil': 607, 'Megido Bomb': 608, 'Sacramental Bread': 609,
+  'Straw Doll': 610, 'Hell Magatama': 611, 'Cyclone Magatama': 612, 'Frost Magatama': 613, 'Arc Magatama': 614,
+  'Psycho Bomb': 615, 'Psy-Wheel': 616, 'Atom Match': 617, 'Nuke Cracker': 618, 'Happy Bomb': 619,
+  'Segaki Rice': 620, 'Curse Bomb': 621, 'Five-Inch Nail': 622, 'Godly Magatama': 623, 'Blast Magatama': 624,
+  'Holy Magatama': 625, 'Grudge Magatama': 626, 'Fire Magatama': 627, 'Gale Magatama': 628, 'Shock Magatama': 629,
+  'Ice Magatama': 630, 'Nuke Magatama': 631, 'Psy Magatama': 632, 'Bless Magatama': 633, 'Curse Magatama': 634
+};
+
+function getItemSortRank(item) {
+  if (!item) return 99999;
+  if (item.category === "Consumable" && P5R_ITEM_SORT_PRIORITY[item.name]) {
+    return P5R_ITEM_SORT_PRIORITY[item.name];
+  }
+  return 1000 + (Number(item.id) & 0x0FFF);
+}
+
+// Render the In-Game Active Carried Items Roster
+function renderUnifiedItemList() {
+  const container = document.getElementById("unifiedItemListContainer");
+  if (!container || !DB.items) return;
+
+  updateCategoryTabBadges();
+
+  // 1. Show only items currently owned in the save file (Strict In-Game Behavior)
+  const allOwnedInCat = Object.entries(INVENTORY_ITEM_COUNTS)
+    .map(([idStr, qty]) => {
+      const id = parseInt(idStr);
+      const item = DB.items.find(it => it.id === id) || { id, name: `Item 0x${id.toString(16).toUpperCase()}`, category: "Consumable" };
+      return { ...item, qty: parseInt(qty) };
+    })
+    .filter(item => {
+      const matchCat = CURRENT_UNIFIED_CATEGORY === "All" || item.category === CURRENT_UNIFIED_CATEGORY;
+      const matchSearch = !UNIFIED_SEARCH_QUERY || item.name.toLowerCase().includes(UNIFIED_SEARCH_QUERY);
+      return matchCat && matchSearch && item.qty > 0;
+    })
+    .sort((a, b) => getItemSortRank(a) - getItemSortRank(b));
 
   container.innerHTML = "";
 
-  if (displayed.length === 0) {
+  if (allOwnedInCat.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align:center; padding:28px 16px; background:rgba(0,0,0,0.3); border:2px dashed #333;">
-        <div style="font-family:var(--font-p5); font-size:18px; color:var(--p5-yellow); margin-bottom:4px;">NO ITEMS IN THIS POCKET</div>
-        <p style="font-size:11px; color:var(--p5-muted); max-width:400px; margin:0 auto 10px auto;">
-          ${allOwned.length === 0 ? "Joker's bag is empty. Use the quick buttons or search on the right to add items!" : `No ${CURRENT_POUCH_POCKET} items in your bag.`}
-        </p>
+      <div style="text-align:center; padding:60px 20px; color:var(--p5-muted);">
+        <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); margin-bottom:8px;">POCKET IS EMPTY</div>
+        <p style="font-size:12px; margin-bottom:16px;">Joker is not carrying any ${CURRENT_UNIFIED_CATEGORY} items right now.</p>
+        <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px;" onclick="openAddItemModal()">
+          <span>+ ADD ${CURRENT_UNIFIED_CATEGORY.toUpperCase()} ITEM</span>
+        </button>
+      </div>
+    `;
+    renderItemDossierSpotlight();
+    return;
+  }
+
+  // Auto-select first owned item if none selected or current selection is not in this pocket
+  if (!SELECTED_ITEM_ID || !allOwnedInCat.some(it => String(it.id) === String(SELECTED_ITEM_ID))) {
+    SELECTED_ITEM_ID = allOwnedInCat[0].id;
+  }
+
+  allOwnedInCat.forEach(item => {
+    const isSelected = String(item.id) === String(SELECTED_ITEM_ID);
+    const theme = P5R_CATEGORY_THEMES[item.category] || P5R_CATEGORY_THEMES.Consumable;
+
+    const row = document.createElement("div");
+    row.onclick = () => selectUnifiedItem(item.id);
+
+    // Authentic P5R In-Game Slanted Pill Styling
+    row.style.cssText = `
+      background: ${isSelected ? 'linear-gradient(90deg, #E60012 0%, #B8000E 100%)' : '#11151E'};
+      border: 1px solid ${isSelected ? '#FFF' : '#26334D'};
+      border-left: 6px solid ${isSelected ? '#FFF' : theme.color};
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transform: skew(-4deg);
+      box-shadow: ${isSelected ? '4px 4px 0 #000' : '2px 2px 0 #000'};
+      transition: transform 0.1s ease, background 0.1s ease;
+      margin-bottom: 2px;
+    `;
+
+    row.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px; min-width:0; transform:skew(4deg);">
+        <!-- Category Glyph Box -->
+        <div style="background:${isSelected ? '#000' : theme.bg}; color:${theme.color}; border:1px solid ${isSelected ? '#FFF' : theme.color}; padding:2px 6px; font-weight:900; font-size:10px; border-radius:2px; letter-spacing:1px; flex-shrink:0;">
+          ${theme.glyph}
+        </div>
+        <!-- Item Name -->
+        <div style="font-family:var(--font-p5); font-size:16px; font-weight:800; color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">
+          ${item.name}
+        </div>
+      </div>
+
+      <!-- Quantity Pill & Inline Stepper -->
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
+        <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-</button>
+        <div style="background:#000; border:1px solid ${isSelected ? '#FFF' : 'var(--p5-yellow)'}; min-width:55px; text-align:center; padding:2px 8px; font-family:var(--font-p5); font-size:15px; color:var(--p5-yellow); border-radius:12px; transform:skew(-6deg);">
+          <span style="display:inline-block; transform:skew(6deg);">✕ ${item.qty}</span>
+        </div>
+        <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+</button>
+        <button class="p5-btn-action" style="padding:2px 6px; font-size:10px; ${item.qty === 99 ? 'background:#00E676; border-color:#00E676; color:#000;' : ''}" onclick="setUnifiedItemQty(${item.id}, ${item.qty === 99 ? 1 : 99})">
+          <span>${item.qty === 99 ? 'MAX' : '99x'}</span>
+        </button>
+        <button style="background:#330000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:24px; height:24px; border-radius:3px; font-size:11px; display:flex; align-items:center; justify-content:center;" onclick="setUnifiedItemQty(${item.id}, 0)" title="Remove item from bag">✕</button>
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+
+  renderItemDossierSpotlight();
+}
+
+function selectUnifiedItem(itemId) {
+  SELECTED_ITEM_ID = itemId;
+  renderUnifiedItemList();
+}
+
+// Render the Active Item Spotlight Dossier on the Right
+function renderItemDossierSpotlight() {
+  const container = document.getElementById("itemDossierSpotlight");
+  const descText = document.getElementById("activeItemDescText");
+  if (!container || !DB.items) return;
+
+  const item = DB.items.find(it => String(it.id) === String(SELECTED_ITEM_ID));
+  if (!item) {
+    if (descText) descText.textContent = "Select an item from your bag or click '+ ADD ITEM' to add items.";
+    container.innerHTML = `
+      <div style="text-align:center; padding:80px 10px; color:var(--p5-muted);">
+        <div style="font-family:var(--font-p5); font-size:26px; color:var(--p5-yellow); margin-bottom:8px;">★ POCKET EMPTY ★</div>
+        <p style="font-size:12px; max-width:320px; margin:0 auto 16px auto;">You don't have any ${CURRENT_UNIFIED_CATEGORY} items in your bag.</p>
+        <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:10px 20px;" onclick="openAddItemModal()">
+          <span>+ BROWSE & ADD ITEMS</span>
+        </button>
       </div>
     `;
     return;
   }
 
-  displayed.forEach(item => {
-    const card = document.createElement("div");
-    card.style.cssText = `
-      background: linear-gradient(135deg, #181824 0%, #0E0E14 100%);
-      border: 2px solid #000;
-      border-left: 6px solid ${getCategoryColor(item.category)};
-      padding: 10px 14px;
-      box-shadow: 3px 3px 0 #000;
+  const qty = INVENTORY_ITEM_COUNTS[item.id] || INVENTORY_ITEM_COUNTS[String(item.id)] || 0;
+  const theme = P5R_CATEGORY_THEMES[item.category] || P5R_CATEGORY_THEMES.Consumable;
+  const desc = getItemDescription(item);
+
+  if (descText) {
+    descText.textContent = desc;
+  }
+
+  container.innerHTML = `
+    <div>
+      <!-- Header Badge -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="background:${theme.bg}; color:${theme.color}; border:1px solid ${theme.color}; font-size:11px; font-weight:900; padding:3px 8px; text-transform:uppercase; letter-spacing:1px; transform:skew(-6deg);">
+          <span style="display:inline-block; transform:skew(6deg);">${theme.name}</span>
+        </span>
+        <span style="font-size:11px; color:var(--p5-muted); font-family:monospace;">ID: 0x${item.id.toString(16).toUpperCase()} (${item.id})</span>
+      </div>
+
+      <!-- Item Title -->
+      <div style="font-family:var(--font-p5); font-size:32px; color:#FFF; line-height:1.1; margin-bottom:14px; text-shadow:2px 2px 0 #000;">
+        ${item.name}
+      </div>
+
+      <!-- In-Game Description Card -->
+      <div style="background:#0D0D14; border:2px solid #000; border-left:6px solid ${theme.color}; padding:14px; margin-bottom:20px; box-shadow:4px 4px 0 #000;">
+        <div style="font-size:11px; font-weight:800; color:var(--p5-yellow); margin-bottom:4px; text-transform:uppercase;">IN-GAME EFFECT / STATS</div>
+        <div style="font-size:14px; color:#E0E0EE; line-height:1.5;">
+          ${desc}
+        </div>
+      </div>
+
+      <!-- Quantity Stepper & Quick Adjustment -->
+      <div style="background:#14141F; border:2px solid #000; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000;">
+        <div style="font-size:11px; font-weight:800; color:var(--p5-muted); margin-bottom:8px; text-transform:uppercase;">BAG QUANTITY</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -10)">-10</button>
+          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-1</button>
+          <div style="background:#000; border:2px solid var(--p5-yellow); min-width:80px; text-align:center; padding:6px 12px; font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow);">
+            ${qty}
+          </div>
+          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+1</button>
+          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 10)">+10</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Action Buttons -->
+    <div style="display:flex; gap:10px;">
+      <button class="p5-btn-action" style="flex:1; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 99)">
+        <span>SET TO 99x (MAX)</span>
+      </button>
+      <button class="p5-btn-action" style="flex:1; background:#330000; border-color:#FF3333; color:#FF8888; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 0)">
+        <span>DISCARD (REMOVE)</span>
+      </button>
+    </div>
+  `;
+}
+
+function stepUnifiedItemQty(itemId, delta) {
+  const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
+  const next = Math.max(0, Math.min(99, cur + delta));
+  if (next === 0) {
+    delete INVENTORY_ITEM_COUNTS[itemId];
+  } else {
+    INVENTORY_ITEM_COUNTS[itemId] = next;
+  }
+  renderUnifiedItemList();
+}
+
+function setUnifiedItemQty(itemId, targetQty) {
+  const next = Math.max(0, Math.min(99, targetQty));
+  if (next === 0) {
+    delete INVENTORY_ITEM_COUNTS[itemId];
+  } else {
+    INVENTORY_ITEM_COUNTS[itemId] = next;
+  }
+  renderUnifiedItemList();
+}
+
+// =========================================================================
+// ADD ITEM MODAL / CATALOG BROWSER
+// =========================================================================
+let MODAL_SEARCH_QUERY = "";
+
+function openAddItemModal() {
+  const modal = document.getElementById("addItemModal");
+  const title = document.getElementById("modalCategoryTitle");
+  if (!modal) return;
+  if (title) title.textContent = CURRENT_UNIFIED_CATEGORY.toUpperCase();
+  MODAL_SEARCH_QUERY = "";
+  if (document.getElementById("modalItemSearchBox")) document.getElementById("modalItemSearchBox").value = "";
+  modal.style.display = "flex";
+  renderModalCatalog();
+}
+
+function closeAddItemModal() {
+  const modal = document.getElementById("addItemModal");
+  if (modal) modal.style.display = "none";
+  renderUnifiedItemList();
+}
+
+function onModalSearchInput() {
+  MODAL_SEARCH_QUERY = (document.getElementById("modalItemSearchBox")?.value || "").toLowerCase().trim();
+  renderModalCatalog();
+}
+
+function renderModalCatalog() {
+  const container = document.getElementById("modalCatalogList");
+  if (!container || !DB.items) return;
+
+  const catalog = DB.items
+    .filter(item => {
+      const matchCat = CURRENT_UNIFIED_CATEGORY === "All" || item.category === CURRENT_UNIFIED_CATEGORY;
+      const matchSearch = !MODAL_SEARCH_QUERY || item.name.toLowerCase().includes(MODAL_SEARCH_QUERY);
+      return matchCat && matchSearch;
+    })
+    .sort((a, b) => getItemSortRank(a) - getItemSortRank(b));
+
+  container.innerHTML = "";
+
+  if (catalog.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:30px; color:var(--p5-muted);">
+        <div style="font-family:var(--font-p5); font-size:18px; color:var(--p5-yellow); margin-bottom:4px;">NO ITEMS FOUND</div>
+        <p style="font-size:12px;">No item matches "${MODAL_SEARCH_QUERY}".</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Render top 50 items for instant performance
+  catalog.slice(0, 50).forEach(item => {
+    const curQty = INVENTORY_ITEM_COUNTS[item.id] || 0;
+    const isOwned = curQty > 0;
+    const theme = P5R_CATEGORY_THEMES[item.category] || P5R_CATEGORY_THEMES.Consumable;
+
+    const row = document.createElement("div");
+    row.style.cssText = `
+      background: ${isOwned ? '#142018' : '#14141E'};
+      border: 1px solid ${isOwned ? '#00E676' : '#26334D'};
+      border-left: 4px solid ${theme.color};
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
     `;
 
-    card.innerHTML = `
+    row.innerHTML = `
       <div style="flex:1; min-width:0;">
         <div style="display:flex; align-items:center; gap:6px;">
-          <span style="font-size:10px; font-weight:900; color:${getCategoryColor(item.category)}; background:#000; padding:1px 5px; border:1px solid #000; text-transform:uppercase;">
-            ${item.category}
+          <span style="font-size:9px; font-weight:900; color:${theme.color}; background:#000; padding:1px 4px; border:1px solid ${theme.color}; text-transform:uppercase;">
+            ${theme.glyph}
           </span>
-          <span style="font-size:10px; color:var(--p5-muted);">0x${item.id.toString(16).toUpperCase()}</span>
-        </div>
-        <div style="font-family:var(--font-p5); font-size:17px; color:#FFF; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">
-          ${item.name}
-        </div>
-      </div>
-
-      <!-- Stepper Controls & Delete -->
-      <div style="display:flex; align-items:center; gap:5px;">
-        <button class="rank-stepper-btn" style="width:28px; height:28px; font-size:14px;" onclick="stepItemQty(${item.id}, -1)">-</button>
-        <div style="background:#000; border:1px solid #000; min-width:34px; text-align:center; padding:2px 4px; font-family:var(--font-p5); font-size:17px; color:var(--p5-yellow);">
-          ${item.qty}
-        </div>
-        <button class="rank-stepper-btn" style="width:28px; height:28px; font-size:14px;" onclick="stepItemQty(${item.id}, 1)">+</button>
-        <button class="p5-btn-action" style="padding:3px 6px; font-size:11px;" onclick="maxItemQty(${item.id})"><span>99x</span></button>
-        <button style="background:#440000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:28px; height:28px; border-radius:3px; font-size:12px; display:flex; align-items:center; justify-content:center;" onclick="removeItemFromPouch(${item.id})" title="Remove item from bag">✕</button>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-// 2. Render Search & Add Results from Royal Vault
-function renderVaultResults() {
-  const container = document.getElementById("vaultResultsContainer");
-  if (!container || !DB.items) return;
-
-  const filtered = DB.items.filter(item => {
-    const matchCat = CURRENT_VAULT_CATEGORY === "All" || item.category === CURRENT_VAULT_CATEGORY;
-    const matchSearch = !VAULT_SEARCH_QUERY || item.name.toLowerCase().includes(VAULT_SEARCH_QUERY);
-    return matchCat && matchSearch;
-  });
-
-  const catalogCounter = document.getElementById("vaultCatalogCounter");
-  if (catalogCounter) {
-    catalogCounter.textContent = `${filtered.length} MATCHING ROYAL ITEMS`;
-  }
-
-  container.innerHTML = "";
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align:center; padding:30px; color:var(--p5-muted);">
-        <div style="font-family:var(--font-p5); font-size:18px; color:var(--p5-yellow); margin-bottom:4px;">NO ITEMS FOUND</div>
-        <p style="font-size:12px;">No Royal item matches "${VAULT_SEARCH_QUERY}". Try another search term.</p>
-      </div>
-    `;
-    return;
-  }
-
-  // Show top 60 matching items for instant, snappy rendering
-  filtered.slice(0, 60).forEach(item => {
-    const qty = INVENTORY_ITEM_COUNTS[item.id] || 0;
-    const isOwned = qty > 0;
-    const card = document.createElement("div");
-    card.style.cssText = `
-      background: ${isOwned ? '#141E18' : '#12121A'};
-      border: 1px solid ${isOwned ? '#00E676' : '#2A2A3A'};
-      border-left: 4px solid ${getCategoryColor(item.category)};
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    `;
-
-    card.innerHTML = `
-      <div style="flex:1; min-width:0;">
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span style="font-size:9px; font-weight:800; color:${getCategoryColor(item.category)}; text-transform:uppercase;">
-            ${item.category}
+          <span style="font-family:var(--font-p5); font-size:15px; color:#FFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${item.name}
           </span>
-          ${isOwned ? '<span style="font-size:9px; font-weight:900; color:#00E676; background:#003311; padding:0 4px; border-radius:2px;">IN POUCH</span>' : ''}
+          ${isOwned ? `<span style="font-size:10px; color:#00E676; font-weight:800; background:#003311; padding:0 5px; border-radius:3px;">IN BAG (✕${curQty})</span>` : ''}
         </div>
-        <div style="font-family:var(--font-p5); font-size:15px; color:${isOwned ? '#00E676' : '#FFF'}; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">
-          ${item.name}
+        <div style="font-size:11px; color:#999; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${getItemDescription(item)}
         </div>
       </div>
 
-      <!-- Add Actions -->
-      <div style="display:flex; align-items:center; gap:4px;">
-        ${isOwned ? `
-          <button class="rank-stepper-btn" style="width:26px; height:26px; font-size:13px;" onclick="stepItemQty(${item.id}, 1)">+1</button>
-          <button class="p5-btn-action" style="padding:2px 6px; font-size:10px;" onclick="maxItemQty(${item.id})"><span>99x</span></button>
-        ` : `
-          <button class="p5-btn-action" style="padding:3px 8px; font-size:11px;" onclick="addItemToPouch(${item.id}, 1)"><span>+ ADD</span></button>
-          <button class="p5-btn-action" style="padding:3px 6px; font-size:11px; background:#FF9F1C; border-color:#FF9F1C; color:#000;" onclick="addItemToPouch(${item.id}, 99)"><span>99x</span></button>
-        `}
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+        <button class="p5-btn-action" style="padding:4px 10px; font-size:11px;" onclick="addItemFromModal(${item.id}, 1)">
+          <span>+ 1x</span>
+        </button>
+        <button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#FF9F1C; border-color:#FF9F1C; color:#000;" onclick="addItemFromModal(${item.id}, 99)">
+          <span>+ 99x</span>
+        </button>
       </div>
     `;
 
-    container.appendChild(card);
+    container.appendChild(row);
   });
 }
 
-function renderInventoryViews() {
-  renderCurrentPouch();
-  renderVaultResults();
-}
-
-function addItemToPouch(itemId, qty = 1) {
-  const currentSlots = Object.values(INVENTORY_ITEM_COUNTS).filter(q => q > 0).length;
-  if (!INVENTORY_ITEM_COUNTS[itemId] && currentSlots >= 30) {
-    alert("Bag is full! Joker can carry a maximum of 30 distinct item slots at once.");
-    return;
-  }
+function addItemFromModal(itemId, addQty) {
   const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
-  INVENTORY_ITEM_COUNTS[itemId] = Math.max(1, Math.min(99, cur + qty));
-  renderInventoryViews();
+  INVENTORY_ITEM_COUNTS[itemId] = Math.min(99, cur + addQty);
+  SELECTED_ITEM_ID = itemId;
+  renderModalCatalog();
+  renderUnifiedItemList();
 }
 
-function removeItemFromPouch(itemId) {
-  delete INVENTORY_ITEM_COUNTS[itemId];
-  renderInventoryViews();
-}
-
-function clearAllPouchItems() {
-  if (confirm("Clear all carried items from Joker's pouch?")) {
-    INVENTORY_ITEM_COUNTS = {};
-    renderInventoryViews();
-  }
-}
-
-function stepItemQty(itemId, delta) {
-  const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
-  const next = cur + delta;
-  if (next <= 0) {
-    delete INVENTORY_ITEM_COUNTS[itemId];
-  } else {
-    INVENTORY_ITEM_COUNTS[itemId] = Math.min(99, next);
-  }
-  renderInventoryViews();
-}
-
-function maxItemQty(itemId) {
-  INVENTORY_ITEM_COUNTS[itemId] = 99;
-  renderInventoryViews();
-}
-
-function getCategoryColor(cat) {
-  switch (cat) {
-    case "Consumable": return "var(--p5-yellow)";
-    case "Infiltration": return "var(--p5-crimson)";
-    case "SkillCard": return "#00E5FF";
-    case "Accessory": return "#E040FB";
-    case "Melee": return "#FF5252";
-    case "Ranged": return "#FF9F1C";
-    case "Protector": return "#00E676";
-    case "Treasure": return "#FFD600";
-    default: return "var(--p5-muted)";
+// Batch Actions
+function maxCurrentTabItems() {
+  if (!DB.items) return;
+  const itemsInCat = DB.items.filter(it => it.category === CURRENT_UNIFIED_CATEGORY);
+  if (itemsInCat.length === 0) return;
+  if (confirm(`Max all ${itemsInCat.length} items in '${CURRENT_UNIFIED_CATEGORY}' to 99x?`)) {
+    itemsInCat.forEach(it => {
+      INVENTORY_ITEM_COUNTS[it.id] = 99;
+    });
+    renderUnifiedItemList();
   }
 }
 
 function stockLeblancKitchen() {
-  if (!DB.items) return;
-  const curries = DB.items.filter(it => it.name.includes("Curry") || it.name.includes("Coffee"));
-  curries.forEach(it => {
-    INVENTORY_ITEM_COUNTS[it.id] = 99;
+  const leblancItems = [
+    8355, 8358, 8359, 8360, 8361, // Leblanc Coffee, Master Coffee, Decent Curry, Leblanc Curry, Master Curry
+    8215, 8203, 8204, 8205, 8206  // Soma, Soul Drop, Snuff Soul, Chewing Soul, Soul Food
+  ];
+  leblancItems.forEach(id => {
+    INVENTORY_ITEM_COUNTS[id] = 99;
   });
-  renderInventoryViews();
-  alert("☕ Stocked 99x Master Curry & 99x Master Coffee in Leblanc Pouch!");
+  renderUnifiedItemList();
 }
 
 function stockInfiltrationKit() {
   if (!DB.items) return;
-  const tools = DB.items.filter(it => it.name.includes("Lockpick") || it.name.includes("Goho-M") || it.name.includes("Smoke"));
+  const tools = DB.items.filter(it => it.category === "Infiltration");
   tools.forEach(it => {
     INVENTORY_ITEM_COUNTS[it.id] = 99;
   });
-  renderInventoryViews();
-  alert("🔑 Stocked Eternal Lockpick, 99x Smokescreens, and 99x Goho-Ms!");
+  renderUnifiedItemList();
 }
 
 function stockClinicMedicine() {
-  if (!DB.items) return;
-  const meds = DB.items.filter(it => it.name.includes("Adhesive") || it.name.includes("Bead") || it.name.includes("Soma") || it.name.includes("Takemedic"));
-  meds.forEach(it => {
-    INVENTORY_ITEM_COUNTS[it.id] = 99;
+  const clinicIds = [
+    8194, 8195, 8196, 8199, 8200, 8201, 8202, // Recov-R, Takemedic, Takemedic-All V/Z
+    8207, 8208, 8210, 8211, 8212, 8216        // Revival Bead, Balm of Life, Nohar-M, Relax Gel, Amrita Soda
+  ];
+  clinicIds.forEach(id => {
+    INVENTORY_ITEM_COUNTS[id] = 99;
   });
-  renderInventoryViews();
-  alert("💉 Stocked 99x SP Adhesive 3, 99x Bead Chains, and 99x Somas!");
+  renderUnifiedItemList();
+}
+
+function clearAllPouchItems() {
+  if (confirm("Clear all carried items from Joker's bag?")) {
+    INVENTORY_ITEM_COUNTS = {};
+    renderUnifiedItemList();
+  }
+}
+
+function renderInventoryViews() {
+  renderUnifiedItemList();
+}
+
+function getCategoryColor(cat) {
+  const theme = P5R_CATEGORY_THEMES[cat];
+  return theme ? theme.color : "var(--p5-yellow)";
 }
 
 // 1-Click God Build Injectors
@@ -1890,40 +2383,67 @@ function injectGodBuild(buildKey) {
   const mem = CURRENT_SAVE.party[0];
   if (!mem) return;
 
-  mem.level = 99;
-  mem.hp = 999;
-  mem.sp = 999;
-  mem.persona = {
+  // NOTE: deliberately does NOT touch mem.level / mem.hp / mem.sp — a god
+  // build is the PERSONA, not Joker's own stats (fixed 2026-08-16 after
+  // user feedback: injecting a build forced Joker to Lv99/999HP/999SP).
+
+  const makeEntry = () => ({
+    slot: 0,
     persona_id: build.persona_id,
+    persona: DB.personas.find(p => p.id === build.persona_id)?.name || "God Persona",
     level: build.level,
     trait_id: build.trait_id,
     exp: 9999999,
     skills: build.skills,
     stats: [99, 99, 99, 99, 99],
+    empty: false,
     flags: 1
-  };
+  });
 
-  if (CURRENT_SAVE.joker_stock && CURRENT_SAVE.joker_stock.length > 0) {
-    CURRENT_SAVE.joker_stock[0] = {
-      slot: 0,
-      persona_id: build.persona_id,
-      persona: DB.personas.find(p => p.id === build.persona_id)?.name || "God Persona",
-      level: build.level,
-      trait_id: build.trait_id,
-      exp: 9999999,
-      skills: build.skills,
-      stats: [99, 99, 99, 99, 99],
-      empty: false,
-      flags: 1
-    };
+  const stock = CURRENT_SAVE.joker_stock || [];
+
+  // 1. Already own this god persona? Update its slot in place (no dupes,
+  //    no clobbering a different persona). Fixed 2026-08-16: the injector
+  //    used to overwrite stock slot 0 blindly, destroying the previous god
+  //    build on every injection.
+  let target = stock.findIndex(s => s && !s.empty && s.persona_id === build.persona_id);
+  let action;
+  if (target >= 0) {
+    action = "updated in place";
+  } else {
+    // 2. First empty slot (empty entries are all-zero 48-byte records).
+    target = stock.findIndex(s => !s || s.empty || !s.persona_id);
+    if (target < 0) {
+      alert("⚠ All 12 persona stock slots are full — free a slot before injecting a God build.");
+      return;
+    }
+    action = `placed in slot ${target}`;
   }
+
+  const entry = makeEntry();
+  entry.slot = target;
+  stock[target] = entry;
+
+  // 3. Equip it: slot 0 is the equipped persona, so swap in the client
+  //    model (mirrors the backend equip_persona swap semantics).
+  if (target !== 0) {
+    const displaced = stock[0] || { slot: 0, persona_id: 0, level: 0, empty: true, flags: 0, persona: null, skills: [], stats: [] };
+    entry.slot = 0;
+    displaced.slot = target;
+    stock[0] = entry;
+    stock[target] = displaced;
+  }
+
+  // Equipped-persona block mirrors stock slot 0.
+  mem.persona = { ...stock[0] };
 
   // Switch to Velvet Room Stage to show
   switchStage('velvet_room');
   document.getElementById("partyMemberSelect").value = 0;
   ACTIVE_STOCK_SLOT = 0;
   renderActiveMember();
-  alert(`★ God-Tier Build (${buildKey.toUpperCase()}) applied to Joker!`);
+  renderStockChips();
+  alert(`★ God-Tier Build (${buildKey.toUpperCase()}) ${action} and equipped to Joker!`);
 }
 
 // Save Changes & Re-Sign
@@ -2029,6 +2549,7 @@ async function executeSavePayload() {
 
     updateIntegrityBadge(result.integrity);
     refreshBackups();
+    if (result.notice) renderSameSaveNotice(result.notice);
     setStatus(`✔ Changes re-signed & saved! Auto-backup created: ${result.backup}`);
     alert("★ Save successful! CRCs & AES integrity verified and re-signed.");
   } catch (err) {
@@ -2104,6 +2625,7 @@ async function restoreSelectedBackup() {
 
 // Navigation Stages (Snappy, Instant P5R Switching)
 function switchStage(stageId, btnEl) {
+  P5Audio.playSwitch();
   document.querySelectorAll(".p5-stage-view").forEach((el) => el.classList.remove("active"));
   document.querySelectorAll(".p5-nav-item").forEach((el) => el.classList.remove("active"));
 
@@ -2117,6 +2639,14 @@ function switchStage(stageId, btnEl) {
   } else {
     const defaultBtn = document.querySelector(`.p5-nav-item[onclick*="'${stageId}'"]`);
     if (defaultBtn) defaultBtn.classList.add("active");
+  }
+
+  if (stageId === "inventory") {
+    renderUnifiedItemList();
+  } else if (stageId === "confidants") {
+    renderConfidants();
+  } else if (stageId === "compendium") {
+    renderCompendium();
   }
 }
 function updateIntegrityBadge(rep) {

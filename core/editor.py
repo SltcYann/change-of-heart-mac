@@ -168,7 +168,59 @@ class SaveEditor:
     # -------------------------------------------------------------------------
     PC31_OFFSET_COMPENDIUM = 0x09973
     PC31_COMPENDIUM_MIRROR = 0x21E83
-    PC31_COMPENDIUM_BITS = 232  # persona IDs 0x001..0x0E8
+    PC31_COMPENDIUM_BITS = 232  # 29-byte registration bitmask (0x09973..0x09990 and 0x21E83..0x21EA0)
+    PC31_COMPENDIUM_ARRAY_BASE = 0x04270
+    PC31_COMPENDIUM_ARRAY_MIRROR = 0x1C780
+    PC31_COMPENDIUM_STRIDE = 0x30
+
+    _COMPENDIUM_TEMPLATES_CACHE = {}
+
+    def _load_compendium_templates(self) -> Dict[int, bytes]:
+        if SaveEditor._COMPENDIUM_TEMPLATES_CACHE:
+            return SaveEditor._COMPENDIUM_TEMPLATES_CACHE
+        import json
+        import sys as _sys
+        result: Dict[int, bytes] = {}
+        candidates = []
+        if getattr(_sys, "frozen", False):
+            candidates.append(os.path.join(getattr(_sys, "_MEIPASS", ""), "data", "compendium_templates.json"))
+        candidates.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "compendium_templates.json"))
+        for path in candidates:
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    for k, v in data.items():
+                        result[int(k)] = bytes.fromhex(v)
+                    if result:
+                        break
+                except Exception:
+                    pass
+        if result:
+            SaveEditor._COMPENDIUM_TEMPLATES_CACHE = result
+        return result
+    # Bits the game NEVER sets in any verified save (12-save corpus + the
+    # game's OWN NAME.TBL marking these entries RESERVE/??? — 2026-08-16).
+    # Split: 0x001 Metatron, 0x0D8 Anat + 0x0DA Prometheus (story-only 2nd
+    # awakenings), 0x0DB-0x0E0 minus 0x0DF (P5-legacy duplicates), plus the
+    # 29 RESERVE/???/blank entries (ids 71, 83, 103, 115-120, 145-150, 155,
+    # 165, 171-180, 200, 229) the game's own name table never populates.
+    # Combined unlockable = 195. Verified against NAME.TBL persona segment.
+    # Dead compendium entries — PROVEN by a true 100% complete NG+ save set
+    # (GameBanana mod 506537, "P5R True 100% Complete NG+ Saves"; all 6
+    # slots read 224/232 and NONE of these bits are set):
+    #   0x001: legacy Metatron slot (obtainable Metatron lives elsewhere)
+    #   0x0D8/0x0DA: Anat/Prometheus, party 2nd awakenings (never registered)
+    #   0x0DB/0x0DC/0x0DD/0x0DE/0x0E0: P5-legacy duplicate-name entries.
+    # NOTE: RESERVE/??? names do NOT mean unregisterable; real saves
+    # (June + NG++ + the 100% set) register those slots.
+    PC31_COMPENDIUM_DEAD_BITS = {0x001, 0x0D8, 0x0DA, 0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0E0}
+
+    @property
+    def compendium_unlockable_ids(self) -> list:
+        """Persona IDs the compendium unlocker may register (232 - dead)."""
+        return [i for i in range(1, self.PC31_COMPENDIUM_BITS + 1)
+                if i not in self.PC31_COMPENDIUM_DEAD_BITS]
 
     def get_compendium(self) -> Dict[str, Any]:
         """
@@ -189,27 +241,33 @@ class SaveEditor:
         out["supported"] = True
         reg = []
         for i in range(self.PC31_COMPENDIUM_BITS):
+            pid = i + 1
+            if pid in self.PC31_COMPENDIUM_DEAD_BITS:
+                continue  # never report reserved/dead entries as registered
             byte = d[base + i // 8]
             bit = i % 8
             if (byte >> bit) & 1:
-                reg.append(i + 1)
+                reg.append(pid)
         out["registered"] = reg
         out["count"] = len(reg)
         return out
 
     def set_compendium_registration(self, persona_id: int, registered: bool) -> Dict[str, Any]:
         """
-        Set one persona's compendium registration bit (PC 0x31 saves).
-
-        Writes BOTH the authoritative copy and the +0x18510 mirror so the
-        game never sees divergent state. persona_id is 1-based (0x001..0x0E8
-        for the 232-bit mask; values beyond are rejected as unsupported).
+        Set one persona's compendium registration bit (PC 0x31 saves)
+        and ensure its 48-byte record in the compendium array is populated.
         """
         if not self.is_real_save():
             return {"status": "unsupported", "message": "Not a PC (0x31) save."}
         if not (1 <= persona_id <= self.PC31_COMPENDIUM_BITS):
             return {"status": "unsupported",
                     "message": f"Persona ID 0x{persona_id:03X} is outside the 232-bit compendium mask."}
+        if persona_id in self.PC31_COMPENDIUM_DEAD_BITS:
+            if registered:
+                return {"status": "invalid",
+                        "message": f"Persona 0x{persona_id:03X} is a reserved/dead compendium "
+                                   "entry — it can never be registered."}
+            # clearing a stale phantom bit is always safe
         d = bytearray(self.parser.data_payload)
         nbytes = (self.PC31_COMPENDIUM_BITS + 7) // 8
         if len(d) < self.PC31_COMPENDIUM_MIRROR + nbytes:
@@ -217,23 +275,37 @@ class SaveEditor:
         idx = persona_id - 1
         byte = idx // 8
         bit = idx % 8
+        
+        # 1. Update Bitmasks
         for base in (self.PC31_OFFSET_COMPENDIUM, self.PC31_COMPENDIUM_MIRROR):
             if registered:
                 d[base + byte] |= (1 << bit)
             else:
                 d[base + byte] &= ~(1 << bit)
+
+        # 2. Update 48-byte Compendium Record Structs
+        templates = self._load_compendium_templates()
+        template = templates.get(persona_id)
+        for arr_base in (self.PC31_COMPENDIUM_ARRAY_BASE, self.PC31_COMPENDIUM_ARRAY_MIRROR):
+            off = arr_base + idx * self.PC31_COMPENDIUM_STRIDE
+            if off + self.PC31_COMPENDIUM_STRIDE <= len(d):
+                if registered:
+                    # Only populate verified summonable persona templates
+                    if template:
+                        d[off : off + self.PC31_COMPENDIUM_STRIDE] = template
+                else:
+                    # Clear struct to 0
+                    d[off : off + self.PC31_COMPENDIUM_STRIDE] = b"\x00" * self.PC31_COMPENDIUM_STRIDE
+
         self.parser.data_payload = bytes(d)
         return {"status": "success", "persona_id": persona_id,
                 "registered": registered,
-                "message": f"Persona 0x{persona_id:03X} {'registered' if registered else 'unregistered'} in compendium (both copies)."}
+                "message": f"Persona 0x{persona_id:03X} {'registered' if registered else 'unregistered'} in compendium (bitmasks & struct arrays)."}
 
     def unlock_compendium_100(self) -> Dict[str, Any]:
         """
-        Register ALL 232 personas in the compendium (PC 0x31 saves).
-
-        VERIFIED 2026-08-14: writes the real 232-bit registration bitmask at
-        0x09973 + mirror 0x21E83. This replaces the old honest-unsupported
-        stub (the 0x20000 64-byte layout was disproven against the oracle).
+        Register ALL 232 personas in the compendium (PC 0x31 saves)
+        by writing both the 232-bit registration bitmasks and all 48-byte persona records.
         """
         if not self.is_real_save():
             if 0x10020 in self.parser.blocks_raw:
@@ -246,12 +318,47 @@ class SaveEditor:
         nbytes = (self.PC31_COMPENDIUM_BITS + 7) // 8
         if len(d) < self.PC31_COMPENDIUM_MIRROR + nbytes:
             return {"status": "noop", "message": "Payload too short for compendium block."}
-        fill = b"\xFF" * nbytes
+        unlockable = self.compendium_unlockable_ids  # 195 ids (232 - 37 dead)
+        
+        # 1. Update Bitmasks (both primary and mirror) across full Royal range
+        templates = self._load_compendium_templates()
+        royal_pids = set(templates.keys())
+        all_unlockable = set(unlockable) | royal_pids
+
         for base in (self.PC31_OFFSET_COMPENDIUM, self.PC31_COMPENDIUM_MIRROR):
-            d[base:base + nbytes] = fill
+            for pid in all_unlockable:
+                idx = pid - 1
+                if base + idx // 8 < len(d):
+                    d[base + idx // 8] |= (1 << (idx % 8))
+            for pid in self.PC31_COMPENDIUM_DEAD_BITS:
+                idx = pid - 1
+                if base + idx // 8 < len(d):
+                    d[base + idx // 8] &= ~(1 << (idx % 8))
+
+        # 2. Populate Compendium Struct Arrays (both primary 0x04270 and mirror 0x1C780)
+        # Strictly populate ONLY authentic summonable persona templates (231 verified Royal records).
+        # Unsummonable/RESERVE slots remain pristine 0x00.
+        for arr_base, gap_start, gap_end in (
+            (self.PC31_COMPENDIUM_ARRAY_BASE, 0x09460, 0x09940),
+            (self.PC31_COMPENDIUM_ARRAY_MIRROR, 0x21970, 0x21E50)
+        ):
+            # Sanitize the gap between slot 436 and slot 463 to pristine zeroes
+            if gap_end <= len(d):
+                d[gap_start:gap_end] = b"\x00" * (gap_end - gap_start)
+
+            # Clear all unverified slots in the struct array to 0x00, and populate verified templates
+            for slot in range(437):
+                pid = slot + 1
+                off = arr_base + slot * self.PC31_COMPENDIUM_STRIDE
+                if off + self.PC31_COMPENDIUM_STRIDE <= len(d):
+                    if pid in templates and (pid in all_unlockable):
+                        d[off : off + self.PC31_COMPENDIUM_STRIDE] = templates[pid]
+                    else:
+                        d[off : off + self.PC31_COMPENDIUM_STRIDE] = b"\x00" * self.PC31_COMPENDIUM_STRIDE
+
         self.parser.data_payload = bytes(d)
-        return {"status": "success", "unlocked_count": self.PC31_COMPENDIUM_BITS,
-                "message": f"Compendium 100% unlocked ({self.PC31_COMPENDIUM_BITS} personas registered, both copies)."}
+        return {"status": "success", "unlocked_count": len([p for p in all_unlockable if p in templates]),
+                "message": f"Compendium 100% unlocked across bitmasks & struct tables."}
 
     def save_to_bytes(self, compress: bool = True, encrypt: bool = True) -> bytes:
         """Repack, compress, encrypt, and resign save bytes."""
@@ -338,12 +445,60 @@ class SaveEditor:
     # Story-locked confidants (rank follows plot, no point gate):
     CONFIDANT_STORY_LOCKED = {"Fool", "Magician", "Moon", "Sun", "Strength", "Judgement"}
 
-    PC31_OFFSET_PARTY_BASE = 0x2C   # VERIFIED 2026-08-09: stride 0x2B0, 5 members
+    # Canonical member seeds captured from a clean NG+ save (DATA16) +
+    # June save's untouched trailing slots. The game pre-allocates all 10
+    # member slots at new-game and writes them only when a member joins.
+    # A slot still holding its seed = member has NOT joined the story yet.
+    # Verified 2026-08-16: June save slots 1-4 differ from seed (joined),
+    # slots 5-8 match seed exactly (Makoto/Futaba/Haru/Akechi pre-join).
+    # Slot 0 (Joker) is always present.
+    PC31_MEMBER_SEEDS = {
+        1: (117, 36, 4, 0xCA),   # Ryuji
+        2: (82, 33, 2, 0xCB),    # Morgana
+        3: (109, 62, 5, 0xCC),   # Ann
+        4: (192, 86, 15, 0xCD),  # Yusuke
+        5: (243, 142, 21, 0xCE), # Makoto
+        6: (316, 182, 36, 0xCF), # Futaba
+        7: (213, 155, 30, 0xD0), # Haru
+        8: (386, 215, 45, 0xD1), # Akechi
+        # Kasumi's slot is PRE-WRITTEN by the game at save creation with
+        # her base state (358/159/43/0xF0) — verified against the untouched
+        # Aug-06 backup, Aug-13 copy, Aug-14 copy, and live June saves,
+        # all identical. DO NOT use the NG+ clear-data save (DATA16:
+        # 427/190/60/0xE5) as the seed — that carries post-game values.
+        9: (358, 159, 43, 0xF0), # Kasumi (pre-join, game-written base)
+    }
+
+    def is_member_joined(self, slot: int) -> bool:
+        """True when this party slot has story data (member joined).
+
+        Slots the game seeded but never touched match their canonical seed
+        exactly -> not yet joined. Refuse edits + hide from the roster UI.
+        """
+        if slot == 0:
+            return True
+        seed = self.PC31_MEMBER_SEEDS.get(slot)
+        if seed is None or not self.is_real_save():
+            return False
+        d = self.parser.data_payload
+        base = self.PC31_OFFSET_PARTY_BASE + slot * self.PC31_PARTY_STRIDE
+        if base + 0x3E > len(d):
+            return False
+        cur = (struct.unpack_from("<H", d, base + 0)[0],
+               struct.unpack_from("<H", d, base + 4)[0],
+               d[base + 0x3C],
+               struct.unpack_from("<H", d, base + 0x3A)[0])
+        return cur != seed
+
+    PC31_OFFSET_PARTY_BASE = 0x2C   # VERIFIED 2026-08-09: stride 0x2B0, 10 member slots
+
     PC31_PARTY_STRIDE = 0x2B0
     PC31_PARTY_HP_OFF = 0x00        # u16 — in-game verified (256/246/208/221/234)
     PC31_PARTY_SP_OFF = 0x04        # u16 — in-game verified (136/99/131/140/108)
-    # Slot 0 (Joker) is a player struct: LV @+0xC + money mirror @+0x10.
-    # Slots 1+ (teammates): LV @+0x3C (u8/u16), flag 0x1001 @+0x38.
+    # Slot 0 (Joker) is a player struct: LV @+0xC, EXP @+0x10 (NOT money!).
+    # Slots 1+ (teammates): LV @+0x3C is the persona-struct level (u8);
+    # +0x3D is the persona struct's unknown byte — never clobber it with
+    # a u16 write (fixed 2026-08-16). Flag 0x1001 @+0x38.
     PC31_PARTY_LV_OFF_LEADER = 0x0C
     PC31_PARTY_LV_OFF_MEMBER = 0x3C
 
@@ -602,10 +757,53 @@ class SaveEditor:
         """Write one member's equipped persona fields (VERIFIED block)."""
         if not self.is_real_save():
             return {"status": "noop", "message": "PC payload required"}
+        if not self.is_member_joined(slot):
+            return {"status": "invalid",
+                    "message": f"Member slot {slot} has not joined the party yet — persona edits refused."}
         d = bytearray(self.parser.data_payload)
         base = self.PC31_OFFSET_PARTY_BASE + slot * self.PC31_PARTY_STRIDE
         if base + self.PC31_PERSONA_STATS_OFF + 5 > len(d):
             return {"status": "noop", "message": "Slot out of range"}
+        if persona_id is not None:
+            if slot > 0:
+                cur_id = struct.unpack_from("<H", d, base + self.PC31_PERSONA_ID_OFF)[0]
+                if persona_id != cur_id:
+                    return {"status": "invalid",
+                            "message": "Teammate personas are story-locked; only Joker (slot 0) may change the equipped persona."}
+            table = self._load_table("Personas.txt")
+            if table and persona_id not in table:
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} not in Personas.txt"}
+            if persona_id in self.PC31_STOCK_LEGACY_IDS:
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} is a legacy/cut entry the game never uses — refusing."}
+            if persona_id in self.PC31_LAB_PERSONA_IDS:
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} is a dev/test-only persona (Lab) — refusing."}
+        if skills is not None:
+            skill_table = self._load_table("Skill ID.txt")
+            for sid in skills:
+                if sid == 0:
+                    continue  # empty slot
+                if sid <= 0x09:
+                    return {"status": "invalid",
+                            "message": f"skill id 0x{sid:04X} is a BLANK/dummy slot — refusing."}
+                if sid in self.PC31_NON_SKILL_IDS:
+                    return {"status": "invalid",
+                            "message": f"skill id 0x{sid:04X} does not exist in the game's skill table — refusing."}
+                if skill_table and sid not in skill_table:
+                    return {"status": "invalid",
+                            "message": f"skill id 0x{sid:04X} not in Skill ID.txt"}
+                if skill_table and skill_table.get(sid, "") in ("BLANK", "RESERVE", "----------"):
+                    return {"status": "invalid",
+                            "message": f"skill id 0x{sid:04X} is a placeholder skill — refusing."}
+        if trait_id not in (None, 0):
+            trait_table = self._load_table("Traits.txt")
+            if trait_table and trait_id not in trait_table:
+                return {"status": "invalid", "message": f"trait id 0x{trait_id:04X} not in Traits.txt"}
+            if trait_table and trait_table.get(trait_id, "") in ("", "RESERVE", "???", "BLANK", "----------"):
+                return {"status": "invalid",
+                        "message": f"trait id 0x{trait_id:04X} is a RESERVE/dummy slot — refusing."}
         if flags is not None:
             struct.pack_into("<H", d, base + self.PC31_PERSONA_BASE_REL, max(0, flags))
         if persona_id is not None:
@@ -682,6 +880,25 @@ class SaveEditor:
     PC31_STOCK_BASE_REL = 0x38
     PC31_STOCK_STRIDE = 0x30
     PC31_STOCK_SLOTS = 12
+    # P5-legacy duplicate persona ids (0x0DB..0x0E0 minus 0x0DF) the Royal
+    # engine never uses in any context — no unit record, no model. Writing
+    # them into a stock slot risks Velvet Room / battle animation crashes.
+    # Verified 2026-08-16: never present in 12 real saves' stock arrays.
+    PC31_STOCK_LEGACY_IDS = {0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0E0}
+    # Dev/test-only personas ("Lab Kelpie" etc) present in the dump but not
+    # in the game's NAME.TBL — never usable by players. Verified 2026-08-16.
+    PC31_LAB_PERSONA_IDS = {440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450}
+    # Skill ids whose dump names do not exist in the game's NAME.TBL: item
+    # names, test skills, dev strings. Refused on write. Verified 2026-08-16
+    # against the extracted EN name table.
+    PC31_NON_SKILL_IDS = {109, 166, 172, 173, 174, 384, 389, 397, 398, 400, 401,
+                          402, 420, 421, 422, 423, 424, 425, 426, 436, 437, 482,
+                          483, 484, 485, 486, 487, 568, 569, 570, 571, 572, 573,
+                          574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584,
+                          585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595,
+                          596, 597, 598, 658, 659, 660, 663, 677, 730, 731, 734,
+                          735, 751, 753, 777, 778, 788, 798, 943, 948, 952, 960,
+                          965, 968, 980, 999, 1027, 1049}
 
     def get_persona_stock(self, slot: int) -> List[Dict[str, Any]]:
         """Read all 12 stock slots for one member (VERIFIED array)."""
@@ -724,15 +941,44 @@ class SaveEditor:
         """
         if not self.is_real_save():
             return {"status": "noop", "message": "PC payload required"}
+        if not self.is_member_joined(member_slot) and member_slot != 0:
+            return {"status": "invalid",
+                    "message": f"Member slot {member_slot} has not joined the party yet — stock edits refused."}
         if persona_id != 0:
             table = self._load_table("Personas.txt")
             if table and persona_id not in table:
                 return {"status": "invalid", "message": f"persona_id 0x{persona_id:04X} not in Personas.txt"}
+            if persona_id in self.PC31_STOCK_LEGACY_IDS:
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} is a P5-legacy duplicate with no Royal model — refusing."}
+            if persona_id in self.PC31_LAB_PERSONA_IDS:
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} is a dev/test-only persona (Lab) — refusing."}
+            if table and table.get(persona_id, "") in ("", "RESERVE", "???", "BLANK", "----------", "P5 Unused"):
+                return {"status": "invalid",
+                        "message": f"persona_id 0x{persona_id:04X} ({table.get(persona_id)}) is cut content — refusing."}
             if skills:
                 skill_table = self._load_table("Skill ID.txt")
                 for sid in skills:
-                    if sid != 0 and skill_table and sid not in skill_table:
+                    if sid == 0:
+                        continue  # empty slot
+                    if sid <= 0x09:
+                        return {"status": "invalid", "message": f"skill id 0x{sid:04X} is a BLANK/dummy slot — refusing."}
+                    if sid in self.PC31_NON_SKILL_IDS:
+                        return {"status": "invalid",
+                                "message": f"skill id 0x{sid:04X} does not exist in the game's skill table — refusing."}
+                    if skill_table and sid not in skill_table:
                         return {"status": "invalid", "message": f"skill id 0x{sid:04X} not in Skill ID.txt"}
+                    if skill_table and skill_table.get(sid, "") in ("BLANK", "RESERVE", "----------"):
+                        return {"status": "invalid",
+                                "message": f"skill id 0x{sid:04X} is a placeholder skill — refusing."}
+            if trait_id not in (None, 0):
+                trait_table = self._load_table("Traits.txt")
+                if trait_table and trait_id not in trait_table:
+                    return {"status": "invalid", "message": f"trait id 0x{trait_id:04X} not in Traits.txt"}
+                if trait_table and trait_table.get(trait_id, "") in ("", "RESERVE", "???", "BLANK", "----------"):
+                    return {"status": "invalid",
+                            "message": f"trait id 0x{trait_id:04X} is a RESERVE/dummy slot — refusing."}
         d = bytearray(self.parser.data_payload)
         off = (self.PC31_OFFSET_PARTY_BASE + member_slot * self.PC31_PARTY_STRIDE
                + self.PC31_STOCK_BASE_REL + stock_k * self.PC31_STOCK_STRIDE)
@@ -850,7 +1096,15 @@ class SaveEditor:
             low = val & 0x0FFF
             if high in self.CATEGORY_MAP and 1 <= low <= 600:
                 name, cat = self._resolve_item_info(val)
-                if name not in ["EN_NAME", "BLANK", "RESERVE", "----------", "使用禁止"] and "RESERVE" not in name:
+                if (
+                    name
+                    and name not in ["EN_NAME", "BLANK", "RESERVE", "----------", "使用禁止", "Unused", "unused", "Unused Item"]
+                    and "RESERVE" not in name
+                    and "BLANK" not in name
+                    and not name.startswith("Item 0x")
+                    and not name.startswith("item_")
+                    and not name.lower().startswith("unused")
+                ):
                     qty = 1
                     for q_offset in [off + 0x3C, off + 0x3E, off + 0x40, off + 0x42]:
                         if q_offset < len(d) and 1 <= d[q_offset] <= 99:
@@ -1072,16 +1326,18 @@ class SaveEditor:
                 if i == 0:
                     lv = struct.unpack_from("<H", d, offset + self.PC31_PARTY_LV_OFF_LEADER)[0]
                 else:
-                    lv = struct.unpack_from("<H", d, offset + self.PC31_PARTY_LV_OFF_MEMBER)[0]
+                    lv = d[offset + self.PC31_PARTY_LV_OFF_MEMBER]  # u8 (persona-struct level)
                 name = PARTY_SLOT_NAMES.get(i, f"slot{i}")
+                joined = i == 0 or self.is_member_joined(i)
                 result.append({
                     "slot": i,
-                    "name": name,
+                    "name": name if joined else "???",
                     "level": lv,
                     "hp": hp,
                     "sp": sp,
                     "max_hp": None,  # not yet located
                     "max_sp": None,  # not yet located
+                    "joined": joined,
                     "status": "verified",
                 })
             return result
@@ -1105,6 +1361,9 @@ class SaveEditor:
         PC layout — they are ignored with a note until mapped.
         """
         if self.is_real_save():
+            if not self.is_member_joined(slot):
+                return {"status": "invalid",
+                        "message": f"Member slot {slot} has not joined the party yet — refusing edit (unsafe before they join)."}
             d = bytearray(self.parser.data_payload)
             offset = self.PC31_OFFSET_PARTY_BASE + slot * self.PC31_PARTY_STRIDE
             if offset + 0x40 > len(d):
@@ -1112,7 +1371,10 @@ class SaveEditor:
             hp_ = struct.unpack_from("<H", d, offset + self.PC31_PARTY_HP_OFF)[0]
             sp_ = struct.unpack_from("<H", d, offset + self.PC31_PARTY_SP_OFF)[0]
             lv_off = self.PC31_PARTY_LV_OFF_LEADER if slot == 0 else self.PC31_PARTY_LV_OFF_MEMBER
-            lvl_ = struct.unpack_from("<H", d, offset + lv_off)[0]
+            if slot == 0:
+                lvl_ = struct.unpack_from("<H", d, offset + lv_off)[0]
+            else:
+                lvl_ = d[offset + lv_off]  # u8 — persona-struct level
             lvl = level if level is not None else lvl_
             cur_hp = hp if hp is not None else hp_
             cur_sp = sp if sp is not None else sp_
@@ -1121,7 +1383,12 @@ class SaveEditor:
                         "applied": False, "level": lvl, "hp": cur_hp, "sp": cur_sp}
             struct.pack_into("<H", d, offset + self.PC31_PARTY_HP_OFF, max(0, min(cur_hp, 999)))
             struct.pack_into("<H", d, offset + self.PC31_PARTY_SP_OFF, max(0, min(cur_sp, 999)))
-            struct.pack_into("<H", d, offset + lv_off, max(1, min(lvl, 99)))
+            if slot == 0:
+                struct.pack_into("<H", d, offset + lv_off, max(1, min(lvl, 99)))
+            else:
+                # u8 write only — a u16 write here clobbers +0x3D (the
+                # persona struct's unk byte). Verified 2026-08-16.
+                d[offset + lv_off] = max(1, min(lvl, 99))
             self.parser.data_payload = bytes(d)
             return {"status": "success", "slot": slot, "level": lvl, "hp": cur_hp, "sp": cur_sp,
                     "max_hp": None, "max_sp": None}

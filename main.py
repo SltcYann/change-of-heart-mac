@@ -1,16 +1,16 @@
 """
-Persona 5 Royal Save Editor — Master Standalone Desktop Application
-Uses pywebview to render the Phantom Thieves UI directly inside a native desktop window.
-Runs the lightweight internal HTTP daemon in a background thread with zero exposed browser tabs.
+Persona 5 Royal Save Editor — Standalone Native Desktop Application
+Powered by PyWebView (Native Edge WebView2 Engine)
 """
 
 import os
 import sys
-import time
 import threading
+import time
+import urllib.request
 from pathlib import Path
 
-# Frozen vs source root
+# Set up project root paths
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     PROJECT_ROOT = Path(sys._MEIPASS)
 else:
@@ -18,82 +18,86 @@ else:
 
 sys.path.insert(0, str(PROJECT_ROOT))
 
-
+import webview
 import server as web_server
+from core import instances
 
-def start_background_server(port=5055):
-    from http.server import HTTPServer
-    server_address = ("127.0.0.1", port)
-    try:
-        httpd = HTTPServer(server_address, web_server.P5RWebHandler)
-        httpd.serve_forever()
-    except Exception as e:
-        print(f"[P5R Server Error] {e}")
+_HTTPD = None
 
 
-def wait_for_server(host="127.0.0.1", port=5055, timeout=10.0):
-    """Actively poll until the local background HTTP server is accepting connections."""
-    import socket
-    start_time = time.time()
-    while time.time() - start_time < timeout:
+def start_background_server() -> int:
+    """Start local backend HTTP server on an OS-assigned ephemeral port."""
+    global _HTTPD
+    from http.server import ThreadingHTTPServer
+
+    class NoReuseThreadingHTTPServer(ThreadingHTTPServer):
+        allow_reuse_address = False
+
+    server = NoReuseThreadingHTTPServer(("127.0.0.1", 0), web_server.P5RWebHandler)
+    _HTTPD = server
+    port = server.server_address[1]
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
+    return port
+
+
+def stop_background_server() -> None:
+    """Cleanly close the background HTTP server."""
+    global _HTTPD
+    if _HTTPD is not None:
         try:
-            with socket.create_connection((host, port), timeout=0.2):
-                return True
-        except (OSError, ConnectionRefusedError):
-            time.sleep(0.05)
+            _HTTPD.server_close()
+        except Exception:
+            pass
+        _HTTPD = None
+
+
+def _wait_for_server(port: int, timeout_s: float = 30.0) -> bool:
+    """Ensure the local server is accepting requests before loading UI."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/build", timeout=1.0) as res:
+                if res.status == 200:
+                    return True
+        except Exception:
+            time.sleep(0.1)
     return False
 
 
-def launch_native_window():
-    import webview
-    
-    # Start the server daemon in the background
-    server_thread = threading.Thread(target=start_background_server, daemon=True)
-    server_thread.start()
-    
-    # Wait until socket is 100% verified listening (eliminates connection error race condition)
-    wait_for_server("127.0.0.1", 5055, timeout=5.0)
+def main() -> None:
+    # 1. Start background server on ephemeral port
+    port = start_background_server()
+    instances.write(port=port)
 
-    icon_path = str(PROJECT_ROOT / "web-app" / "static" / "assets" / "joker_avatar.jpg")
-    if not os.path.exists(icon_path):
-        icon_path = None
+    # 2. Wait for server to become responsive
+    if not _wait_for_server(port):
+        instances.clear()
+        stop_background_server()
+        sys.exit(1)
 
-    # Create standalone native desktop window
+    url = f"http://127.0.0.1:{port}/"
+
+    # 3. Create native single desktop window (Edge WebView2)
     window = webview.create_window(
-        title="CHANGE OF HEART — Persona 5 Royal Save Studio (by j0nny DiGITAL)",
-        url="http://127.0.0.1:5055/",
-        width=1380,
-        height=880,
-        min_size=(1050, 700),
-        background_color="#060608",
-        text_select=False,
+        title="PERSONA 5 ROYAL — Change of Heart Save Editor",
+        url=url,
+        width=1280,
+        height=850,
+        min_size=(1024, 700),
+        background_color="#0A0A0F",
+        text_select=True,
     )
 
-    webview.start(debug=False)
-
-
-def launch_tkinter_gui():
-    import gui
-    gui.main()
-
-
-def main():
-    if "--gui" in sys.argv or "--desktop" in sys.argv:
-        launch_tkinter_gui()
-    else:
-        try:
-            launch_native_window()
-        except Exception as e:
-            # If native pywebview fails on a specific Windows configuration, launch in default browser
-            import webbrowser
-            server_thread = threading.Thread(target=start_background_server, daemon=True)
-            server_thread.start()
-            wait_for_server("127.0.0.1", 5055, timeout=5.0)
-            webbrowser.open("http://127.0.0.1:5055/")
-            while True:
-                time.sleep(1)
+    try:
+        # 4. Start native GUI event loop (blocks until window is closed)
+        webview.start(gui="edgechromium", debug=False)
+    finally:
+        # 5. Clean teardown on window exit
+        instances.clear()
+        stop_background_server()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
     main()
-

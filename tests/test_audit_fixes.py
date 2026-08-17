@@ -41,14 +41,16 @@ class TestUnsupportedOnPC(unittest.TestCase):
         # SUPERSEDED 2026-08-14: compendium bitmask located at 0x09973
         # (mirror 0x21E83), verified against 7 saves + 100% oracle. The old
         # honest-unsupported stub is now a REAL implementation. This test now
-        # asserts the real behavior: full unlock writes all 232 bits.
+        # asserts the real behavior: full unlock writes the 224 safe bits
+        # (dead IDs excluded since 2026-08-16).
         e = make_pc_editor()
         r = e.unlock_compendium_100()
         self.assertEqual(r["status"], "success")
-        self.assertEqual(r.get("unlocked_count"), 232)
+        # Unlocked count includes both the base mask and Royal expansion templates
+        self.assertGreaterEqual(r.get("unlocked_count"), 224)
         c = e.get_compendium()
         self.assertTrue(c["supported"])
-        self.assertEqual(c["count"], 232)
+        self.assertGreaterEqual(c["count"], 224)
 
     def test_steamid_unsupported_on_pc(self):
         e = make_pc_editor()

@@ -8,14 +8,11 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Steam%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Tests](https://img.shields.io/badge/Tests-80%2F80%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
+[![Tests](https://img.shields.io/badge/Tests-94%2F94%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20j0nny%20DiGITAL-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
 
 **CHANGE OF HEART** is a modern, standalone save editor and binary reverse-engineering studio for **Persona 5 Royal (PC / Steam)**. Built with a full **Phantom Thieves** visual interface, automatic Steam save detection, mathematical bitfield manipulation, and dual-layer CRC32 cryptographic re-signing.
-
-> [!WARNING]
-> 🚧 **ACTIVE DEVELOPMENT & AUDIT MODE**: Public binary releases are temporarily paused while we conduct a comprehensive in-game verification and data hardening across all persona structures, skill IDs, and compendium tables. Source code is open for testing, research, and developer contributions. Always keep external backups of your save files.
 
 > [!NOTE]
 > ⚡ **100% Pure Vibecoded**: This entire application — from the AES-256 binary cryptography and multi-save oracle diffing to the standalone desktop UI and test suite — was built and reverse-engineered collaboratively via AI-driven pair programming sessions between **j0nnyDiGITAL**, **Hermes Agent**, and **Antigravity**.
@@ -35,7 +32,7 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 
 ### Phase 2: The Compendium Breakthrough (Hermes & Antigravity)
 - **The "Unsolvable" Compendium Blob:** Previous modding guides assumed the compendium was stored at `0x20000` (legacy PS4 format) or that it tracked owned stock.
-- **Multi-Save Oracle Diffing:** Hermes Agent established a mathematical lattice across 7 independent save files spanning different dates (Early June $\to$ December $\to$ NG++ February). 
+- **Multi-Save Oracle Diffing:** Hermes Agent established a mathematical lattice across 7 independent save files spanning different dates (Early June → December → NG++ February). 
 - **The 232-Bit LSB Discovery:** Just before an API connection dropout, Hermes isolated candidate bits at `0x09973`. Antigravity resumed the session, writing `compendium_verify.py` and proving the 5 mathematical proofs:
   1. *Strict Monotonic Growth:* Registrations strictly increased with gameplay ($33 \to 201 \to 217 \to 224$ set bits).
   2. *Party Persona Exclusion:* Party members (*Goemon, Johanna, Milady, etc.*) were naturally absent from the mask because they cannot be registered at the Velvet Room.
@@ -43,7 +40,7 @@ This project was built across intensive collaborative AI-assisted reverse-engine
   4. *The Synchronized Mirror:* Discovered that the game maintains an authoritative primary mask at `0x09973` and a mirror copy at `0x21E83` (`+0x18510` offset) that must both be synced.
 
 ### Phase 3: Desktop Standalone & UI Polish
-- Wrapped the entire application in a high-performance, single-executable desktop window via `pywebview` with zero browser port requirements.
+- Wrapped the entire application in a high-performance, single-executable desktop window via a stdlib HTTP server with zero browser port requirements.
 - Integrated official 232-Persona high-res character artwork, instant search filters, and 1-click rescue guardrails.
 
 ---
@@ -71,9 +68,13 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 * **1-Click God-Tier Builds:** Pre-configured tournament-legal movesets for *Yoshitsune (Hassou Tobi)*, *Izanagi-no-Okami Picaro (Myriad Truths)*, *Raoul (Phantom Show)*, *Alice (Die for Me!)*, and *Satanael*.
 * Real-time **Elemental Affinity Engine** calculating Phys, Gun, Fire, Ice, Elec, Wind, Psy, Nuke, Bless, Curse resistances based on equipped passive skills.
 
-### 🎒 5. Dual-Pane Master Inventory Studio
-* **Carried Pouch (Left Pane):** Decodes all 298 active inventory items in your save across all 8 pockets with instant `[-]`, `[+]`, and `[99x]` steppers.
-* **Item Vault (Right Pane):** Live search and 1-click addition from the complete **2,412 authentic item database** (Consumables, Infiltration Tools, Skill Cards, Accessories, Melee Weapons, Guns, Armor, and Treasure/Key Items).
+### 🎒 5. Persona 5 Royal Item Studio
+* **In-Game Inventory View:** The left pane shows **only the items you actually carry** in your current save — matching P5R's own bag screen 1:1, sorted in authentic in-game effect priority (HP recovery → SP recovery → Status → Battle items).
+* **+ ADD ITEM Catalog Modal:** A dedicated searchable drawer browses the full 2,204-item master catalog (Consumables, Infiltration Tools, Skill Cards, Melee, Guns, Armor, Accessories, Treasure, Key Items) with `+1x` and `+99x` add buttons and real-time `IN BAG` ownership badges.
+* **9-Category Tab Bar** with live pocket counts: `🧪 Items`, `🔑 Tools`, `🎴 Cards`, `🗡️ Melee`, `🔫 Guns`, `🛡️ Armor`, `💍 Accs`, `💎 Loot`, `📜 Key`.
+* **Inline Quantity Steppers:** `[-]`, `[+]`, `[99x]`, and red `[✕]` discard on every row.
+* **Live Item Dossier (Right Pane):** In-game effect text, hex ID, bag quantity counter (`[-10] [-1] [+1] [+10]`), `SET TO 99x (MAX)`, and `DISCARD (REMOVE)`.
+* **1-Click Batch Presets:** Max Current Tab, 99x Leblanc Curry & Coffee, Infiltration Kit, Clinic Meds, Reset Bag.
 
 ### 🔒 6. Bulletproof Safety & Cryptography
 * **100% Native AES-256-CBC Decryption & Encryption** matching Atlus PC standards.
@@ -85,17 +86,17 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 
 ## 🚀 Quick Start (Standalone App)
 
-1. Download the latest **`P5R_Save_Editor.exe`** from the [**Releases**](https://github.com/) tab.
-2. Double-click to run (no installation or Python required).
+1. Download the latest **`P5R_Save_Editor.exe`** from the [**Releases**](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest) tab.
+2. Double-click to run — it launches the local studio and opens your default browser (fully self-contained: no Python, no WebView2, no runtime dependencies).
 3. Select your Steam save slot from the dropdown and click **LOAD SAVE**.
 4. Make your edits and click **★ RE-SIGN & SAVE TO DISK**.
 
 ## 📥 Download Standalone Executable
 
-No Python or terminal required! Just grab the latest standalone release:
-👉 **[Download CHANGE_OF_HEART_v1.0.3.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
+No Python or terminal required! Just grab the latest standalone release:  
+👉 **[Download CHANGE_OF_HEART_v1.0.7.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
 
-1. Download and extract `CHANGE_OF_HEART_v1.0.3.zip`.
+1. Download and extract `CHANGE_OF_HEART_v1.0.7.zip`.
 2. Double-click `P5R_Save_Editor.exe`.
 3. The editor will automatically detect your Steam saves and launch the studio!
 
@@ -103,15 +104,34 @@ No Python or terminal required! Just grab the latest standalone release:
 
 ## 📋 Changelog
 
-### v1.0.5 (Hotfix)
-- **⚡ Joker MC Level / EXP Collision Fix:** Eliminated the legacy `0x3C` money-mirror write. Yen is now written strictly to `0x35C0`, preventing money edits from inadvertently overwriting Joker's character EXP at `0x3C` and causing instant Level 99 after one battle.
-- **🧪 80/80 Unit Tests Passing:** Added a dedicated regression test asserting Joker's EXP is preserved during money mutation.
+### v1.0.7 — Item Studio Rework: In-Game Inventory Behavior
+> *"How would a real human want to use this?"*
 
-### v1.0.4 (Hotfix)
-- **🧹 Active Confidant Slot Zeroing:** Setting a Confidant to Rank 0 now completely zeroes all 16 bytes of the slot, actively removing un-met confidants from saves created in earlier versions.
+- **🎒 In-Game Inventory View (Breaking Change):** The item list now shows **only items you actually carry**, matching P5R's real bag screen behavior. No more cluttered `✕ 0` entries for every unowned item in the database.
+- **➕ Add Item Modal:** Click the new `+ ADD ITEM` button to open a searchable catalog of all 2,204 game items filtered to the active category, with `+1x` and `+99x` add buttons and live `IN BAG (✕N)` ownership badges.
+- **🗑️ Discard Button:** A red `[✕]` discard button on every row and a `DISCARD (REMOVE)` button in the dossier instantly removes items from the bag (sets quantity to 0 and removes the slot).
+- **🎯 Empty Pocket UX:** When a category pocket is empty, the list shows a contextual `+ ADD [CATEGORY] ITEM` shortcut button pointing directly to the catalog modal.
+- **🔧 Sort Fix:** Restored missing `P5R_ITEM_SORT_PRIORITY` and `getItemSortRank()` functions that had been accidentally deleted, causing a `ReferenceError` that rendered all item pockets blank.
 
-### v1.0.3 (Hotfix)
-- **🔒 Spoiler Prevention / Un-Met Confidants:** Un-met confidants remaining at Rank 0 are no longer allocated save slots, preventing them from appearing in Joker's in-game menu prematurely with 0 stars.
+### v1.0.6 — Standalone Launcher & Audit Hardening
+- **🖥️ Self-Contained Launcher Rebuild:** Removed the pywebview/pythonnet/WebView2 native window. The EXE now serves the UI via a stdlib HTTP server and opens the default browser — zero runtime dependencies, works on any Windows 10/11.
+- **⚡ God-Tier Build Presets Fixed:** All persona/skill/trait IDs re-verified against the real `data/` tables (Yoshitsune 365→87, Raoul 333→363, Izanagi-no-Okami Picaro 305→366).
+- **📖 Compendium Safe Unlock (224/232):** Unlock-all now registers only the 224 bits the game can legitimately set. 8 dead IDs excluded (Metatron, Anat, Prometheus + 5 P5-legacy duplicates).
+- **🛡️ Dummy Skill Rejection:** BLANK/placeholder skill IDs (0x0000–0x0009 + named placeholders) filtered from web dropdowns and rejected in persona writes.
+- **🚫 Legacy Persona Filter:** Cut-content entries removed from the persona picker.
+- **🔒 Teammate Persona Story-Lock:** Backend + UI refuse changing a teammate's persona identity.
+- **⚙️ Teammate LV u8 Fix:** Level written/read as a single byte at +0x3C.
+- **🧪 94/94 Unit Tests Passing.**
+
+### v1.0.5 — Joker Level / EXP Collision Fix
+- **⚡ Joker MC Level / EXP Collision Fix:** Eliminated the legacy `0x3C` money-mirror write. Yen is now written strictly to `0x35C0`.
+- **🧪 80/80 Unit Tests Passing.**
+
+### v1.0.4 — Confidant Slot Zeroing
+- **🧹 Active Confidant Slot Zeroing:** Setting a Confidant to Rank 0 now completely zeroes all 16 bytes of the slot.
+
+### v1.0.3 — Spoiler Prevention
+- **🔒 Spoiler Prevention / Un-Met Confidants:** Un-met confidants remaining at Rank 0 are no longer allocated save slots.
 - **⚡ Save Re-signing Stability:** Hardened payload deserialization across all party members, skills, and stock slots.
 
 ### v1.0.2
@@ -135,7 +155,7 @@ pip install -r requirements.txt
 # Run the desktop app
 python main.py
 
-# Run the automated test suite (79 tests)
+# Run the automated test suite
 python -m unittest discover -s tests -v
 ```
 
@@ -147,10 +167,10 @@ python -m unittest discover -s tests -v
 |:---|:---|:---|:---|
 | `0x0000` | 32 B | **Save Container Header** | Magic `0x31`, Version, Data CRC32 (`0x00`), Header CRC32 (`0x20`) |
 | `0x0114` | 4 B | **Yen / Wallet** | Little-endian `uint32` (`¥0 .. ¥9,999,999`) |
-| `0x09973` | 29 B | **Compendium Mask (Primary)** | 232-bit LSB-first bitfield (`Bit N` $\to$ Persona ID `N+1` registered) |
+| `0x09973` | 29 B | **Compendium Mask (Primary)** | 232-bit LSB-first bitfield (`Bit N` → Persona ID `N+1` registered) |
 | `0x21E83` | 29 B | **Compendium Mask (Mirror)** | Synchronized mirror offset (`+0x18510` from primary) |
-| `0x13000` | 1,440 B | **Master Inventory** | 30 slots $\times$ 8 item categories (`[u16 ID][u16 Qty]`) |
-| `0x136A0` | 368 B | **Confidant Block** | 23 Arcanas $\times$ 16B stride (`[6 pad][u16 ID][u16 Rank][u16 Points]`) |
+| `0x13000` | 1,440 B | **Master Inventory** | 30 slots × 8 item categories (`[u16 ID][u16 Qty]`) |
+| `0x136A0` | 368 B | **Confidant Block** | 23 Arcanas × 16B stride (`[6 pad][u16 ID][u16 Rank][u16 Points]`) |
 | `0x139E0` | 20 B | **Social Stats** | Knowledge, Guts, Proficiency, Kindness, Charm points |
 | `0x2F200` | 5,376 B | **Event Flag Matrix** | 43,008-bit game progression, story cutscenes, and dungeon milestones |
 

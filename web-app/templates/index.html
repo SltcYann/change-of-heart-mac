@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PERSONA 5 ROYAL — Phantom Thieves Save System</title>
-  <link rel="stylesheet" href="/app.css?v=8">
+  <link rel="stylesheet" href="/app.css?v=20260816c">
   <link rel="icon" type="image/jpeg" href="/assets/joker_avatar.jpg">
 </head>
 <body>
@@ -53,6 +53,19 @@
     <div class="p5-sidebar-footer">
       <div id="sidebarHealthPill" class="status-pill" style="margin-bottom:8px;">
         <span>●</span> <span id="sidebarHealthText">SCANNING SAVE...</span>
+      </div>
+      <!-- Persona Full Art Hover Spotlight Modal -->
+      <div id="personaArtSpotlight" style="display:none; position:fixed; pointer-events:none; z-index:99999; background:rgba(10,10,16,0.95); border:2px solid var(--p5-crimson); border-radius:8px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.9); transform:translate(15px, 15px); max-width:280px;">
+        <div style="text-align:center;">
+          <img id="personaSpotlightImg" src="" style="width:220px; height:260px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.8));">
+          <div id="personaSpotlightTitle" style="font-family:var(--font-p5); font-size:16px; color:#FFF; margin-top:8px; letter-spacing:0.5px;"></div>
+          <div id="personaSpotlightSub" style="font-size:11px; color:var(--p5-yellow); font-family:monospace; margin-top:2px;"></div>
+        </div>
+      </div>
+
+      <div id="status-bar">
+        <div class="status-indicator"></div>
+        <span id="status-text">INITIALIZING SYSTEM...</span>
       </div>
       <a href="https://ko-fi.com/j0nnydigital" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,94,91,0.12); border:1px solid #FF5E5B; color:#FF5E5B; padding:5px 8px; border-radius:4px; font-size:11px; font-weight:800; text-decoration:none; transition:all 0.2s ease;">
         <span>☕</span> <span>SUPPORT j0nny DiGITAL</span>
@@ -139,50 +152,62 @@
       </div>
     </section>
 
-    <!-- STAGE 2: Velvet Room & Party Deck -->
+    <!-- STAGE 2: Velvet Room & Party Deck (Authentic Atlus Layout) -->
     <section id="stage-velvet_room" class="p5-stage-view">
       <div class="stage-headline">
-        <h2>★ VELVET ROOM & PARTY ROSTER</h2>
-        <p>Customize party member battle stats and equip custom high-tier Persona skill sets.</p>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2>★ VELVET ROOM & PHANTOM THIEVES</h2>
+            <p>Customize party member combat potential, battle stats, and equip custom high-tier Persona skill sets.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="p5-btn-action" style="padding:6px 16px; font-size:14px;" onclick="healActiveMember()"><span>RESTORE HP/SP</span></button>
+            <button class="p5-btn-action secondary" style="padding:6px 16px; font-size:14px;" onclick="maxLevelActiveMember()"><span>MAX LEVEL 99</span></button>
+          </div>
+        </div>
       </div>
 
-      <div class="grid-2">
-        <!-- Party Roster & Level -->
-        <div class="p5-card">
-          <div class="p5-card-header">
-            <span>👥 ACTIVE PARTY MEMBER</span>
-            <span id="activeMemberBadge" style="font-size:13px; color:var(--p5-yellow);">SLOT 0</span>
+      <!-- Top Phantom Thief Selection Ribbon -->
+      <div id="phantomThiefRibbon" class="thief-ribbon-container">
+        <!-- 10 Thieves dynamically rendered as angled profile placards -->
+      </div>
+
+      <!-- Split Screen: Left Character Dossier Stage | Right Velvet Room Persona Deck -->
+      <div class="velvet-stage-grid">
+        
+        <!-- Left: Dedicated Character Dossier & Battle Stats -->
+        <div class="p5-card character-stage-card">
+          <div class="character-standee-container">
+            <img id="partyMemberStandeeImg" src="/assets/party/joker.png" class="character-stage-standee" alt="Active Party Member">
           </div>
 
-          <div style="margin-bottom:18px;">
-            <label style="font-size:11px; font-weight:800; color:var(--p5-muted); text-transform:uppercase;">Select Party Member</label>
-            <select id="partyMemberSelect" class="p5-select" style="width:100%; margin-top:6px;" onchange="renderActiveMember()">
-              <!-- Party members -->
-            </select>
-          </div>
+          <div class="character-stats-overlay">
+            <div class="p5-card-header" style="margin-bottom:12px;">
+              <span id="characterStageName">JOKER</span>
+              <span id="activeMemberBadge" style="font-size:13px; color:var(--p5-yellow);">SLOT 0</span>
+            </div>
 
-          <div class="grid-3" style="gap:10px; margin-bottom:18px;">
-            <div>
-              <label style="font-size:11px; font-weight:800; color:var(--p5-muted);">LEVEL (1-99)</label>
-              <input type="number" id="memberLevel" class="p5-input" style="width:100%;" min="1" max="99">
+            <div class="grid-3" style="gap:8px; margin-bottom:12px;">
+              <div>
+                <label style="font-size:10px; font-weight:900; color:var(--p5-muted);">LEVEL (1-99)</label>
+                <input type="number" id="memberLevel" class="p5-input" style="width:100%; font-size:15px; font-weight:900;" min="1" max="99">
+              </div>
+              <div>
+                <label style="font-size:10px; font-weight:900; color:var(--p5-muted);">MAX HP</label>
+                <input type="number" id="memberHP" class="p5-input" style="width:100%; font-size:15px; font-weight:900;" min="1" max="999">
+              </div>
+              <div>
+                <label style="font-size:10px; font-weight:900; color:var(--p5-muted);">MAX SP</label>
+                <input type="number" id="memberSP" class="p5-input" style="width:100%; font-size:15px; font-weight:900;" min="1" max="999">
+              </div>
             </div>
-            <div>
-              <label style="font-size:11px; font-weight:800; color:var(--p5-muted);">BATTLE HP</label>
-              <input type="number" id="memberHP" class="p5-input" style="width:100%;" min="1" max="999">
-            </div>
-            <div>
-              <label style="font-size:11px; font-weight:800; color:var(--p5-muted);">BATTLE SP</label>
-              <input type="number" id="memberSP" class="p5-input" style="width:100%;" min="1" max="999">
-            </div>
-          </div>
 
-          <div style="display:flex; gap:10px;">
-            <button class="p5-btn-action" onclick="healActiveMember()"><span>RESTORE HP & SP</span></button>
-            <button class="p5-btn-action secondary" onclick="maxLevelActiveMember()"><span>SET LV 99</span></button>
+            <!-- Hidden fallback select for logic compatibility -->
+            <select id="partyMemberSelect" style="display:none;" onchange="renderActiveMember()"></select>
           </div>
         </div>
 
-        <!-- Equipped Persona Deck -->
+        <!-- Right: Velvet Room Persona & Moveset Engine -->
         <div class="p5-card">
           <div class="p5-card-header">
             <span id="personaDeckHeader">🎭 EQUIPPED PERSONA & MOVESET</span>
@@ -195,9 +220,9 @@
           </div>
 
           <!-- Large Persona Hero Showcase Banner (Authentic P5 Velvet Room Style) -->
-          <div style="background:linear-gradient(135deg, #1A0508 0%, #08080C 100%); border:2px solid var(--p5-crimson); border-radius:6px; padding:15px; margin-bottom:15px; display:flex; gap:20px; align-items:center; position:relative; overflow:hidden; box-shadow:0 8px 30px rgba(230,0,18,0.25);">
-            <div style="position:relative; width:140px; height:140px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle, rgba(230,0,18,0.2) 0%, rgba(0,0,0,0.8) 70%); border:1px solid #333; border-radius:6px;">
-              <img id="velvetPersonaPortrait" src="/assets/personas/1.png" onerror="this.style.display='none'" style="width:130px; height:130px; object-fit:contain; filter:drop-shadow(0 6px 12px rgba(0,0,0,0.9)); transition:transform 0.3s ease;">
+          <div style="background:linear-gradient(135deg, #1A0508 0%, #08080C 100%); border:2px solid var(--p5-crimson); padding:15px; margin-bottom:15px; display:flex; gap:20px; align-items:center; position:relative; overflow:hidden; box-shadow:0 8px 30px rgba(230,0,18,0.25);">
+            <div style="position:relative; width:130px; height:130px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle, rgba(230,0,18,0.2) 0%, rgba(0,0,0,0.8) 70%); border:2px solid #000; box-shadow:4px 4px 0 #000;">
+              <img id="velvetPersonaPortrait" src="/assets/personas/1.png" onerror="this.style.display='none'" style="width:120px; height:120px; object-fit:contain; filter:drop-shadow(0 6px 12px rgba(0,0,0,0.9)); transition:transform 0.3s ease;">
             </div>
             <div style="flex:1;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -205,15 +230,15 @@
                 <span id="velvetPersonaIdBadge" style="font-family:monospace; font-size:11px; color:var(--p5-muted);">ID: 0x001 (1)</span>
               </div>
               <select id="personaSelect" class="p5-select" style="width:100%; margin-top:6px; font-size:15px; font-weight:700; background:#0F0F16; border:2px solid var(--p5-crimson); padding:8px 12px;" onchange="onPersonaSelectChange()">
-                <!-- 460+ Personas -->
+                <!-- Personas -->
               </select>
-              <div id="velvetPersonaArcanaTag" style="font-size:11px; color:var(--p5-muted); margin-top:6px; font-weight:700;">
-                Arcana: <span style="color:#FFF;">Fool</span> | High-Affinity Summon
+              <div id="personaLockNote" style="display:none; font-size:11px; font-weight:800; color:var(--p5-yellow); margin-top:6px; letter-spacing:0.5px;">
+                🔒 Story-locked persona
               </div>
             </div>
           </div>
 
-          <div class="grid-2" style="gap:15px; margin-bottom:15px;">
+          <div class="grid-2" style="gap:12px; margin-bottom:15px;">
             <div>
               <label style="font-size:11px; font-weight:800; color:var(--p5-muted);">PERSONA LEVEL</label>
               <input type="number" id="personaLevel" class="p5-input" style="width:100%;" min="1" max="99">
@@ -227,12 +252,12 @@
           </div>
 
           <!-- 5 Core Persona Stats (St, Ma, En, Ag, Lu) Visual Sliders -->
-          <div style="background:rgba(0,0,0,0.3); border:1px solid var(--p5-border); border-radius:4px; padding:12px; margin-bottom:15px;">
+          <div style="background:rgba(0,0,0,0.4); border:2px solid #000; padding:12px; margin-bottom:15px; box-shadow:3px 3px 0 #000;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:11px; font-weight:800; color:var(--p5-yellow); text-transform:uppercase;">5 Core Stats (1-99)</span>
+              <span style="font-size:11px; font-weight:800; color:var(--p5-yellow); text-transform:uppercase;">5 Core Persona Stats</span>
               <button class="p5-btn-action secondary" style="padding:2px 8px; font-size:11px;" onclick="maxPersonaStats()"><span>MAX STATS (99)</span></button>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;">
+            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;">
               <div>
                 <label style="font-size:10px; font-weight:800; color:var(--p5-muted);">ST (力)</label>
                 <input type="number" id="stat_st" class="p5-input" style="width:100%; padding:6px; font-size:12px;" min="1" max="99">
@@ -341,82 +366,101 @@
       </div>
     </section>
 
-    <!-- STAGE 3.5: Hideout & Inventory Manager (Dual-Pane Studio) -->
+    <!-- STAGE 3.5: Persona 5 Royal Unified Item Studio & Dossier -->
     <section id="stage-inventory" class="p5-stage-view">
       <div class="stage-headline">
         <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
           <div>
-            <h2>🎒 HIDEOUT INVENTORY & DUAL-PANE POUCH STUDIO</h2>
-            <p>Side-by-side management: Inspect and adjust Joker's carried pouch on the left, search and add 2,400+ Royal items on the right.</p>
+            <h2>🎒 PERSONA 5 ROYAL ITEM STUDIO</h2>
+            <p>Unified In-Game Item Roster with authentic effect sorting, quantity stepper badges, and live item dossier.</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="p5-btn-action" onclick="maxCurrentTabItems()"><span>✨ MAX CURRENT TAB (99x)</span></button>
             <button class="p5-btn-action" onclick="stockLeblancKitchen()"><span>☕ 99x CURRY & COFFEE</span></button>
             <button class="p5-btn-action" onclick="stockInfiltrationKit()"><span>🔑 INFILTRATION KIT</span></button>
             <button class="p5-btn-action" onclick="stockClinicMedicine()"><span>💉 CLINIC MEDS</span></button>
-            <button class="p5-btn-action" style="background:#330000; border-color:#FF3333; color:#FF8888;" onclick="clearAllPouchItems()"><span>🗑️ CLEAR BAG</span></button>
+            <button class="p5-btn-action" style="background:#330000; border-color:#FF3333; color:#FF8888;" onclick="clearAllPouchItems()"><span>🗑️ RESET BAG</span></button>
           </div>
         </div>
       </div>
 
-      <!-- DUAL-PANE CONTAINER -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+      <!-- Top Slanted Category Navigation Ribbon (Canonical 1-9 Tabs) -->
+      <div class="confidant-filter-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:15px;">
+        <div id="unifiedItemTabs" style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button id="tabConsumable" class="filter-pill active" onclick="switchItemCategory('Consumable', this)"><span>🧪 Items (<span id="catBadgeConsumable">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Infiltration', this)"><span>🔑 Tools (<span id="catBadgeInfiltration">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('SkillCard', this)"><span>🎴 Cards (<span id="catBadgeSkillCard">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Melee', this)"><span>🗡️ Melee (<span id="catBadgeMelee">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Ranged', this)"><span>🔫 Guns (<span id="catBadgeRanged">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Protector', this)"><span>🛡️ Armor (<span id="catBadgeProtector">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Accessory', this)"><span>💍 Accs (<span id="catBadgeAccessory">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('Treasure', this)"><span>💎 Loot (<span id="catBadgeTreasure">0</span>)</span></button>
+          <button class="filter-pill" onclick="switchItemCategory('KeyItem', this)"><span>📜 Key (<span id="catBadgeKeyItem">0</span>)</span></button>
+        </div>
+        <div style="font-family:var(--font-p5); font-size:14px; color:var(--p5-yellow); background:#000; padding:6px 12px; border:2px solid #000; box-shadow:3px 3px 0 #000; transform:skew(-8deg);">
+          <span style="display:inline-block; transform:skew(8deg);" id="globalOwnedCounter">0 ITEMS IN BAG</span>
+        </div>
+      </div>
+
+      <!-- Main Unified Studio Grid (Left: P5R Item Roster | Right: Item Dossier & Inspector) -->
+      <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start;">
         
-        <!-- LEFT PANE: JOKER'S CURRENT POUCH -->
-        <div class="p5-card" style="border-left:6px solid var(--p5-yellow); height:620px; display:flex; flex-direction:column;">
-          <div class="p5-card-header" style="flex-shrink:0;">
-            <span>👜 JOKER'S CARRIED POUCH</span>
-            <span id="pouchSlotCounter" style="font-size:13px; color:var(--p5-yellow); font-family:var(--font-p5);">0 / 30 SLOTS</span>
-          </div>
-          
-          <!-- Pouch Pocket Filter Tabs -->
-          <div id="pouchPocketTabs" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; flex-shrink:0;">
-            <button id="pouchTabAll" class="filter-pill active" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('All', this)"><span>All (<span id="pouchBadgeAll">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('Consumable', this)"><span>☕ Items (<span id="pouchBadgeConsumable">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('Infiltration', this)"><span>🔑 Tools (<span id="pouchBadgeInfiltration">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('SkillCard', this)"><span>🎴 Cards (<span id="pouchBadgeSkillCard">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('Accessory', this)"><span>💍 Accs (<span id="pouchBadgeAccessory">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('Equipment', this)"><span>🗡️ Gear (<span id="pouchBadgeEquipment">0</span>)</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterPouchPocket('KeyItem', this)"><span>📜 Key (<span id="pouchBadgeKeyItem">0</span>)</span></button>
+        <!-- LEFT: P5R SLANTED ITEM ROSTER -->
+        <div class="p5-card" style="border-left:6px solid var(--p5-crimson); height:640px; display:flex; flex-direction:column; padding:14px;">
+          <!-- Filter / Search & Add Header -->
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-shrink:0;">
+            <input type="text" id="unifiedItemSearchBox" class="p5-input" placeholder="Search bag items by name..." style="flex:1; font-size:13px; padding:8px 12px;" oninput="onUnifiedSearchInput()">
+            <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 14px; font-size:12px;" onclick="openAddItemModal()">
+              <span>+ ADD ITEM</span>
+            </button>
           </div>
 
-          <div id="currentPouchContainer" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
-            <!-- Active pouch items rendered dynamically -->
+          <!-- Dynamic Item List Container (Default: In-Game Owned Items Only) -->
+          <div id="unifiedItemListContainer" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;">
+            <!-- Rendered in authentic P5R slanted pill cards -->
+          </div>
+
+          <!-- P5R In-Game Description Footer Bar -->
+          <div id="activeItemDescriptionBar" style="background:#000; border-top:2px solid var(--p5-crimson); padding:10px 14px; margin-top:8px; display:flex; align-items:center; gap:8px; font-family:var(--font-p5); font-size:14px; color:#FFF; flex-shrink:0; transform:skew(-3deg); box-shadow:3px 3px 0 #000;">
+            <span style="color:var(--p5-yellow); font-size:18px;">ニ</span>
+            <span id="activeItemDescText" style="color:#EEE; font-size:13px;">Select an item above to view in-game description and adjust quantities.</span>
           </div>
         </div>
 
-        <!-- RIGHT PANE: ROYAL ITEM VAULT (SEARCH & ADD) -->
-        <div class="p5-card" style="border-left:6px solid var(--p5-crimson); height:620px; display:flex; flex-direction:column;">
-          <div class="p5-card-header" style="flex-shrink:0;">
-            <span>🔍 ROYAL ITEM VAULT (ADD TO POUCH)</span>
-            <span id="vaultCatalogCounter" style="font-size:12px; color:var(--p5-muted);">2,412 ITEMS</span>
-          </div>
-          
-          <!-- Search Input Box -->
-          <div style="margin-bottom:10px; flex-shrink:0;">
-            <input type="text" id="vaultSearchBox" class="p5-input" placeholder="Type name (e.g. Soma, Lockpick, SP Adhesive, Megidolaon, Curry)..." style="width:100%; font-size:13px; padding:10px 14px;" oninput="onVaultSearchInput()">
-          </div>
-
-          <!-- Category Filter Tabs -->
-          <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; flex-shrink:0;">
-            <button id="catPillAll" class="filter-pill active" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('All', this)"><span>All</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Consumable', this)"><span>☕ Items</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Infiltration', this)"><span>🔑 Tools</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('SkillCard', this)"><span>🎴 Cards</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Accessory', this)"><span>💍 Accs</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Melee', this)"><span>🗡️ Melee</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Ranged', this)"><span>🔫 Guns</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Protector', this)"><span>🛡️ Armor</span></button>
-            <button class="filter-pill" style="font-size:11px; padding:4px 8px;" onclick="filterVaultCategory('Treasure', this)"><span>💎 Loot</span></button>
-          </div>
-
-          <!-- Vault Search Results List -->
-          <div id="vaultResultsContainer" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;">
-            <!-- Matching items with [+ Add] buttons -->
+        <!-- RIGHT: ACTIVE ITEM DOSSIER & ACTIONS -->
+        <div class="p5-card" style="border-left:6px solid var(--p5-yellow); height:640px; display:flex; flex-direction:column; justify-content:space-between; padding:20px;">
+          <div id="itemDossierSpotlight">
+            <!-- Dynamically populated selected item details -->
+            <div style="text-align:center; padding:60px 10px; color:var(--p5-muted);">
+              <div style="font-family:var(--font-p5); font-size:26px; color:var(--p5-yellow); margin-bottom:8px;">★ SELECT AN ITEM ★</div>
+              <p style="font-size:12px;">Click any item on the left roster to inspect its stats, itemization, and quick adjustments.</p>
+            </div>
           </div>
         </div>
-
       </div>
     </section>
+
+    <!-- ADD ITEM POPUP MODAL (Search 2,204 Master Catalog by Category) -->
+    <div id="addItemModal" class="p5-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center;">
+      <div class="p5-card" style="width:700px; max-width:92vw; max-height:85vh; border:3px solid var(--p5-crimson); background:#0E0E14; display:flex; flex-direction:column; padding:20px; box-shadow:0 0 30px rgba(230,0,18,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:2px solid var(--p5-crimson); padding-bottom:10px;">
+          <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); text-shadow:2px 2px 0 #000;">
+            🎁 ADD TO INVENTORY (<span id="modalCategoryTitle">CONSUMABLE</span>)
+          </div>
+          <button style="background:transparent; border:none; color:#FF3333; font-size:24px; cursor:pointer; font-weight:900;" onclick="closeAddItemModal()">✕</button>
+        </div>
+
+        <input type="text" id="modalItemSearchBox" class="p5-input" placeholder="Search master catalog (e.g. Soma, Lockpick, SP Adhesive 3, Omnipotent Orb)..." style="font-size:14px; padding:10px 14px; margin-bottom:12px;" oninput="onModalSearchInput()">
+
+        <div id="modalCatalogList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; min-height:300px; max-height:420px; padding-right:4px;">
+          <!-- Rendered catalog items -->
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:15px; padding-top:10px; border-top:1px solid #222;">
+          <button class="p5-btn-action" style="background:#222; border-color:#444;" onclick="closeAddItemModal()"><span>CLOSE</span></button>
+        </div>
+      </div>
+    </div>
 
     <!-- STAGE 3.75: Compendium Registry (Granular & Batch Studio) -->
     <section id="stage-compendium" class="p5-stage-view">
@@ -439,7 +483,7 @@
       <div class="p5-card" style="border-left:6px solid #00E5FF;">
         <div class="p5-card-header">
           <span>📊 COMPENDIUM REGISTRATION STATUS</span>
-          <span id="compendiumCounter" style="font-size:13px; color:#00E5FF; font-family:var(--font-p5);">0 / 232 REGISTERED</span>
+          <span id="compendiumCounter" style="font-size:13px; color:#00E5FF; font-family:var(--font-p5);">— / — REGISTERED</span>
         </div>
         <div style="margin-top:8px;">
           <div style="background:#111; border:2px solid #222; height:28px; position:relative; overflow:hidden;">
@@ -453,7 +497,7 @@
       <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center;">
         <input type="text" id="compendiumSearchInput" class="p5-input" placeholder="🔍 Search by Persona name or ID..." style="flex:1; min-width:240px;" oninput="filterCompendiumGrid()">
         <div style="display:flex; gap:6px;">
-          <button class="p5-chip active" id="filterCompAll" onclick="setCompendiumFilter('all', this)">ALL (232)</button>
+          <button class="p5-chip active" id="filterCompAll" onclick="setCompendiumFilter('all', this)">ALL (—)</button>
           <button class="p5-chip" id="filterCompReg" onclick="setCompendiumFilter('registered', this)">REGISTERED</button>
           <button class="p5-chip" id="filterCompUnreg" onclick="setCompendiumFilter('unregistered', this)">UNREGISTERED</button>
         </div>
@@ -463,7 +507,7 @@
       <div class="p5-card" style="border-left:6px solid #E040FB; margin-top:12px;">
         <div class="p5-card-header">
           <span>🎭 PERSONA REGISTRATION MATRIX (CLICK TO TOGGLE)</span>
-          <span id="compendiumFilterCount" style="font-size:11px; color:var(--p5-muted);">Showing 232 Personas</span>
+          <span id="compendiumFilterCount" style="font-size:11px; color:var(--p5-muted);">Showing 224 Personas</span>
         </div>
         <div id="compendiumGrid" style="max-height:540px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px; padding:10px 4px;">
           <!-- Rendered dynamically with toggle buttons -->
@@ -620,6 +664,6 @@
     </div>
   </div>
 
-  <script src="/app.js?v=16"></script>
+  <script src="/app.js?v=20260816m"></script>
 </body>
 </html>
