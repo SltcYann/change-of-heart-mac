@@ -1777,13 +1777,13 @@ function togglePersonaRegistration(pid) {
 }
 
 function unlockFullCompendium() {
-  const regIds = (DB.personas || [])
-    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
-    .map(p => p.id)
-    .filter(id => id >= 1 && id <= 437
-      && !STUB_COMPENDIUM_IDS.has(id)
-      && !STORY_COMPENDIUM_IDS.has(id)
-      && !PARTY_COMPENDIUM_IDS.has(id));
+  const deadBits = new Set([1, 216, 218, 219, 220, 221, 222, 224]);
+  const regIds = [];
+  for (let i = 1; i <= 232; i++) {
+    if (!deadBits.has(i)) {
+      regIds.push(i);
+    }
+  }
   if (!confirm(`Unlock ALL ${regIds.length} registerable personas in the Compendium?\n\nStory-exclusive & Party personas are excluded — the game never registers them.\n\nRemember to RE-SIGN SAVE.`)) return;
   COMPENDIUM_DATA.registered = regIds.slice();
   COMPENDIUM_DATA.count = regIds.length;
