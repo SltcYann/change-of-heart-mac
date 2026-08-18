@@ -1575,13 +1575,19 @@ function renderCompendium() {
   }
   if (!COMPENDIUM_DATA || !COMPENDIUM_DATA.supported) return;
 
-  // Authentic registerable compendium max is 224 (232 mask minus 8 dead entries).
+  const playableIds = (DB.personas || [])
+    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
+    .map(p => p.id)
+    .filter(id => id >= 1 && id <= 437
+      && !STUB_COMPENDIUM_IDS.has(id)
+      && !STORY_COMPENDIUM_IDS.has(id)
+      && !PARTY_COMPENDIUM_IDS.has(id));
+
+  const total = playableIds.length; // 243 summonable Personas
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
-  const validIds = Array.from(regSet).filter(id => id >= 1 && id <= 232 && !STUB_COMPENDIUM_IDS.has(id));
-  const total = 224;
-  const count = Math.min(total, validIds.length);
+  const count = playableIds.filter(id => regSet.has(id)).length;
   COMPENDIUM_DATA.count = count;
-  const pct = Math.round((count / total) * 100);
+  const pct = total ? Math.round((count / total) * 100) : 0;
 
   const counter = document.getElementById("compendiumCounter");
   if (counter) counter.textContent = `${count} / ${total} REGISTERED (${pct}%)`;
@@ -1777,13 +1783,14 @@ function togglePersonaRegistration(pid) {
 }
 
 function unlockFullCompendium() {
-  const deadBits = new Set([1, 216, 218, 219, 220, 221, 222, 224]);
-  const regIds = [];
-  for (let i = 1; i <= 232; i++) {
-    if (!deadBits.has(i)) {
-      regIds.push(i);
-    }
-  }
+  const regIds = (DB.personas || [])
+    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
+    .map(p => p.id)
+    .filter(id => id >= 1 && id <= 437
+      && !STUB_COMPENDIUM_IDS.has(id)
+      && !STORY_COMPENDIUM_IDS.has(id)
+      && !PARTY_COMPENDIUM_IDS.has(id));
+
   if (!confirm(`Unlock ALL ${regIds.length} registerable personas in the Compendium?\n\nStory-exclusive & Party personas are excluded — the game never registers them.\n\nRemember to RE-SIGN SAVE.`)) return;
   COMPENDIUM_DATA.registered = regIds.slice();
   COMPENDIUM_DATA.count = regIds.length;

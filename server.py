@@ -623,7 +623,7 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                     comp = data["compendium"]
                     if comp and comp.get("supported"):
                         registered_list = set(comp.get("registered", []))
-                        for pid in range(1, CURRENT_EDITOR.PC31_COMPENDIUM_BITS + 1):
+                        for pid in range(1, CURRENT_EDITOR.PC31_COMPENDIUM_MAX_ID + 1):
                             is_reg = pid in registered_list
                             CURRENT_EDITOR.set_compendium_registration(pid, is_reg)
                         # Sanitize any rogue bytes in the gap

@@ -168,7 +168,8 @@ class SaveEditor:
     # -------------------------------------------------------------------------
     PC31_OFFSET_COMPENDIUM = 0x09973
     PC31_COMPENDIUM_MIRROR = 0x21E83
-    PC31_COMPENDIUM_BITS = 232  # 29-byte registration bitmask (0x09973..0x09990 and 0x21E83..0x21EA0)
+    PC31_COMPENDIUM_BITS = 232  # 29-byte primary registration bitmask
+    PC31_COMPENDIUM_MAX_ID = 437  # Max persona ID in Royal templates
     PC31_COMPENDIUM_ARRAY_BASE = 0x04270
     PC31_COMPENDIUM_ARRAY_MIRROR = 0x1C780
     PC31_COMPENDIUM_STRIDE = 0x30
@@ -201,34 +202,22 @@ class SaveEditor:
         return result
     # Bits the game NEVER sets in any verified save (12-save corpus + the
     # game's OWN NAME.TBL marking these entries RESERVE/??? — 2026-08-16).
-    # Split: 0x001 Metatron, 0x0D8 Anat + 0x0DA Prometheus (story-only 2nd
-    # awakenings), 0x0DB-0x0E0 minus 0x0DF (P5-legacy duplicates), plus the
-    # 29 RESERVE/???/blank entries (ids 71, 83, 103, 115-120, 145-150, 155,
-    # 165, 171-180, 200, 229) the game's own name table never populates.
-    # Combined unlockable = 195. Verified against NAME.TBL persona segment.
-    # Dead compendium entries — PROVEN by a true 100% complete NG+ save set
-    # (GameBanana mod 506537, "P5R True 100% Complete NG+ Saves"; all 6
-    # slots read 224/232 and NONE of these bits are set):
-    #   0x001: legacy Metatron slot (obtainable Metatron lives elsewhere)
-    #   0x0D8/0x0DA: Anat/Prometheus, party 2nd awakenings (never registered)
-    #   0x0DB/0x0DC/0x0DD/0x0DE/0x0E0: P5-legacy duplicate-name entries.
-    # NOTE: RESERVE/??? names do NOT mean unregisterable; real saves
-    # (June + NG++ + the 100% set) register those slots.
     PC31_COMPENDIUM_DEAD_BITS = {0x001, 0x0D8, 0x0DA, 0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0E0}
 
     @property
     def compendium_unlockable_ids(self) -> list:
-        """Persona IDs the compendium unlocker may register (232 - dead)."""
-        return [i for i in range(1, self.PC31_COMPENDIUM_BITS + 1)
-                if i not in self.PC31_COMPENDIUM_DEAD_BITS]
+        """Persona IDs the compendium unlocker may register."""
+        templates = self._load_compendium_templates()
+        royal_pids = set(templates.keys())
+        base_unlockable = set(i for i in range(1, self.PC31_COMPENDIUM_BITS + 1)
+                              if i not in self.PC31_COMPENDIUM_DEAD_BITS)
+        return sorted(list((base_unlockable | royal_pids) - self.PC31_COMPENDIUM_DEAD_BITS))
 
     def get_compendium(self) -> Dict[str, Any]:
         """
-        Read the compendium registration bitmask (PC 0x31 saves only).
+        Read the compendium registration bitmask & struct table (PC 0x31 saves).
 
-        Returns {'registered': [persona_ids...], 'count': N} for the
-        authoritative copy at PC31_OFFSET_COMPENDIUM. Returns an empty
-        result dict with 'supported': False on legacy payloads.
+        Returns {'registered': [persona_ids...], 'count': N}.
         """
         out: Dict[str, Any] = {"supported": False, "registered": [], "count": 0}
         if not self.is_real_save():
@@ -239,62 +228,71 @@ class SaveEditor:
         if len(d) < base + nbytes:
             return out
         out["supported"] = True
-        reg = []
+        reg = set()
+        # 1. Read 1..232 from registration bitmask
         for i in range(self.PC31_COMPENDIUM_BITS):
             pid = i + 1
             if pid in self.PC31_COMPENDIUM_DEAD_BITS:
-                continue  # never report reserved/dead entries as registered
+                continue
             byte = d[base + i // 8]
             bit = i % 8
             if (byte >> bit) & 1:
-                reg.append(pid)
-        out["registered"] = reg
-        out["count"] = len(reg)
+                reg.add(pid)
+
+        # 2. Also check populated struct records for Royal/DLC personas up to 437
+        for slot in range(self.PC31_COMPENDIUM_MAX_ID):
+            pid = slot + 1
+            if pid in self.PC31_COMPENDIUM_DEAD_BITS:
+                continue
+            off = self.PC31_COMPENDIUM_ARRAY_BASE + slot * self.PC31_COMPENDIUM_STRIDE
+            if off + self.PC31_COMPENDIUM_STRIDE <= len(d):
+                # If struct contains a non-zero persona ID and level
+                stored_pid = struct.unpack_from("<H", d, off + 2)[0] if off + 4 <= len(d) else 0
+                if stored_pid == pid:
+                    reg.add(pid)
+
+        out["registered"] = sorted(list(reg))
+        out["count"] = len(out["registered"])
         return out
 
     def set_compendium_registration(self, persona_id: int, registered: bool) -> Dict[str, Any]:
         """
-        Set one persona's compendium registration bit (PC 0x31 saves)
-        and ensure its 48-byte record in the compendium array is populated.
+        Set one persona's compendium registration bit and 48-byte record struct.
         """
         if not self.is_real_save():
             return {"status": "unsupported", "message": "Not a PC (0x31) save."}
-        if not (1 <= persona_id <= self.PC31_COMPENDIUM_BITS):
+        if not (1 <= persona_id <= self.PC31_COMPENDIUM_MAX_ID):
             return {"status": "unsupported",
-                    "message": f"Persona ID 0x{persona_id:03X} is outside the 232-bit compendium mask."}
+                    "message": f"Persona ID 0x{persona_id:03X} is outside valid compendium range (1..{self.PC31_COMPENDIUM_MAX_ID})."}
         if persona_id in self.PC31_COMPENDIUM_DEAD_BITS:
             if registered:
                 return {"status": "invalid",
-                        "message": f"Persona 0x{persona_id:03X} is a reserved/dead compendium "
-                                   "entry — it can never be registered."}
-            # clearing a stale phantom bit is always safe
+                        "message": f"Persona 0x{persona_id:03X} is a reserved/dead compendium entry — cannot be registered."}
         d = bytearray(self.parser.data_payload)
-        nbytes = (self.PC31_COMPENDIUM_BITS + 7) // 8
-        if len(d) < self.PC31_COMPENDIUM_MIRROR + nbytes:
-            return {"status": "noop", "message": "Payload too short for compendium block."}
-        idx = persona_id - 1
-        byte = idx // 8
-        bit = idx % 8
         
-        # 1. Update Bitmasks
-        for base in (self.PC31_OFFSET_COMPENDIUM, self.PC31_COMPENDIUM_MIRROR):
-            if registered:
-                d[base + byte] |= (1 << bit)
-            else:
-                d[base + byte] &= ~(1 << bit)
+        # 1. Update Bitmasks (for IDs 1..232)
+        if 1 <= persona_id <= self.PC31_COMPENDIUM_BITS:
+            idx = persona_id - 1
+            byte = idx // 8
+            bit = idx % 8
+            for base in (self.PC31_OFFSET_COMPENDIUM, self.PC31_COMPENDIUM_MIRROR):
+                if base + byte < len(d):
+                    if registered:
+                        d[base + byte] |= (1 << bit)
+                    else:
+                        d[base + byte] &= ~(1 << bit)
 
-        # 2. Update 48-byte Compendium Record Structs
+        # 2. Update 48-byte Compendium Record Structs (for all IDs up to 437)
         templates = self._load_compendium_templates()
         template = templates.get(persona_id)
+        idx = persona_id - 1
         for arr_base in (self.PC31_COMPENDIUM_ARRAY_BASE, self.PC31_COMPENDIUM_ARRAY_MIRROR):
             off = arr_base + idx * self.PC31_COMPENDIUM_STRIDE
             if off + self.PC31_COMPENDIUM_STRIDE <= len(d):
                 if registered:
-                    # Only populate verified summonable persona templates
                     if template:
                         d[off : off + self.PC31_COMPENDIUM_STRIDE] = template
                 else:
-                    # Clear struct to 0
                     d[off : off + self.PC31_COMPENDIUM_STRIDE] = b"\x00" * self.PC31_COMPENDIUM_STRIDE
 
         self.parser.data_payload = bytes(d)
