@@ -586,6 +586,22 @@ class SaveEditor:
         group_ok = True
         if self.is_real_save():
             group_ok = False  # PC group-name location not mapped; 0x2D block not serialized
+            d = bytearray(self.parser.data_payload)
+            # Full Name (64 bytes null-padded) at 0x13840 & mirror 0x2BD50
+            full_b = f"{first} {last}".encode("utf-8")[:64].ljust(64, b"\x00")
+            # Last Name (32 bytes null-padded) at 0x138A8 & mirror 0x2BDB8
+            last_b = last.encode("utf-8")[:32].ljust(32, b"\x00")
+            # First Name (32 bytes null-padded) at 0x138DC & mirror 0x2BDEC
+            first_b = first.encode("utf-8")[:32].ljust(32, b"\x00")
+
+            for base_f, base_l, base_first in ((0x13840, 0x138A8, 0x138DC), (0x2BD50, 0x2BDB8, 0x2BDEC)):
+                if base_first + 32 <= len(d):
+                    d[base_f : base_f + 64] = full_b
+                    d[base_l : base_l + 32] = last_b
+                    d[base_first : base_first + 32] = first_b
+
+            self.parser.data_payload = bytes(d)
+
         self.parser.player_names.group_name_game = group
         self.parser.player_names.group_name_utf8 = group
         return {"status": "ok", "names_updated": True,
@@ -1141,6 +1157,19 @@ class SaveEditor:
         d[off_qty] = clamped_qty
         struct.pack_into("<H", d, off_ring, max(0, item_id))
         struct.pack_into("<H", d, off_ring + 2, 1 if clamped_qty > 0 else 0)
+
+        # Also write to Master Count Table at 0x2410..0x2780 (0x2535 + item_index for Consumables)
+        prefix = item_id & 0xF000
+        idx = item_id & 0x0FFF
+        if prefix == 0x2000: # Consumables
+            master_off = 0x2535 + idx
+            if master_off < len(d):
+                d[master_off] = clamped_qty
+        elif prefix == 0x6000: # Infiltration Tools
+            master_off = 0x25D0 + idx
+            if master_off < len(d):
+                d[master_off] = clamped_qty
+
         self.parser.data_payload = bytes(d)
         return {"status": "success", "slot": slot, "item_id": item_id, "quantity": clamped_qty}
 

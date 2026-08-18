@@ -1575,19 +1575,13 @@ function renderCompendium() {
   }
   if (!COMPENDIUM_DATA || !COMPENDIUM_DATA.supported) return;
 
-  // Only real, named, registerable personas count toward progress.
-  const regIds = (DB.personas || [])
-    .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
-    .map(p => p.id)
-    .filter(id => id >= 1 && id <= 437
-      && !STUB_COMPENDIUM_IDS.has(id)
-      && !STORY_COMPENDIUM_IDS.has(id)
-      && !PARTY_COMPENDIUM_IDS.has(id));
-  const total = regIds.length;
+  // Authentic registerable compendium max is 224 (232 mask minus 8 dead entries).
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
-  const count = regIds.filter(id => regSet.has(id)).length;
+  const validIds = Array.from(regSet).filter(id => id >= 1 && id <= 232 && !STUB_COMPENDIUM_IDS.has(id));
+  const total = 224;
+  const count = Math.min(total, validIds.length);
   COMPENDIUM_DATA.count = count;
-  const pct = total ? Math.round((count / total) * 100) : 0;
+  const pct = Math.round((count / total) * 100);
 
   const counter = document.getElementById("compendiumCounter");
   if (counter) counter.textContent = `${count} / ${total} REGISTERED (${pct}%)`;

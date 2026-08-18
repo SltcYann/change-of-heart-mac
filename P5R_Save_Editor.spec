@@ -39,12 +39,7 @@ a = Analysis(
     datas=data_files,
     hiddenimports=[
         'webview',
-        'webview.platforms.winforms',
         'webview.platforms.edgechromium',
-        'clr',
-        'System',
-        'System.Windows.Forms',
-        'System.Threading',
         'server',
         'core',
         'core.crypto',
