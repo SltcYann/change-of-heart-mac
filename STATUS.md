@@ -1,11 +1,11 @@
 # STATUS.md — P5R Save Editor (Change of Heart)
 
 > Human-readable current state. Synced from state.json on every exit.
-> Updated: 2026-08-21 04:05 EDT
+> Updated: 2026-08-21 04:30 EDT
 
 ## Current State
-- **Phase:** implementation (inventory web-app rebuild)
-- **Gate:** verified — compendium 100% fix confirmed in-game on 2 independent saves
+- **Phase:** released v1.0.10 → next: UI overhaul / offset probes
+- **Gate:** released — pushed + tagged + GitHub Release with asset
 - **Mode:** single-agent
 
 ## Last Completed
@@ -17,13 +17,14 @@
 - Compendium phantom pid-211 fixed
 
 ## Next Action
-- Push v1.0.10 to GitHub (in-game verification gate now satisfied) — pending user go-ahead.
+- Next build: authentic P5R UI overhaul (docs/superpowers spec — reconcile bulk-action conflict first) and/or offset probes to unfreeze SkillCard/Tool/Treasure/Outfit writes.
 - Offset-dependent lifts (Outfit `0xA000+`, KeyItem mapping, SkillCard/Tool/Treasure bases) remain **frozen** until live `BASE.CPK` + paired PC saves for `tools/diff_mapper.py`.
 
 ## Blockers
 - None.
 
 ## Recent Session
+- 2026-08-21: **v1.0.10 RELEASED** — compendium fix verified in-game ×2 slots; pushed `main` (e3ba51a) + tag `v1.0.10` + GitHub Release with `CHANGE_OF_HEART_v1.0.10.zip` (61.3 MB). Note: repo-local git credential helper now routes via `gh` (stale OS credential for another account removed from the chain).
 - 2026-08-21: compendium 96% fix + in-game verification ×2 slots (memory/2026-08-21-compendium-96-fix.md)
 - 2026-08-20: Metroid Prime conventions audit, oracle SOP consult, P5R hygiene upgrade
 
