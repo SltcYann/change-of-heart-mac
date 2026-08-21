@@ -48,20 +48,21 @@ python -m unittest discover -s tests
 
 ---
 
-## Research Lane (mandatory — concrete per harness)
+## Research Lane (mandatory — machine-level tools, equal access)
 
-This project may boot under 4 harnesses; each runs tools differently. A skill is only
-instructions — if the line below says "load X skill" to a harness with no
-skill-loading mechanism, the instruction is dead. The lines here are the **actual
-invocations to run**. At session start, identify your harness, then use that column.
+These tools live on THIS MACHINE, not inside any one harness. Any agent booted here
+can reach every one of them. Each capability carries its concrete invocation.
+Route A = native MCP tool (Hermes). Route B = terminal command (every harness):
+`mcporter` / `curl` / CLI. If neither route works, delegate the lookup to Hermes.
 
-| Need | Hermes (primary) | DSH | OpenCode | Antigravity (agy) |
-|------|------------------|-----|----------|-------------------|
-| Web keyword search | `mcp__hound__mcp_smart_search(query=...)` — or load `web-search` skill → Hound→Exa→rdt | `default.skill("web-research")` → `mcp-hound.mcp_smart_search` | native `web_search` tool; GitHub-scoped: terminal `gh search`; deep research → `opencode run` delegate to Hermes | dispatch task to Hermes + `web-search` skill |
-| URL → markdown | `web_extract` tool OR terminal `curl -s "https://r.jina.ai/<URL>"` | `default.pwsh -c "curl -s 'https://r.jina.ai/<URL>'"` | terminal `curl -s "https://r.jina.ai/<URL>"` | Gemini live fetch (agy multimodal) |
-| Reddit | `rdt search "<q>" -n 8 --json` (agent-reach) OR `reddit-exa-search` skill | `reddit-exa-search` skill (Exa MCP) | terminal `rdt` if agent-reach on PATH; else delegate to Hermes | delegate to Hermes |
-| GitHub | `gh` CLI (terminal) | `gh` CLI (`default.pwsh`) | `gh` CLI (terminal) | `gh` CLI |
-| Oracle / design review | See **Oracle Invocation** block below | load `oracle` skill (both MCPs wired) | if deepseek-web/gemini-web MCP configured: load `oracle`; else delegate to Hermes | Gemini (agy); dual-oracle diff → delegate to Hermes |
+| Capability | Concrete invocation |
+|---|---|
+| Web keyword search | `mcporter call mcp-hound.mcp_smart_search 'query=<q>'` (Hermes native: `mcp__hound__mcp_smart_search`) |
+| Semantic/deep search | `mcporter call exa.web_search_exa 'query=<q>' 'numResults=5' --no-oauth --timeout 30000` |
+| URL → markdown | `curl -s "https://r.jina.ai/<URL>"` |
+| Reddit | `rdt search "<q>" -n 8 --json` |
+| GitHub | `gh search ...` / `gh api ...` (authed) |
+| Oracle / design review | See **Oracle Invocation** block below |
 
 - When you hit an unknown format, CPK layout, or community claim: STOP and look it up
   before acting. Do not shim or guess. P5R ground-truth offsets come from 2-save diff
