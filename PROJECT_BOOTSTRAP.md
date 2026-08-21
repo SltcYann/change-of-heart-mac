@@ -57,12 +57,15 @@ Route A = native MCP tool (Hermes). Route B = terminal command (every harness):
 
 | Capability | Concrete invocation |
 |---|---|
-| Web keyword search | `mcporter call mcp-hound.mcp_smart_search 'query=<q>'` (Hermes native: `mcp__hound__mcp_smart_search`) |
+| Web keyword search | `mcporter call mcp-hound.mcp_smart_search 'query=<q>' 'numResults=5' --no-oauth --timeout 30000` |
 | Semantic/deep search | `mcporter call exa.web_search_exa 'query=<q>' 'numResults=5' --no-oauth --timeout 30000` |
 | URL → markdown | `curl -s "https://r.jina.ai/<URL>"` |
-| Reddit | `rdt search "<q>" -n 8 --json` |
+| Reddit | `"E:/Hermes/hermes-agent/venv/Scripts/rdt.exe" search "<q>" -n 8 --json` (absolute path — rdt is NOT on the default PATH) |
 | GitHub | `gh search ...` / `gh api ...` (authed) |
 | Oracle / design review | See **Oracle Invocation** block below |
+
+Verified working from a neutral cwd on this machine (2026-08-21): mcporter
+(mcp-hound + exa), gh, curl, and rdt via the absolute path above.
 
 - When you hit an unknown format, CPK layout, or community claim: STOP and look it up
   before acting. Do not shim or guess. P5R ground-truth offsets come from 2-save diff
