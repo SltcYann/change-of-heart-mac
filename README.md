@@ -8,7 +8,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Steam%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Tests](https://img.shields.io/badge/Tests-120%2F120%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
+[![Tests](https://img.shields.io/badge/Tests-157%2F157%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20j0nny%20DiGITAL-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
 
@@ -94,15 +94,34 @@ This project was built across intensive collaborative AI-assisted reverse-engine
 ## 📥 Download Standalone Executable
 
 No Python or terminal required! Just grab the latest standalone release:  
-👉 **[Download CHANGE_OF_HEART_v1.0.7.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
+👉 **[Download CHANGE_OF_HEART_v1.0.10.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
 
-1. Download and extract `CHANGE_OF_HEART_v1.0.7.zip`.
+1. Download and extract `CHANGE_OF_HEART_v1.0.10.zip`.
 2. Double-click `P5R_Save_Editor.exe`.
 3. The editor will automatically detect your Steam saves and open the studio window.
 
 ---
 
 ## 📋 Changelog
+
+### v1.0.10 — Compendium 100% Unlock Fix (Genuine-Save Parity)
+> *"Why does it say 96%?"* — fixed, and proven in-game.
+
+- **🐛 The 96% Compendium Bug — Root-Caused & Fixed:** Unlock ALL previously staged a *filtered* persona list; on save, unlisted personas (party Personas, Satanael variants, etc.) had their registration bits **actively cleared** and their Velvet Room records never written. The game's `Completed %` counts Velvet Room **records** (~232 denominator), not the mask — so partial records = 96%.
+- **✅ Genuine-Save Parity:** Unlock ALL now triggers the verified backend full unlock: all **224 live registration bits** (party & Satanael bits included — genuine 100% saves set them too) plus all **232 Velvet Room records**, byte-equivalent to a real 100% NG+ save.
+- **🧪 157/157 Unit Tests** including 4 new wiring regression tests (`TestCompendiumUnlockAllWiring`).
+- **🎮 Verified In-Game** on two independent saves (one surgically repaired, one via the new Unlock ALL flow): both show **Completed 100%**, no greyed Satanael ghost.
+
+### v1.0.9 — In-Game Parity, Master Inventory Overhaul & Full Compendium
+- **🗃️ 10-Category Master Inventory:** unique equipment tracked by ownership flags (Melee `0x1B30`, Ranged `0x3430` — all 106 guns mapped, Outfits `0x3230` — all 286 costumes), stackables by count arrays (Armor/Accessories/Consumables/Skill Cards/Tools/Treasure), zero phantom items, engine mirror sync.
+- **🖋️ Full-Spectrum Name Editor:** dual UTF-8 + Atlus font-glyph encoding across 8 primary/mirror blocks — names stick in dialogue, status screens, and calling cards.
+- **🃏 Clean 100% Compendium:** Satanael ghost bug fixed (`0xD3` mask-only); authentic 232-record structure.
+- **🛡️ Guarded Key Items** + dynamic asset packaging. See `docs/RELEASE_NOTES_v1.0.9.md`.
+
+### v1.0.8 — In-Game Parity Fixes: Names, Master Items & Compendium
+- **🔤 Names** serialize into the in-game dialogue payload (`0x13840` family + mirrors), not just the header preview.
+- **🎒 Item quantities** write to the authoritative master count array (`0x2410..0x2800` sub-bases) — no more 30-slot cap silently dropping items.
+- **📖 Compendium math** corrected to the true 224-registerable denominator. See `patch_notes_v1.0.8.md`.
 
 ### v1.0.7 — Item Studio Rework: In-Game Inventory Behavior
 > *"How would a real human want to use this?"*
