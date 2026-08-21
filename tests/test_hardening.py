@@ -533,6 +533,78 @@ class TestCompendiumUnlockAllWiring(unittest.TestCase):
         self.assertEqual(d[M:M + nb], d[MI:MI + nb], "mask mirror out of sync after unlock")
 
 
+class TestInventoryRemovalPersistence(unittest.TestCase):
+    """Regression for the silent no-op removal bug (found 2026-08-21).
+
+    The UI DELETED zeroed ids from its item map, so the save payload never
+    contained them and the backend merge-patch loop left the old bytes —
+    DISCARD/UNEQUIP silently didn't persist (items resurrected on reload).
+    Fix per RFC 6902 lesson ('deletion must be explicit'): mutations store
+    explicit 0, and the payload is the minimal diff vs the load baseline."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "web-app", "static", "app.js"), encoding="utf-8") as f:
+            self.src = f.read()
+
+    def _fn_src(self, name):
+        m = re.search(r"function %s\(\) \{.*?\n\}" % name, self.src, re.S)
+        self.assertIsNotNone(m, "%s() missing from app.js" % name)
+        return m.group(0)
+
+    def test_mutations_never_delete_keys(self):
+        self.assertNotIn("delete INVENTORY_ITEM_COUNTS", self.src,
+                         "zeroing must store explicit 0 — key deletion makes removals vanish from the payload")
+
+    def test_payload_is_baseline_diff(self):
+        fn = self._fn_src("buildInventoryPayload")
+        self.assertIn("__INVENTORY_BASELINE", fn,
+                      "payload must be computed as a diff against the load baseline")
+        self.assertIn("cur===was", fn.replace(" ", ""),
+                      "diff must skip untouched ids")
+        # and executeSavePayload must use it
+        self.assertIn("const normPayload = buildInventoryPayload();", self.src)
+
+    def test_removal_persists_untouched_preserved(self):
+        """Behavioral: baseline {stackA:5, stackB:3, gear:owned}; user discards
+        stackA and unequips gear; stackB untouched. Emitted change-set zeroes
+        A + gear (with mirrors) and never writes B."""
+        e = SaveEditor()
+        e.parser.is_pc_0x31 = True
+        d = bytearray(0x40000)
+        soff_a = e.get_item_count_offset(0x2001)
+        soff_b = e.get_item_count_offset(0x2002)
+        goff = e.get_item_owned_offset(0x1005)
+        for off, val in ((soff_a, 5), (soff_a + 0x18510, 5), (soff_b, 3), (soff_b + 0x18510, 3), (goff, 1), (goff + 0x18510, 1)):
+            d[off] = val
+        e.parser.data_payload = bytes(d)
+
+        # UI state: hydrated baseline -> user discards 0x2001, unequips 0x1005
+        baseline = {"8193": 5, "8194": 3, "4101": 1}
+        current = {"8193": 0, "8194": 3, "4101": 0}
+        payload_stacks, payload_gear = {}, {}
+        for id_str in set(baseline) | set(current):
+            cur_v, was_v = current.get(id_str, 0), baseline.get(id_str, 0)
+            if cur_v == was_v:
+                continue  # untouched — omitted
+            if int(id_str) & 0xF000 == 0x1000:
+                payload_gear[int(id_str)] = cur_v > 0
+            else:
+                payload_stacks[int(id_str)] = max(0, min(99, cur_v))
+        self.assertEqual(payload_stacks, {0x2001: 0}, "discard must emit explicit 0")
+        self.assertEqual(payload_gear, {0x1005: False}, "unequip must emit explicit false")
+
+        for rid, qty in payload_stacks.items():
+            e.set_item_quantity(rid, qty)
+        for rid, owned in payload_gear.items():
+            e.set_item_quantity(rid, 1 if owned else 0)
+        d2 = e.parser.data_payload
+        self.assertEqual(d2[soff_a], 0, "discarded stack must persist as 0")
+        self.assertEqual(d2[soff_a + 0x18510], 0, "mirror must be zeroed too")
+        self.assertEqual(d2[goff], 0, "unequipped gear flag must persist as 0")
+        self.assertEqual(d2[goff + 0x18510], 0, "gear mirror must be zeroed too")
+        self.assertEqual(d2[soff_b], 3, "untouched id must NOT be written")
+
+
 if __name__ == "__main__":
     unittest.main()
 

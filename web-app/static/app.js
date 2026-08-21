@@ -2421,12 +2421,11 @@ function stepUnifiedItemQty(itemId, delta) {
   const item = getItemById(itemId);
   const cat = item ? item.category : "Consumable";
   if (isGearCategory(cat)) {
-    // Gear is owned toggle — any step flips
+    // Gear is owned toggle — any step flips. Explicit 0 (NOT delete):
+    // buildInventoryPayload() diffs vs baseline, so a zeroed entry persists.
     const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
-    const next = cur ? 0 : 1;
-    if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
-    else INVENTORY_ITEM_COUNTS[itemId] = 1;
-    _markDirty(itemId); if (next === 0) {} // keep dirty even on discard
+    INVENTORY_ITEM_COUNTS[itemId] = cur ? 0 : 1;
+    _markDirty(itemId);
     renderUnifiedItemList();
     return;
   }
@@ -2437,8 +2436,7 @@ function stepUnifiedItemQty(itemId, delta) {
   if (cat === "KeyItem" && !confirm("Modify Key Item? May break story flags — proceed?")) return;
   const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
   const next = Math.max(0, Math.min(99, cur + delta));
-  if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
-  else INVENTORY_ITEM_COUNTS[itemId] = next;
+  INVENTORY_ITEM_COUNTS[itemId] = next;
   _markDirty(itemId);
   renderUnifiedItemList();
 }
@@ -2447,9 +2445,7 @@ function setUnifiedItemQty(itemId, targetQty) {
   const item = getItemById(itemId);
   const cat = item ? item.category : "Consumable";
   if (isGearCategory(cat)) {
-    const next = targetQty > 0 ? 1 : 0;
-    if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
-    else INVENTORY_ITEM_COUNTS[itemId] = 1;
+    INVENTORY_ITEM_COUNTS[itemId] = targetQty > 0 ? 1 : 0;
     _markDirty(itemId);
     renderUnifiedItemList();
     return;
@@ -2459,11 +2455,36 @@ function setUnifiedItemQty(itemId, targetQty) {
     return;
   }
   if (cat === "KeyItem" && targetQty !== 0 && !confirm("Modify Key Item? May break story flags — write anyway?")) return;
-  const next = Math.max(0, Math.min(99, targetQty));
-  if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
-  else INVENTORY_ITEM_COUNTS[itemId] = next;
+  INVENTORY_ITEM_COUNTS[itemId] = Math.max(0, Math.min(99, targetQty));
   _markDirty(itemId);
   renderUnifiedItemList();
+}
+
+// S2 persistence contract (RFC 6902 lesson: deletion must be EXPLICIT).
+// Emits the minimal change-set vs __INVENTORY_BASELINE: untouched ids are
+// OMITTED (server merge-patch semantics leave them alone — safe for
+// incomplete reads & guarded categories), while user-zeroed ids are sent
+// as explicit 0/false so discards actually persist.
+function buildInventoryPayload() {
+  const normPayload = { stacks: {}, owned_gear: {} };
+  let base = {};
+  try { base = JSON.parse(window.__INVENTORY_BASELINE || "{}"); } catch {}
+  const ids = new Set([...Object.keys(base), ...Object.keys(INVENTORY_ITEM_COUNTS)]);
+  ids.forEach(idStr => {
+    const id = parseInt(idStr);
+    const cur = INVENTORY_ITEM_COUNTS[id] || 0;
+    const was = base[idStr] || 0;
+    if (cur === was) return; // untouched — omit entirely
+    const item = getItemById(id);
+    const cat = item ? item.category : "Consumable";
+    if (cat === "KeyItem" && !KEY_ITEM_UNLOCKED) return; // guarded: never emit
+    if (isGearCategory(cat)) {
+      normPayload.owned_gear[id] = cur > 0;
+    } else {
+      normPayload.stacks[id] = Math.max(0, Math.min(99, cur));
+    }
+  });
+  return normPayload;
 }
 
 // =========================================================================
@@ -2817,19 +2838,9 @@ async function executeSavePayload() {
   }
 
   // Persist Active Inventory — S1 normalized payload (preferred) + legacy
-  const normPayload = { stacks: {}, owned_gear: {} };
-  Object.entries(INVENTORY_ITEM_COUNTS).forEach(([idStr, qty]) => {
-    const id = parseInt(idStr);
-    const item = getItemById(id);
-    const cat = item ? item.category : "Consumable";
-    if (cat === "KeyItem" && qty > 0 && !KEY_ITEM_UNLOCKED) return; // guarded
-    if (isGearCategory(cat)) {
-      if (qty > 0) normPayload.owned_gear[id] = true;
-      else normPayload.owned_gear[id] = false;
-    } else if (qty > 0) {
-      normPayload.stacks[id] = Math.min(99, parseInt(qty));
-    }
-  });
+  // Minimal change-set vs load baseline: removals are EXPLICIT (0/false),
+  // untouched ids omitted (server merge-patch leaves them alone).
+  const normPayload = buildInventoryPayload();
   CURRENT_SAVE.inventory_normalized = normPayload;
   // Legacy flat list also sent for backwards compat
   CURRENT_SAVE.inventory = [];
