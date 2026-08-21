@@ -1,0 +1,302 @@
+基址	名称	JP_NAME	EN_NAME	角色/性别
+main+02271F30	BLANK (Unusable)	BLANK (Unusable)	BLANK (Unusable)	-
+main+02271F31	RESERVE	RESERVE	RESERVE	-
+main+02271F32	Dark Undershirt	Dark Undershirt	Dark Undershirt	-
+main+02271F33	Print T-Shirt	Print T-Shirt	Print T-Shirt	-
+main+02271F34	Neckerchief	Neckerchief	Neckerchief	-
+main+02271F35	Baseball Jacket	Baseball Jacket	Baseball Jacket	-
+main+02271F36	Dress Shirt	Dress Shirt	Dress Shirt	-
+main+02271F37	Turtleneck	Turtleneck	Turtleneck	-
+main+02271F38	Pink Top	Pink Top	Pink Top	-
+main+02271F39	Loose Cutsew	Loose Cutsew	Loose Cutsew	-
+main+02271F3A	Formal Shirt	Formal Shirt	Formal Shirt	-
+main+02271F3B	Light Undershirt	Light Undershirt	Light Undershirt	-
+main+02271F3C	Chaos Undershirt	Chaos Undershirt	Chaos Undershirt	-
+main+02271F3D	RESERVE	RESERVE	RESERVE	-
+main+02271F3E	Sooty Ghastly Gear	Sooty Ghastly Gear	Sooty Ghastly Gear	-
+main+02271F3F	RESERVE	RESERVE	RESERVE	-
+main+02271F40	Shoulder Pads	Shoulder Pads	Shoulder Pads	-
+main+02271F41	Confident Camisole	Confident Camisole	Confident Camisole	-
+main+02271F42	Lynx Camo Vest	Lynx Camo Vest	Lynx Camo Vest	-
+main+02271F43	Memorial Collar	Memorial Collar	Memorial Collar	-
+main+02271F44	Old Cat Collar	Old Cat Collar	Old Cat Collar	-
+main+02271F45	Cat Knight's Collar	Cat Knight's Collar	Cat Knight's Collar	-
+main+02271F46	Old Duke's Coat	Old Duke's Coat	Old Duke's Coat	-
+main+02271F47	Duke's Coat	Duke's Coat	Duke's Coat	-
+main+02271F48	RESERVE	RESERVE	RESERVE	-
+main+02271F49	RESERVE	RESERVE	RESERVE	-
+main+02271F4A	RESERVE	RESERVE	RESERVE	-
+main+02271F4B	Cat Sweater	Cat Sweater	Cat Sweater	-
+main+02271F4C	Old Angels' Cape	Old Angels' Cape	Old Angels' Cape	-
+main+02271F4D	Angel's Cape	Angel's Cape	Angel's Cape	-
+main+02271F4E	Old Pajamas	Old Pajamas	Old Pajamas	-
+main+02271F4F	Succubus Pajamas	Succubus Pajamas	Succubus Pajamas	-
+main+02271F50	Saint's Tunic	Saint's Tunic	Saint's Tunic	-
+main+02271F51	Robust Apron	Robust Apron	Robust Apron	-
+main+02271F52	Amulet Shirt	Amulet Shirt	Amulet Shirt	-
+main+02271F53	Breeze Scarf	Breeze Scarf	Breeze Scarf	-
+main+02271F54	Silk Dress	Silk Dress	Silk Dress	-
+main+02271F55	Fine Silk Dress	Fine Silk Dress	Fine Silk Dress	-
+main+02271F56	Frost Hood	Frost Hood	Frost Hood	-
+main+02271F57	Frost Ace Hood	Frost Ace Hood	Frost Ace Hood	-
+main+02271F58	Survival Vest	Survival Vest	Survival Vest	-
+main+02271F59	Lady's Dress	Lady's Dress	Lady's Dress	-
+main+02271F5A	Zen Outfit	Zen Outfit	Zen Outfit	-
+main+02271F5B	Cone Collar	Cone Collar	Cone Collar	-
+main+02271F5C	Old Ghastly Dress	Old Ghastly Dress	Old Ghastly Dress	-
+main+02271F5D	Shikigami Dress	Shikigami Dress	Shikigami Dress	-
+main+02271F5E	Old Cheongsam	Old Cheongsam	Old Cheongsam	-
+main+02271F5F	Fairy Cheongsam	Fairy Cheongsam	Fairy Cheongsam	-
+main+02271F60	Old Mythical Scarf	Old Mythical Scarf	Old Mythical Scarf	-
+main+02271F61	Mythical Scarf	Mythical Scarf	Mythical Scarf	-
+main+02271F62	RESERVE	RESERVE	RESERVE	-
+main+02271F63	RESERVE	RESERVE	RESERVE	-
+main+02271F64	Cosmic Undies	Cosmic Undies	Cosmic Undies	-
+main+02271F65	Lightning Blouse	Lightning Blouse	Lightning Blouse	-
+main+02271F66	Night Shift Haori	Night Shift Haori	Night Shift Haori	-
+main+02271F67	Rubber Scarf	Rubber Scarf	Rubber Scarf	-
+main+02271F68	Heavensent Dress	Heavensent Dress	Heavensent Dress	-
+main+02271F69	Godsent Dress	Godsent Dress	Godsent Dress	-
+main+02271F6A	RESERVE	RESERVE	RESERVE	-
+main+02271F6B	RESERVE	RESERVE	RESERVE	-
+main+02271F6C	Athletic Shirt	Athletic Shirt	Athletic Shirt	-
+main+02271F6D	Power Camisole	Power Camisole	Power Camisole	-
+main+02271F6E	RESERVE	RESERVE	RESERVE	-
+main+02271F6F	Hard Scarf	Hard Scarf	Hard Scarf	-
+main+02271F70	Old Haori	Old Haori	Old Haori	-
+main+02271F71	Dishonored Haori	Dishonored Haori	Dishonored Haori	-
+main+02271F72	Old Coat	Old Coat	Old Coat	-
+main+02271F73	Nekomata Coat	Nekomata Coat	Nekomata Coat	-
+main+02271F74	Old Fiery Apron	Old Fiery Apron	Old Fiery Apron	-
+main+02271F75	Fiery Apron	Fiery Apron	Fiery Apron	-
+main+02271F76	Blood Red Capote	Blood Red Capote	Blood Red Capote	-
+main+02271F77	Bloodied Capote	Bloodied Capote	Bloodied Capote	-
+main+02271F78	Mandala Vest	Mandala Vest	Mandala Vest	-
+main+02271F79	Elysian Robe	Elysian Robe	Elysian Robe	-
+main+02271F7A	Papal Robes	Papal Robes	Papal Robes	-
+main+02271F7B	Id Collar	Id Collar	Id Collar	-
+main+02271F7C	RESERVE	RESERVE	RESERVE	-
+main+02271F7D	RESERVE	RESERVE	RESERVE	-
+main+02271F7E	RESERVE	RESERVE	RESERVE	-
+main+02271F7F	RESERVE	RESERVE	RESERVE	-
+main+02271F80	Army Vest	Army Vest	Army Vest	-
+main+02271F81	Hard Corset	Hard Corset	Hard Corset	-
+main+02271F82	RESERVE	RESERVE	RESERVE	-
+main+02271F83	Sparkly Collar	Sparkly Collar	Sparkly Collar	-
+main+02271F84	Old Shroud	Old Shroud	Old Shroud	-
+main+02271F85	Royal Holy Shroud	Royal Holy Shroud	Royal Holy Shroud	-
+main+02271F86	Old Robe	Old Robe	Old Robe	-
+main+02271F87	Arcane Robe	Arcane Robe	Arcane Robe	-
+main+02271F88	Old Snakeskin Scarf	Old Snakeskin Scarf	Old Snakeskin Scarf	-
+main+02271F89	Snakeskin Scarf	Snakeskin Scarf	Snakeskin Scarf	-
+main+02271F8A	Fairy Knight Armor	Fairy Knight Armor	Fairy Knight Armor	-
+main+02271F8B	Fairy Hero Armor	Fairy Hero Armor	Fairy Hero Armor	-
+main+02271F8C	Cool Vest	Cool Vest	Cool Vest	-
+main+02271F8D	Titanium Corset	Titanium Corset	Titanium Corset	-
+main+02271F8E	Hope Shirt	Hope Shirt	Hope Shirt	-
+main+02271F8F	Morose Collar	Morose Collar	Morose Collar	-
+main+02271F90	Tapsuan	Tapsuan	Tapsuan	-
+main+02271F91	Fine Tapsuan	Fine Tapsuan	Fine Tapsuan	-
+main+02271F92	RESERVE	RESERVE	RESERVE	-
+main+02271F93	RESERVE	RESERVE	RESERVE	-
+main+02271F94	Gigas Vest	Gigas Vest	Gigas Vest	-
+main+02271F95	Maillot	Maillot	Maillot	-
+main+02271F96	RESERVE	RESERVE	RESERVE	-
+main+02271F97	Armada Collar	Armada Collar	Armada Collar	-
+main+02271F98	Old Undershirt	Old Undershirt	Old Undershirt	-
+main+02271F99	Lil Devil Undershirt	Lil Devil Undershirt	Lil Devil Undershirt	-
+main+02271F9A	Old Shocking Scarf	Old Shocking Scarf	Old Shocking Scarf	-
+main+02271F9B	Shocking Scarf	Shocking Scarf	Shocking Scarf	-
+main+02271F9C	Old Ghillie Vest	Old Ghillie Vest	Old Ghillie Vest	-
+main+02271F9D	Ghillie Vest	Ghillie Vest	Ghillie Vest	-
+main+02271F9E	RESERVE	RESERVE	RESERVE	-
+main+02271F9F	RESERVE	RESERVE	RESERVE	-
+main+02271FA0	Austere Haori	Austere Haori	Austere Haori	-
+main+02271FA1	Yama Dress	Yama Dress	Yama Dress	-
+main+02271FA2	Rune Vest	Rune Vest	Rune Vest	-
+main+02271FA3	Brave Scarf	Brave Scarf	Brave Scarf	-
+main+02271FA4	Lucky Robe	Lucky Robe	Lucky Robe	-
+main+02271FA5	Super Lucky Robe	Super Lucky Robe	Super Lucky Robe	-
+main+02271FA6	RESERVE	RESERVE	RESERVE	-
+main+02271FA7	RESERVE	RESERVE	RESERVE	-
+main+02271FA8	Fluted Guard	Fluted Guard	Fluted Guard	-
+main+02271FA9	Panzer Dress	Panzer Dress	Panzer Dress	-
+main+02271FAA	RESERVE	RESERVE	RESERVE	-
+main+02271FAB	Measure Collar	Measure Collar	Measure Collar	-
+main+02271FAC	Old Vest	Old Vest	Old Vest	-
+main+02271FAD	Leopard Print Vest	Leopard Print Vest	Leopard Print Vest	-
+main+02271FAE	Old Pure Collar	Old Pure Collar	Old Pure Collar	-
+main+02271FAF	Pure Collar	Pure Collar	Pure Collar	-
+main+02271FB0	Old Tights	Old Tights	Old Tights	-
+main+02271FB1	Divine Black Tights	Divine Black Tights	Divine Black Tights	-
+main+02271FB2	RESERVE	RESERVE	RESERVE	-
+main+02271FB3	RESERVE	RESERVE	RESERVE	-
+main+02271FB4	Fireman Happi	Fireman Happi	Fireman Happi	-
+main+02271FB5	Glaring Cape	Glaring Cape	Glaring Cape	-
+main+02271FB6	Egoist Shirt	Egoist Shirt	Egoist Shirt	-
+main+02271FB7	Water Crown	Water Crown	Water Crown	-
+main+02271FB8	King Frost Cape	King Frost Cape	King Frost Cape	-
+main+02271FB9	King Frost Cape EX	King Frost Cape EX	King Frost Cape EX	-
+main+02271FBA	RESERVE	RESERVE	RESERVE	-
+main+02271FBB	RESERVE	RESERVE	RESERVE	-
+main+02271FBC	Kaiser Vest	Kaiser Vest	Kaiser Vest	-
+main+02271FBD	Tomoe's Doumaru	Tomoe's Doumaru	Tomoe's Doumaru	-
+main+02271FBE	RESERVE	RESERVE	RESERVE	-
+main+02271FBF	Kampff Collar	Kampff Collar	Kampff Collar	-
+main+02271FC0	Old Wild Lion Scarf	Old Wild Lion Scarf	Old Wild Lion Scarf	-
+main+02271FC1	Wild Lion Scarf	Wild Lion Scarf	Wild Lion Scarf	-
+main+02271FC2	Old Khamrai Tao	Old Khamrai Tao	Old Khamrai Tao	-
+main+02271FC3	Khamrai Tao	Khamrai Tao	Khamrai Tao	-
+main+02271FC4	Old Primate Vest	Old Primate Vest	Old Primate Vest	-
+main+02271FC5	Primate Vest	Primate Vest	Primate Vest	-
+main+02271FC6	RESERVE	RESERVE	RESERVE	-
+main+02271FC7	RESERVE	RESERVE	RESERVE	-
+main+02271FC8	Demon's Jacket	Demon's Jacket	Demon's Jacket	-
+main+02271FC9	Cozy Dress	Cozy Dress	Cozy Dress	-
+main+02271FCA	Akashic Shirt	Akashic Shirt	Akashic Shirt	-
+main+02271FCB	Lyrical Scarf	Lyrical Scarf	Lyrical Scarf	-
+main+02271FCC	RESERVE	RESERVE	RESERVE	-
+main+02271FCD	RESERVE	RESERVE	RESERVE	-
+main+02271FCE	RESERVE	RESERVE	RESERVE	-
+main+02271FCF	RESERVE	RESERVE	RESERVE	-
+main+02271FD0	Karna's Robe	Karna's Robe	Karna's Robe	-
+main+02271FD1	Haten Robe	Haten Robe	Haten Robe	-
+main+02271FD2	RESERVE	RESERVE	RESERVE	-
+main+02271FD3	Sublime Collar	Sublime Collar	Sublime Collar	-
+main+02271FD4	Old Sinful Bikini	Old Sinful Bikini	Old Sinful Bikini	-
+main+02271FD5	Sinful Bikini	Sinful Bikini	Sinful Bikini	-
+main+02271FD6	Old Underwear	Old Underwear	Old Underwear	-
+main+02271FD7	Lucky Underwear	Lucky Underwear	Lucky Underwear	-
+main+02271FD8	Old Infinity Scarf	Old Infinity Scarf	Old Infinity Scarf	-
+main+02271FD9	Bottomless Scarf	Bottomless Scarf	Bottomless Scarf	-
+main+02271FDA	RESERVE	RESERVE	RESERVE	-
+main+02271FDB	RESERVE	RESERVE	RESERVE	-
+main+02271FDC	RESERVE	RESERVE	RESERVE	-
+main+02271FDD	RESERVE	RESERVE	RESERVE	-
+main+02271FDE	Scarf of Mercy	Scarf of Mercy	Scarf of Mercy	-
+main+02271FDF	RESERVE	RESERVE	RESERVE	-
+main+02271FE0	RESERVE	RESERVE	RESERVE	-
+main+02271FE1	RESERVE	RESERVE	RESERVE	-
+main+02271FE2	RESERVE	RESERVE	RESERVE	-
+main+02271FE3	RESERVE	RESERVE	RESERVE	-
+main+02271FE4	Immortal Vest	Immortal Vest	Immortal Vest	-
+main+02271FE5	RESERVE	RESERVE	RESERVE	-
+main+02271FE6	Old Black Tights	Old Black Tights	Old Black Tights	-
+main+02271FE7	Death's Black Tights	Death's Black Tights	Death's Black Tights	-
+main+02271FE8	Old Witch's Robe	Old Witch's Robe	Old Witch's Robe	-
+main+02271FE9	Lovely Witch's Robe	Lovely Witch's Robe	Lovely Witch's Robe	-
+main+02271FEA	Old Scale Scarf	Old Scale Scarf	Old Scale Scarf	-
+main+02271FEB	Dragon Scale Scarf	Dragon Scale Scarf	Dragon Scale Scarf	-
+main+02271FEC	RESERVE	RESERVE	RESERVE	-
+main+02271FED	RESERVE	RESERVE	RESERVE	-
+main+02271FEE	RESERVE	RESERVE	RESERVE	-
+main+02271FEF	RESERVE	RESERVE	RESERVE	-
+main+02271FF0	Tantric Oath	Tantric Oath	Tantric Oath	-
+main+02271FF1	Black Jacket	Black Jacket	Black Jacket	-
+main+02271FF2	Official's Robe	Official's Robe	Official's Robe	-
+main+02271FF3	Tantric Oath R	Tantric Oath R	Tantric Oath R	-
+main+02271FF4	RESERVE	RESERVE	RESERVE	-
+main+02271FF5	Archangel Bra	Archangel Bra	Archangel Bra	-
+main+02271FF6	RESERVE	RESERVE	RESERVE	-
+main+02271FF7	High Archangel Bra	High Archangel Bra	High Archangel Bra	-
+main+02271FF8	RESERVE	RESERVE	RESERVE	-
+main+02271FF9	Black Wing Robe	Black Wing Robe	Black Wing Robe	-
+main+02271FFA	Black Wing Robe R	Black Wing Robe R	Black Wing Robe R	-
+main+02271FFB	Dark Jacket	Dark Jacket	Dark Jacket	-
+main+02271FFC	RESERVE	RESERVE	RESERVE	-
+main+02271FFD	Official's Robe R	Official's Robe R	Official's Robe R	-
+main+02271FFE	Black Robe	Black Robe	Black Robe	-
+main+02271FFF	RESERVE	RESERVE	RESERVE	-
+main+02272000	Moonlight Robe R	Moonlight Robe R	Moonlight Robe R	-
+main+02272001	Weird Wrap	Weird Wrap	Weird Wrap	-
+main+02272002	Moonlight Robe	Moonlight Robe	Moonlight Robe	-
+main+02272003	Sirius Armor	Sirius Armor	Sirius Armor	-
+main+02272004	Sirius Armor EX	Sirius Armor EX	Sirius Armor EX	-
+main+02272005	Sooty Ladies' Armor	Sooty Ladies' Armor	Sooty Ladies' Armor	-
+main+02272006	Sooty Boots	Sooty Boots	Sooty Boots	-
+main+02272007	Sooty Heavy Armor	Sooty Heavy Armor	Sooty Heavy Armor	-
+main+02272008	Sooty Yorishiro	Sooty Yorishiro	Sooty Yorishiro	-
+main+02272009	Sooty Elder's Armor	Sooty Elder's Armor	Sooty Elder's Armor	-
+main+0227200A	Sooty Cheongsam	Sooty Cheongsam	Sooty Cheongsam	-
+main+0227200B	Sooty Man's Armor	Sooty Man's Armor	Sooty Man's Armor	-
+main+0227200C	Sooty Cat's Armor	Sooty Cat's Armor	Sooty Cat's Armor	-
+main+0227200D	Sooty Ogress' Gear	Sooty Ogress' Gear	Sooty Ogress' Gear	-
+main+0227200E	Sooty Wolf's Coat	Sooty Wolf's Coat	Sooty Wolf's Coat	-
+main+0227200F	Sooty Divine Armor	Sooty Divine Armor	Sooty Divine Armor	-
+main+02272010	Sooty Snakeskin	Sooty Snakeskin	Sooty Snakeskin	-
+main+02272011	Sooty Astro Armor	Sooty Astro Armor	Sooty Astro Armor	-
+main+02272012	Sooty Feather Coat	Sooty Feather Coat	Sooty Feather Coat	-
+main+02272013	Sooty Black Armor	Sooty Black Armor	Sooty Black Armor	-
+main+02272014	Sooty Spotted Fur	Sooty Spotted Fur	Sooty Spotted Fur	-
+main+02272015	Sooty Horn	Sooty Horn	Sooty Horn	-
+main+02272016	Sooty Grifter's Garb	Sooty Grifter's Garb	Sooty Grifter's Garb	-
+main+02272017	Sooty Lion's Mane	Sooty Lion's Mane	Sooty Lion's Mane	-
+main+02272018	Sooty Monkey Fur	Sooty Monkey Fur	Sooty Monkey Fur	-
+main+02272019	Sooty Regalia	Sooty Regalia	Sooty Regalia	-
+main+0227201A	Sooty Rogue's Garb	Sooty Rogue's Garb	Sooty Rogue's Garb	-
+main+0227201B	Sooty Bolt Armor	Sooty Bolt Armor	Sooty Bolt Armor	-
+main+0227201C	Sooty Gilded Collar	Sooty Gilded Collar	Sooty Gilded Collar	-
+main+0227201D	Sooty Dancer's Garb	Sooty Dancer's Garb	Sooty Dancer's Garb	-
+main+0227201E	Sooty Dark Armor	Sooty Dark Armor	Sooty Dark Armor	-
+main+0227201F	Sooty Scale Armor	Sooty Scale Armor	Sooty Scale Armor	-
+main+02272020	RESERVE	RESERVE	RESERVE	-
+main+02272021	RESERVE	RESERVE	RESERVE	-
+main+02272022	RESERVE	RESERVE	RESERVE	-
+main+02272023	RESERVE	RESERVE	RESERVE	-
+main+02272024	RESERVE	RESERVE	RESERVE	-
+main+02272025	RESERVE	RESERVE	RESERVE	-
+main+02272026	RESERVE	RESERVE	RESERVE	-
+main+02272027	RESERVE	RESERVE	RESERVE	-
+main+02272028	RESERVE	RESERVE	RESERVE	-
+main+02272029	RESERVE	RESERVE	RESERVE	-
+main+0227202A	RESERVE	RESERVE	RESERVE	-
+main+0227202B	RESERVE	RESERVE	RESERVE	-
+main+0227202C	RESERVE	RESERVE	RESERVE	-
+main+0227202D	RESERVE	RESERVE	RESERVE	-
+main+0227202E	RESERVE	RESERVE	RESERVE	-
+main+0227202F	RESERVE	RESERVE	RESERVE	-
+main+02272030	RESERVE	RESERVE	RESERVE	-
+main+02272031	RESERVE	RESERVE	RESERVE	-
+main+02272032	RESERVE	RESERVE	RESERVE	-
+main+02272033	RESERVE	RESERVE	RESERVE	-
+main+02272034	RESERVE	RESERVE	RESERVE	-
+main+02272035	RESERVE	RESERVE	RESERVE	-
+main+02272036	RESERVE	RESERVE	RESERVE	-
+main+02272037	RESERVE	RESERVE	RESERVE	-
+main+02272038	RESERVE	RESERVE	RESERVE	-
+main+02272039	RESERVE	RESERVE	RESERVE	-
+main+0227203A	RESERVE	RESERVE	RESERVE	-
+main+0227203B	RESERVE	RESERVE	RESERVE	-
+main+0227203C	RESERVE	RESERVE	RESERVE	-
+main+0227203D	Shining Vest	Shining Vest	Shining Vest	-
+main+0227203E	Tao Robe	Tao Robe	Tao Robe	-
+main+0227203F	Philosophical Scarf	Philosophical Scarf	Philosophical Scarf	-
+main+02272040	Bodhi Haori	Bodhi Haori	Bodhi Haori	-
+main+02272041	Divine Guard	Divine Guard	Divine Guard	-
+main+02272042	Unio Dress	Unio Dress	Unio Dress	-
+main+02272043	Pleroma Collar	Pleroma Collar	Pleroma Collar	-
+main+02272044	RESERVE	RESERVE	RESERVE	-
+main+02272045	Gambler's Shirt	Gambler's Shirt	Gambler's Shirt	-
+main+02272046	Immovable Shirt	Immovable Shirt	Immovable Shirt	-
+main+02272047	Vest of Life	Vest of Life	Vest of Life	-
+main+02272048	RESERVE	RESERVE	RESERVE	-
+main+02272049	RESERVE	RESERVE	RESERVE	-
+main+0227204A	Nightwatch Armor	Nightwatch Armor	Nightwatch Armor	-
+main+0227204B	Golden Vest	Golden Vest	Golden Vest	-
+main+0227204C	Robe of Hatred	Robe of Hatred	Robe of Hatred	-
+main+0227204D	Space Suit	Space Suit	Space Suit	-
+main+0227204E	Golden Dress	Golden Dress	Golden Dress	-
+main+0227204F	Starry Wisdom Vest	Starry Wisdom Vest	Starry Wisdom Vest	-
+main+02272050	0x120	0x120	0x120	-
+main+02272051	0x121	0x121	0x121	-
+main+02272052	0x122	0x122	0x122	-
+main+02272053	0x123	0x123	0x123	-
+main+02272054	0x124	0x124	0x124	-
+main+02272055	0x125	0x125	0x125	-
+main+02272056	0x126	0x126	0x126	-
+main+02272057	0x127	0x127	0x127	-
+main+02272058	0x128	0x128	0x128	-
+main+02272059	0x129	0x129	0x129	-
+main+0227205A	0x12A	0x12A	0x12A	-
+main+0227205B	0x12B	0x12B	0x12B	-
+main+0227205C	0x12C	0x12C	0x12C	-

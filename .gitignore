@@ -27,6 +27,8 @@ wheels/
 # PyInstaller build artefacts (keep the product .spec)
 PyInstaller-*.txt
 *.manifest
+build_pyi/
+dist_build/
 
 # Installer logs
 pip-log.txt
@@ -62,3 +64,9 @@ Thumbs.db
 
 # Local-only agent handoff doc (never ships to GitHub)
 HANDOFF.md
+screenshots/
+*.zip
+archive/
+
+# Local agent tooling
+.dsh-vision-toolkit/

@@ -217,10 +217,11 @@ def build_reference_db():
         (0x4000, "Skill Cards.txt", "SkillCard"),
         (0x1000, "Weapon melee.txt", "Melee"),
         (0x7000, "Weapon ranged.txt", "Ranged"),
-        (0x5000, "Clothes.txt", "Protector"),
+        (0x5000, "Protectors.txt", "Protector"),
         (0x3000, "Accessories.txt", "Accessory"),
         (0x8000, "Treasure.txt", "Treasure"),
         (0x9000, "Keyitems&essentials.txt", "KeyItem"),
+        (0xA000, "Outfits.txt", "Outfit"),
     ]
 
     seen_ids = set()
@@ -262,9 +263,24 @@ def build_reference_db():
                             # resolve to a real item -- exclude them.
                             if re.match(r"^0x[0-9A-Fa-f]+$", en_name):
                                 continue
+                            
+                            display_name = ITEM_NAME_FIXES.get(iid, en_name)
+                            # For Protectors (0x5000), Melee (0x1000), Ranged (0x7000), Outfits (0xA000), append character owner if present
+                            if prefix in (0x1000, 0x5000, 0x7000, 0xA000) and len(parts) >= 5 and parts[4].strip() and parts[4].strip() != "-":
+                                role = parts[4].strip()
+                                char_map = {
+                                    "主人公": "Joker", "坂本龙司": "Ryuji", "摩尔加纳": "Morgana",
+                                    "高卷杏": "Ann", "喜多川佑介": "Yusuke", "新岛真": "Makoto",
+                                    "奥村春": "Haru", "佐仓双叶": "Futaba", "明智吾郎": "Akechi",
+                                    "芳泽霞": "Kasumi", "ALL": "All"
+                                }
+                                eng_role = char_map.get(role, role)
+                                if eng_role:
+                                    display_name = f"{display_name} ({eng_role})"
+
                             db["items"].append({
                                 "id": iid,
-                                "name": ITEM_NAME_FIXES.get(iid, en_name),
+                                "name": display_name,
                                 "category": cat
                             })
         except Exception as e:
@@ -435,6 +451,10 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 # Get Joker's full 12-slot stock persona inventory
                 joker_stock = CURRENT_EDITOR.get_persona_stock(0)
                 inventory = CURRENT_EDITOR.get_inventory()
+                try:
+                    inventory_norm = CURRENT_EDITOR.get_normalized_inventory()
+                except Exception:
+                    inventory_norm = {}
                 compendium = CURRENT_EDITOR.get_compendium()
 
                 resp = {
@@ -453,6 +473,7 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                     "party": party_personas,
                     "joker_stock": joker_stock,
                     "inventory": inventory,
+                    "inventory_normalized": inventory_norm,
                     "compendium": compendium,
                     "integrity": integrity
                 }
@@ -607,14 +628,34 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                             flags=int(s_entry.get("flags", 1))
                         )
 
-                # 5c. Apply Active Inventory Items
-                inv_in = data.get("inventory", [])
-                for entry in inv_in:
-                    slot = entry.get("slot")
-                    if slot is not None and 0 <= slot < 30:
+                # 5c. Apply Active Inventory Items — prefers normalized payload
+                norm_in = data.get("inventory_normalized")
+                if isinstance(norm_in, dict) and (norm_in.get("stacks") or norm_in.get("owned_gear")):
+                    # New path: stacks + owned_gear from S1 normalized model
+                    for raw_id, qty in (norm_in.get("stacks") or {}).items():
+                        try:
+                            iid = int(raw_id) if isinstance(raw_id, str) else int(raw_id)
+                        except Exception:
+                            continue
+                        CURRENT_EDITOR.set_item_quantity(iid, int(qty))
+                    for raw_id, owned in (norm_in.get("owned_gear") or {}).items():
+                        try:
+                            iid = int(raw_id) if isinstance(raw_id, str) else int(raw_id)
+                        except Exception:
+                            continue
+                        CURRENT_EDITOR.set_item_quantity(iid, 1 if owned else 0)
+                else:
+                    # Legacy path: flat inventory list
+                    inv_in = data.get("inventory", [])
+                    for entry in inv_in:
                         iid = int(entry.get("item_id", 0))
                         qty = int(entry.get("quantity", 0))
-                        CURRENT_EDITOR.set_inventory_slot(slot, iid, qty)
+                        slot = entry.get("slot")
+                        if iid > 0:
+                            if slot is not None and 0 <= slot < 30:
+                                CURRENT_EDITOR.set_inventory_slot(slot, iid, qty)
+                            else:
+                                CURRENT_EDITOR.set_item_quantity(iid, qty)
 
                 # 5d. Apply Compendium Registrations
                 if data.get("unlock_compendium"):

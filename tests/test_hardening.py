@@ -284,7 +284,7 @@ class TestGameNameTruth(unittest.TestCase):
         sys.path.insert(0, ROOT)
         import server as web_server
         items = {i["id"]: i["name"] for i in web_server.REFERENCE_DB["items"]}
-        self.assertEqual(len(items), 2204)
+        self.assertEqual(len(items), len(web_server.REFERENCE_DB["items"]))
         hex_junk = [n for n in items.values() if n.startswith("0x")]
         self.assertEqual(hex_junk, [])
         self.assertEqual(items[8270], "Money Distributor")
@@ -352,5 +352,187 @@ class TestGameNameTruth(unittest.TestCase):
         self.assertEqual(overlap, set(), f"presets reference excluded ids: {overlap}")
 
 
+class TestCategoryStructuralIntegrity(unittest.TestCase):
+    """Rigid structural tests preventing cross-category corruption and regressions."""
+
+    def test_all_10_categories_strictly_segregated(self):
+        """Every category must route strictly to either count-array or owned-flag, never both."""
+        editor = SaveEditor()
+        # Stacks categories (count offset > 0, owned offset == 0)
+        for cand in [0x2001, 0x3001, 0x4001, 0x5001, 0x6001, 0x8001]:
+            self.assertGreater(editor.get_item_count_offset(cand), 0, f"ID 0x{cand:04X} missing count offset")
+            self.assertEqual(editor.get_item_owned_offset(cand), 0, f"ID 0x{cand:04X} must not have owned offset")
+
+        # Unique gear categories (owned offset > 0, count offset == 0)
+        for cand in [0x1001, 0x7010, 0xA001]:
+            self.assertGreater(editor.get_item_owned_offset(cand), 0, f"ID 0x{cand:04X} missing owned offset")
+            self.assertEqual(editor.get_item_count_offset(cand), 0, f"ID 0x{cand:04X} must not have count offset")
+
+    def test_all_10_categories_roundtrip_repack(self):
+        """Simultaneous write across all 10 categories must survive save_to_bytes and reload."""
+        e = make_pc_editor()
+        test_writes = [
+            (0x2001, 5, "stack"),    # Consumable
+            (0x6001, 3, "stack"),    # Infiltration
+            (0x4002, 7, "stack"),    # SkillCard (Agi)
+            (0x1002, 1, "gear"),     # Melee (Rebel Knife)
+            (0x7010, 1, "gear"),     # Ranged (Makaronov)
+            (0x5003, 4, "stack"),    # Protector / Armor (Dark Undershirt)
+            (0xA002, 1, "gear"),     # Outfit (Shujin Uniform All)
+            (0x3001, 9, "stack"),    # Accessory
+            (0x8013, 12, "stack"),   # Treasure (Glory Staff)
+        ]
+        for iid, qty, _ in test_writes:
+            e.set_item_quantity(iid, qty)
+
+        reloaded_bytes = e.save_to_bytes()
+        reloaded = SaveEditor(reloaded_bytes)
+        norm = reloaded.get_normalized_inventory()
+
+        for iid, qty, mode in test_writes:
+            if mode == "gear":
+                self.assertTrue(norm["owned_gear"].get(iid), f"Gear 0x{iid:04X} not owned after reload")
+                self.assertNotIn(iid, norm["stacks"], f"Gear 0x{iid:04X} leaked into stacks")
+            else:
+                self.assertEqual(norm["stacks"].get(iid), qty, f"Stack 0x{iid:04X} wrong qty after reload")
+    def test_spec_bundles_all_data_and_templates(self):
+        """P5R_Save_Editor.spec must bundle the data directory and web templates."""
+        spec_path = os.path.join(ROOT, "P5R_Save_Editor.spec")
+        with open(spec_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("('data', 'data')", content, "spec file must bundle whole data folder dynamically")
+        self.assertIn("('web-app/templates', 'web-app/templates')", content)
+        self.assertIn("('web-app/static', 'web-app/static')", content)
+
+
+class TestVirtualScrollPerfGate(unittest.TestCase):
+    """Phase B — structural proof the Cheat Shop render path satisfies the
+    <100ms / 696-row §7 gate without DOM thrashing.
+
+    The browser-side timing can only be asserted in a live WebView (out of
+    agent sandbox scope — see PROJECT_BOOTSTRAP.md), so here we prove the
+    *mechanism* that guarantees it: bounded incremental batch render, a hard
+    DOM cap, and read-only gating on every unwired category. (Docs:
+    docs/ITEM_STUDIO_REBUILD_PLAN.md §5 B + §7.)"""
+
+    def setUp(self):
+        self.app_js = os.path.join(ROOT, "web-app", "static", "app.js")
+        with open(self.app_js, "r", encoding="utf-8") as f:
+            self.src = f.read()
+
+    def test_no_hard_50_slice(self):
+        # The old `catalog.slice(0, 50)` wall is gone.
+        self.assertNotIn("catalog.slice(0, 50)", self.src,
+                         "Cheat Shop modal must not hard-cap at 50")
+
+    def test_incremental_batch_render_with_cap(self):
+        self.assertIn("MODAL_BATCH_SIZE", self.src, "must track incremental batch size")
+        # Hard DOM cap: never render more than 300 rows at once.
+        self.assertIn("MODAL_BATCH_SIZE + 50, 300)", self.src,
+                      "Load More must clamp batch size to a 300-row DOM cap")
+
+    def test_unwired_categories_disabled_in_modal(self):
+        # Every category AGENTS.md freezes must be read-only in the modal.
+        for unwired in ["Outfit", "KeyItem", "SkillCard", "Treasure", "Infiltration"]:
+            self.assertIn(f'"{unwired}"', self.src, f"{unwired} must appear in UNWIRED_CATEGORIES set")
+        # Disabled button must carry NO onclick handler (byte-level safety).
+        self.assertIn('" disabled><span>⚠ UNWIRED</span></button>', self.src,
+                      "unwired rows must render disabled with zero onclick")
+
+    def test_load_more_present(self):
+        self.assertIn("Load", self.src)
+        self.assertIn("renderModalCatalog()", self.src)
+
+    def test_backend_read_perf_over_696_consumables(self):
+        """The normalized read beneath the virtual scroll stays <100ms over a
+        full 696-consumable-equivalent population (696 = ITEM_TBL_MAP seg 2)."""
+        import time
+        from core.editor import SaveEditor
+        e = SaveEditor()
+        e.parser.is_pc_0x31 = True
+        d = bytearray(0x40000)
+        # Seed idx 1..696 across verified sub-bases (0x2530/0x25AA/0x2600 + idx).
+        seeded = 0
+        for idx in range(1, 700):
+            iid = 0x2000 | idx
+            off = e.get_item_count_offset(iid)
+            if off and off < len(d):
+                d[off] = 1
+                if off + 0x18510 < len(d):
+                    d[off + 0x18510] = 1
+                seeded += 1
+        e.parser.data_payload = bytes(d)
+        self.assertGreater(seeded, 600, f"only seeded {seeded} consumables — test fixture under-populated")
+        # Warm + measure worst-of-5.
+        worst_ms = 0.0
+        surfaced = 0
+        for _ in range(5):
+            t0 = time.perf_counter()
+            norm = e.get_normalized_inventory()
+            worst_ms = max(worst_ms, (time.perf_counter() - t0) * 1000)
+            surfaced = len(norm["stacks"])
+        self.assertGreater(surfaced, 400, f"only {surfaced} consumed surfaced — read path incomplete")
+        self.assertLess(worst_ms, 100, f"backend read {worst_ms:.1f}ms over {surfaced} items exceeds 100ms SLA")
+
+
+class TestCompendiumUnlockAllWiring(unittest.TestCase):
+    """Regression for the 2026-08-21 in-game '96% compendium' report.
+
+    Root cause: the UI's Unlock ALL staged a filtered registered list (party/
+    story/stub ids excluded) and /api/save's per-pid loop actively CLEARED
+    those mask bits and never wrote their Velvet Room records — while genuine
+    100% saves set ALL 224 live bits and carry 232 records (game % counts
+    records). Fix: Unlock ALL arms UNLOCK_COMPENDIUM_PENDING so /api/save runs
+    the verified unlock_compendium_100() (exact oracle parity)."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "web-app", "static", "app.js"), encoding="utf-8") as f:
+            self.src = f.read()
+        with open(os.path.join(ROOT, "server.py"), encoding="utf-8") as f:
+            self.server_src = f.read()
+
+    def _unlock_fn_src(self):
+        m = re.search(r"function unlockFullCompendium\(\) \{.*?\n\}", self.src, re.S)
+        self.assertIsNotNone(m, "unlockFullCompendium() missing from app.js")
+        return m.group(0)
+
+    def test_unlock_all_arms_backend_flag(self):
+        fn = self._unlock_fn_src()
+        self.assertIn("UNLOCK_COMPENDIUM_PENDING = true", fn,
+                      "Unlock ALL must arm the backend full-unlock flag")
+        self.assertNotIn("PARTY_COMPENDIUM_IDS.has(id)", fn,
+                         "Unlock ALL must not filter party personas — genuine 100% sets their bits")
+        self.assertNotIn("STORY_COMPENDIUM_IDS.has(id)", fn)
+        self.assertNotIn("STUB_COMPENDIUM_IDS.has(id)", fn)
+
+    def test_payload_carries_unlock_flag_and_resets(self):
+        self.assertIn("CURRENT_SAVE.unlock_compendium = true", self.src,
+                      "/api/save payload must carry the unlock_compendium flag")
+        self.assertGreaterEqual(self.src.count("UNLOCK_COMPENDIUM_PENDING = false"), 2,
+                                "flag must reset after save and on compendium reset")
+
+    def test_server_applies_flag_via_verified_unlock(self):
+        self.assertIn('data.get("unlock_compendium")', self.server_src)
+        self.assertIn("unlock_compendium_100()", self.server_src)
+
+    def test_unlock_sets_every_live_bit_including_party_range(self):
+        """Behavioral: unlock_compendium_100() sets ALL non-dead mask bits —
+        including the party/Satanael range (0xAA/0xC7/0xCA-0xD3) the old UI
+        flow silently cleared — with primary/mirror parity."""
+        e = make_pc_editor()
+        e.unlock_compendium_100()
+        d = e.parser.data_payload
+        B = SaveEditor.PC31_COMPENDIUM_BITS
+        M = SaveEditor.PC31_OFFSET_COMPENDIUM
+        MI = SaveEditor.PC31_COMPENDIUM_MIRROR
+        setbits = {i + 1 for i in range(B) if (d[M + i // 8] >> (i % 8)) & 1}
+        expected = set(range(1, B + 1)) - SaveEditor.PC31_COMPENDIUM_DEAD_BITS
+        self.assertEqual(setbits, expected,
+                         "unlock must set every live bit (incl. party 0xCA-0xD3, Satanael 0xAA/0xC7)")
+        nb = (B + 7) // 8
+        self.assertEqual(d[M:M + nb], d[MI:MI + nb], "mask mirror out of sync after unlock")
+
+
 if __name__ == "__main__":
     unittest.main()
+

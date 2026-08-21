@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "project": "p5r-save-editor",
+  "phase": "implementation",
+  "gate": "verified",
+  "mode": "single-agent",
+  "pinned_shas": {},
+  "last_session": "memory/2026-08-21-compendium-96-fix.md",
+  "updated_at": "2026-08-21T04:05:00Z",
+  "test_count": 157,
+  "last_known_good_commit": "ce9f846",
+  "last_build": "dist/P5R_Save_Editor.exe",
+  "last_build_date": "2026-08-21T03:21:00-04:00",
+  "version": "v1.0.10-dev",
+  "blockers": [],
+  "next_action": "Push v1.0.10 to GitHub (in-game verification gate satisfied) — pending user go-ahead",
+  "active_owners": [],
+  "frozen_offsets": ["0xA000+ Outfits", "KeyItem mapping", "SkillCard/Tool/Treasure count bases"]
+}

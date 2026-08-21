@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from .crypto import SaveContainer
 from .parser import GameDataParser, SaveHeader, PlayerNameBlock
+from .key_item_offsets import KEY_ITEM_OFFSET_BY_DB_ID
 
 
 # Confidant Arcana Map
@@ -54,12 +55,110 @@ class SaveEditor:
         if raw_buffer:
             self.load_from_bytes(raw_buffer)
 
+    # Staging buffer for S1 inventory edits (INVENTORY_SPEC.md S1 #2):
+    # None = no staged changes; dict = staged inventory delta. Payload bytes
+    # are NOT mutated until commit_staged_inventory(). Server calls
+    # stage_* methods on load, then commit on save.
+    _staged_inventory: Optional[Dict[str, Any]] = None
+
+    def _ensure_staged(self):
+        if self._staged_inventory is None:
+            self._staged_inventory = {"stacks": {}, "owned_gear": {},
+                                       "unknown": [], "conflicts": [],
+                                       "mirror_mismatches": []}
+
+    def _staged_get_normalized(self) -> Dict[str, Any]:
+        """Normalized view merged with staged changes (if any)."""
+        base = self.get_normalized_inventory()
+        if not self._staged_inventory:
+            return base
+        merged = {"owned_gear": dict(base.get("owned_gear", {})),
+                  "stacks": dict(base.get("stacks", {})),
+                  "key_flags": dict(base.get("key_flags", {})),
+                  "unknown": list(base.get("unknown", [])),
+                  "conflicts": list(base.get("conflicts", [])),
+                  "mirror_mismatches": list(base.get("mirror_mismatches", []))}
+        for k, v in self._staged_inventory.get("stacks", {}).items():
+            if v is None or v <= 0:
+                merged["stacks"].pop(k, None)
+            else:
+                merged["stacks"][k] = max(0, min(int(v), 99))
+        for k, v in self._staged_inventory.get("owned_gear", {}).items():
+            merged["owned_gear"][k] = bool(v)
+        return merged
+
+    def stage_set_stack(self, item_id: int, quantity: int) -> Dict[str, Any]:
+        """Stage a stack quantity (0..99) — does NOT touch payload bytes."""
+        if not self.is_real_save():
+            return {"status": "noop"}
+        if self.get_item_count_offset(item_id) == 0:
+            return {"status": "invalid",
+                    "message": f"Item 0x{item_id:04X} is not a stack type (gear/key)."}
+        self._ensure_staged()
+        q = max(0, min(int(quantity), 99))
+        if q == 0:
+            self._staged_inventory["stacks"][item_id] = 0  # deletion marker
+        else:
+            self._staged_inventory["stacks"][item_id] = q
+        return {"status": "staged", "item_id": item_id, "quantity": q}
+
+    def stage_set_owned(self, item_id: int, owned: bool) -> Dict[str, Any]:
+        """Stage an owned-flag toggle — does NOT touch payload bytes."""
+        if not self.is_real_save():
+            return {"status": "noop"}
+        off = self.get_item_owned_offset(item_id)
+        if off == 0 and (item_id & 0xF000) == 0x7000:
+            return {"status": "unsupported",
+                    "message": f"Ranged item 0x{item_id:04X} not in verified map — refusing."}
+        if off == 0:
+            return {"status": "invalid",
+                    "message": f"Item 0x{item_id:04X} is not ownable gear."}
+        self._ensure_staged()
+        self._staged_inventory["owned_gear"][item_id] = bool(owned)
+        return {"status": "staged", "item_id": item_id, "owned": bool(owned)}
+
+    def commit_staged_inventory(self) -> Dict[str, Any]:
+        """Flush staged inventory delta to payload bytes + mirrors.
+
+        Writes count bytes + mirrors and owned-flag bytes + mirrors. Clears
+        staged buffer on success.
+        """
+        if not self.is_real_save() or not self._staged_inventory:
+            return {"status": "noop"}
+        d = bytearray(self.parser.data_payload)
+        delta = self.PC31_MIRROR_DELTA
+        applied = 0
+        for iid, qty in list(self._staged_inventory.get("stacks", {}).items()):
+            off = self.get_item_count_offset(iid)
+            if off and off < len(d):
+                q = 0 if qty is None else max(0, min(int(qty), 99))
+                d[off] = q
+                mo = off + delta
+                if mo < len(d):
+                    d[mo] = q
+                applied += 1
+        for iid, owned in list(self._staged_inventory.get("owned_gear", {}).items()):
+            off = self.get_item_owned_offset(iid)
+            if off and off < len(d):
+                d[off] = 1 if owned else 0
+                mo = off + delta
+                if mo < len(d):
+                    d[mo] = 1 if owned else 0
+                applied += 1
+        self.parser.data_payload = bytes(d)
+        self._staged_inventory = None
+        return {"status": "success", "applied": applied}
+
+    def discard_staged_inventory(self):
+        self._staged_inventory = None
+
     def load_from_bytes(self, raw_buffer: bytes):
         """Unpack raw binary save bytes."""
         self._raw_buffer = raw_buffer
         self.container.unpack_raw(raw_buffer)
         self.parser.unpack(self.container.header_bytes, self.container.data_bytes)
         self.loaded = True
+        self._staged_inventory = None
 
     def integrity_report(self) -> Dict[str, Any]:
         """
@@ -203,6 +302,13 @@ class SaveEditor:
     # Bits the game NEVER sets in any verified save (12-save corpus + the
     # game's OWN NAME.TBL marking these entries RESERVE/??? — 2026-08-16).
     PC31_COMPENDIUM_DEAD_BITS = {0x001, 0x0D8, 0x0DA, 0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0E0}
+    # Personas whose registration BIT is set in genuine 100% saves but that have
+    # NO 48-byte struct in the array ("mask-only" entries). Writing a struct here
+    # produces a greyed/ghost compendium entry (slot index != pid-1 mismatch).
+    # VERIFIED 2026-08-19 against Buff Joker NG++ + GameBanana all-items saves:
+    # slot 210 (pid 0xD3 / 211) is 0x00 there, but the 0xD3 mask bit IS set
+    # (224/224 genuine). Keep the bit, skip the struct.
+    PC31_COMPENDIUM_MASK_ONLY_IDS = {0xD3, }  # decimal 211 = Satanael's phantom key
 
     @property
     def compendium_unlockable_ids(self) -> list:
@@ -349,7 +455,7 @@ class SaveEditor:
                 pid = slot + 1
                 off = arr_base + slot * self.PC31_COMPENDIUM_STRIDE
                 if off + self.PC31_COMPENDIUM_STRIDE <= len(d):
-                    if pid in templates and (pid in all_unlockable):
+                    if pid in templates and (pid in all_unlockable) and (pid not in self.PC31_COMPENDIUM_MASK_ONLY_IDS):
                         d[off : off + self.PC31_COMPENDIUM_STRIDE] = templates[pid]
                     else:
                         d[off : off + self.PC31_COMPENDIUM_STRIDE] = b"\x00" * self.PC31_COMPENDIUM_STRIDE
@@ -563,48 +669,102 @@ class SaveEditor:
                 return struct.unpack("<I", raw[:4])[0]
         return 0
 
-    def set_player_names(self, first: str, last: str, group: str) -> Dict[str, Any]:
-        """Update Joker first, last, and Phantom Thief group name.
+    @staticmethod
+    def _to_fullwidth(text: str) -> str:
+        """Convert ASCII alphanumeric string to Unicode Fullwidth (Zen-kaku)."""
+        res = []
+        for c in text:
+            code = ord(c)
+            if 0x21 <= code <= 0x7E:
+                res.append(chr(code + 0xFEE0))
+            elif code == 0x20:
+                res.append(" ")  # standard space
+            else:
+                res.append(c)
+        return "".join(res)
 
-        PC (0x31): fname/lname live in the 0x190 header struct and persist.
-        Group name lives in the 0x2D player-names block only — its PC
-        location is not mapped, so it is a no-op there (reported, not silent).
+    @staticmethod
+    def _to_atlus_encoding(text: str) -> bytes:
+        """Convert ASCII string to Atlus 2-byte font glyph encoding.
+        
+        Authentic Atlus font encoding formula verified across genuine saves:
+        - ASCII alphanumeric / punctuation characters (0x21..0x7E) -> 0x80, (code + 0x60).
+        - Space (0x20) -> 0x20.
         """
-        first = first[:64]
-        last = last[:64]
-        group = group[:25]
+        b = bytearray()
+        for c in text:
+            code = ord(c)
+            if 0x21 <= code <= 0x7E:
+                b.extend([0x80, code + 0x60])
+            elif code == 32:
+                b.append(0x20)
+            else:
+                b.append(code if code < 128 else 0x20)
+        return bytes(b)
+
+    def set_player_names(self, first: str, last: str, group: str) -> Dict[str, Any]:
+        """Update Joker first, last, and Phantom Thief group name across container and payload."""
+        first = first.strip()[:24]
+        last = last.strip()[:24]
+        group = group.strip()[:24]
+        full_ascii = f"{first} {last}".strip()
+
+        # 1. Header (0x190 container header)
+        fw_first = self._to_fullwidth(first)
+        fw_last = self._to_fullwidth(last)
+        fw_group = self._to_fullwidth(group)
+        fw_full = f"{fw_first} {fw_last}".strip()
+
         self.parser.header.fname = first
         self.parser.header.lname = last
 
+        # 2. Player Name Block (0x2D / legacy)
         self.parser.player_names.first_name_game = first
         self.parser.player_names.last_name_game = last
-        self.parser.player_names.full_name_game = f"{first} {last}"
-        self.parser.player_names.full_name_utf8 = f"{first} {last}"
+        self.parser.player_names.full_name_game = full_ascii
+        self.parser.player_names.full_name_utf8 = full_ascii
+        self.parser.player_names.group_name_game = group
+        self.parser.player_names.group_name_utf8 = group
 
-        group_ok = True
+        # 3. Native PC Data Payload (0x13840..0x139B0 and mirror 0x2BD50..0x2BEC0)
         if self.is_real_save():
-            group_ok = False  # PC group-name location not mapped; 0x2D block not serialized
             d = bytearray(self.parser.data_payload)
-            # Full Name (64 bytes null-padded) at 0x13840 & mirror 0x2BD50
-            full_b = f"{first} {last}".encode("utf-8")[:64].ljust(64, b"\x00")
-            # Last Name (32 bytes null-padded) at 0x138A8 & mirror 0x2BDB8
-            last_b = last.encode("utf-8")[:32].ljust(32, b"\x00")
-            # First Name (32 bytes null-padded) at 0x138DC & mirror 0x2BDEC
-            first_b = first.encode("utf-8")[:32].ljust(32, b"\x00")
+            # Fullwidth UTF-8 encoded bytes
+            fw_full_b = fw_full.encode("utf-8")[:64].ljust(64, b"\x00")
+            fw_last_b = fw_last.encode("utf-8")[:32].ljust(32, b"\x00")
+            fw_first_b = fw_first.encode("utf-8")[:32].ljust(32, b"\x00")
+            fw_group_b = fw_group.encode("utf-8")[:48].ljust(48, b"\x00")
 
-            for base_f, base_l, base_first in ((0x13840, 0x138A8, 0x138DC), (0x2BD50, 0x2BDB8, 0x2BDEC)):
-                if base_first + 32 <= len(d):
-                    d[base_f : base_f + 64] = full_b
-                    d[base_l : base_l + 32] = last_b
-                    d[base_first : base_first + 32] = first_b
+            # Atlus Custom 2-byte encoded bytes
+            atlus_last_b = self._to_atlus_encoding(last)[:20].ljust(20, b"\x00")
+            atlus_first_b = self._to_atlus_encoding(first)[:20].ljust(20, b"\x00")
+            atlus_full_b = self._to_atlus_encoding(full_ascii)[:40].ljust(40, b"\x00")
+            atlus_group_b = self._to_atlus_encoding(group)[:24].ljust(24, b"\x00")
+
+            for delta in (0x0000, 0x18510):
+                base = 0x13840 + delta
+                if base + 0x170 <= len(d):
+                    # 0x13840: Full Name (Fullwidth UTF-8, 64B)
+                    d[base : base + 64] = fw_full_b
+                    # 0x138A8: Last Name (Fullwidth UTF-8, 32B)
+                    d[base + 0x68 : base + 0x88] = fw_last_b
+                    # 0x138DC: First Name (Fullwidth UTF-8, 32B)
+                    d[base + 0x9C : base + 0xBC] = fw_first_b
+                    # 0x13910: Last Name (Atlus encoding, 20B)
+                    d[base + 0xD0 : base + 0xE4] = atlus_last_b
+                    # 0x13924: First Name (Atlus encoding, 20B)
+                    d[base + 0xE4 : base + 0xF8] = atlus_first_b
+                    # 0x13938: Full Name (Atlus encoding, 40B)
+                    d[base + 0xF8 : base + 0x120] = atlus_full_b
+                    if group:
+                        # 0x13960: Group Name (Atlus encoding, 24B)
+                        d[base + 0x120 : base + 0x138] = atlus_group_b
+                        # 0x1397C: Group Name (Fullwidth UTF-8, 48B)
+                        d[base + 0x13C : base + 0x16C] = fw_group_b
 
             self.parser.data_payload = bytes(d)
 
-        self.parser.player_names.group_name_game = group
-        self.parser.player_names.group_name_utf8 = group
-        return {"status": "ok", "names_updated": True,
-                "group_updated": group_ok,
-                "message": "" if group_ok else "Group name not mapped on PC saves; ignored."}
+        return {"status": "ok", "names_updated": True, "group_updated": True, "message": ""}
 
     def get_social_stats(self) -> Dict[str, Dict[str, Any]]:
         """Read social stats as (points, rank) pairs from the u16 point block.
@@ -1047,17 +1207,141 @@ class SaveEditor:
     PC31_INVENTORY_STRIDE = 0x1B
     PC31_INVENTORY_SLOTS = 30
     PC31_RING_BUFFER_BASE = 0x3530
+    # Equipment ownership flags — VERIFIED 2026-08-19 via 9 live purchase diffs.
+    #   Melee     owned flag = 0x1B30 + (item_id & 0x0FFF)   [3 points]
+    #   Protector owned flag = 0x1F30 + (item_id & 0x0FFF)   [2 points]
+    #   Accessory owned flag = 0x2330 + (item_id & 0x0FFF)   [2 points]
+    #   Ranged    owned flag = 0x3430 + idx                   [2 points, but the
+    #             DB id→save-id mapping is OFFSET for ranged (ranged name table has
+    #             filler/Unused rows that shift real ids). See RANGED_SAVE_ID_BY_DB_ID.]
+    # The cheat save (GameBanana) uses a DIFFERENT layout — never trust it for bases.
+    PC31_MELEE_OWNED_BASE     = 0x1B30
+    PC31_PROTECTOR_OWNED_BASE = 0x1F30
+    PC31_ACCESSORY_OWNED_BASE = 0x2330
+    PC31_RANGED_OWNED_BASE    = 0x3430
+    # Ranged: DB item_id -> actual save index (derived from game memory offsets: addr - 0x02272456)
+    # Verified live on Makaronov (0x7010 -> 0x13) and Bianchi SBAS (0x7020 -> 0x23).
+    RANGED_SAVE_IDX_BY_DB_ID = {
+        0x700B: 0x0E,  # Tkachev
+        0x700C: 0x0F,  # Governance
+        0x700E: 0x11,  # Riot Police
+        0x7010: 0x13,  # Makaronov
+        0x7011: 0x14,  # Nataraja EX
+        0x7016: 0x19,  # Jig 227
+        0x7019: 0x1C,  # Tyrant Pistol EX
+        0x701A: 0x1D,  # Model Gun
+        0x701B: 0x1E,  # Levinson M31
+        0x701D: 0x20,  # Granelli M3
+        0x7020: 0x23,  # Bianchi SBAS
+        0x7022: 0x25,  # Fireworks
+        0x7023: 0x26,  # Pumpkin Buster
+        0x7024: 0x27,  # Megido Blaster
+        0x7027: 0x2A,  # Pumpkin Bomb
+        0x7029: 0x2C,  # Megido Fire
+        0x7035: 0x38,  # Bandit Slingshot
+        0x7039: 0x3C,  # Comanche
+        0x703B: 0x3E,  # Cat Whip
+        0x703F: 0x42,  # Dream Slingshot
+        0x7041: 0x44,  # Sudarshana EX
+        0x7042: 0x45,  # Utopia
+        0x7044: 0x47,  # Star Slingshot
+        0x704E: 0x51,  # Replica Gun
+        0x7054: 0x57,  # Troop Submachine Gun
+        0x7055: 0x58,  # Sterling Short
+        0x7058: 0x5B,  # Crimson Gun
+        0x7059: 0x5C,  # Wildfire
+        0x705A: 0x5D,  # No Mercy
+        0x705B: 0x5E,  # Phantom Killer
+        0x705E: 0x61,  # Heaven's Gate
+        0x7061: 0x64,  # Gossip
+        0x7067: 0x6A,  # Custom Submachine Gun
+        0x7069: 0x6C,  # Masquerade
+        0x706E: 0x71,  # Silver Gun
+        0x7074: 0x77,  # Black Crossbow
+        0x7075: 0x78,  # Red Crossbow
+        0x7076: 0x79,  # Heavy Crossbow
+        0x7077: 0x7A,  # Blue Crossbow
+        0x7078: 0x7B,  # White Crossbow
+        0x7079: 0x7C,  # Master Crossbow
+        0x707B: 0x7E,  # Shiranui EX
+        0x707C: 0x7F,  # Guillotine Crossbow
+        0x707E: 0x81,  # Holy Crossbow
+        0x7086: 0x89,  # Ancient Crossbow
+        0x7088: 0x8B,  # Dragon Crossbow
+        0x708A: 0x8D,  # Judgment Crossbow
+        0x708C: 0x8F,  # Long Barrel Crossbow
+        0x708D: 0x90,  # Phoenix Crossbow
+        0x7093: 0x96,  # Revolver 38
+        0x7095: 0x98,  # Peacemaker
+        0x7097: 0x9A,  # Peacemaker HP
+        0x7099: 0x9C,  # Heavy Revolver
+        0x709A: 0x9D,  # Python 44
+        0x709B: 0x9E,  # Judge End
+        0x709C: 0x9F,  # Miragestalker
+        0x70A0: 0xA3,  # Carnelian
+        0x70A8: 0xAB,  # Custom Revolver
+        0x70A9: 0xAC,  # Big Bear
+        0x70AF: 0xB2,  # Grenade Launcher
+        0x70B1: 0xB4,  # Rapid Launcher
+        0x70B2: 0xB5,  # Heavy Launcher
+        0x70B3: 0xB6,  # Blast Launcher
+        0x70B4: 0xB7,  # Multi Launcher
+        0x70B5: 0xB8,  # Buster Launcher
+        0x70B6: 0xB9,  # Megido Launcher
+        0x70B7: 0xBA,  # Flame Launcher
+        0x70B8: 0xBB,  # Freeze Launcher
+        0x70B9: 0xBC,  # Spark Launcher
+        0x70BA: 0xBD,  # Gale Launcher
+        0x70BB: 0xBE,  # Psycho Launcher
+        0x70BC: 0xBF,  # Atomic Launcher
+        0x70C0: 0xC3,  # Yagrush EX
+        0x70C1: 0xC4,  # Giant Launcher
+        0x70C6: 0xC9,  # Custom Launcher
+        0x70C7: 0xCA,  # Wild Launcher
+        0x70C8: 0xCB,  # Demon Launcher
+        0x70CF: 0xD2,  # Laser Pistol
+        0x70D1: 0xD4,  # Plasma Pistol
+        0x70D2: 0xD5,  # Photon Pistol
+        0x70D5: 0xD8,  # Ray Gun
+        0x70D6: 0xD9,  # Doomsday EX
+        0x70DB: 0xDE,  # Quantum Pistol
+        0x70DD: 0xE0,  # Electron Pistol
+        0x70DE: 0xE1,  # Gravity Pistol
+        0x70DF: 0xE2,  # Chaos Pistol
+        0x70E1: 0xE4,  # Dark Ray Gun
+        0x70E2: 0xE5,  # Supernova Pistol
+        0x70E5: 0xE8,  # Custom Ray Gun
+        0x70E6: 0xE9,  # Hyper Ray Gun
+        0x70E7: 0xEA,  # Mega Ray Gun
+        0x70EB: 0xEE,  # Lever Action Rifle
+        0x70EC: 0xEF,  # Bolt Action Rifle
+        0x70ED: 0xF0,  # Hunting Rifle
+        0x70EE: 0xF1,  # Precision Rifle
+        0x70EF: 0xF2,  # Heavy Rifle
+        0x70F1: 0xF4,  # Cendrillon Rifle
+        0x70F2: 0xF5,  # Sahasrara EX
+        0x70F3: 0xF6,  # Custom Rifle
+        0x70F4: 0xF7,  # Wild Rifle
+        0x70F5: 0xF8,  # Sniper Rifle
+        0x70F6: 0xF9,  # Anti-Material Rifle
+        0x70F7: 0xFA,  # Dragon Rifle
+        0x70F8: 0xFB,  # Holy Rifle
+        0x70F9: 0xFC,  # Demon Rifle
+        0x70FA: 0xFD,  # Lucifer Rifle
+    }
+    PC31_MIRROR_DELTA = 0x18510
 
     CATEGORY_MAP = {
         0x1000: ("Weapon melee.txt", "Melee"),
         0x2000: ("Items.txt", "Consumable"),
         0x3000: ("Accessories.txt", "Accessory"),
         0x4000: ("Skill Cards.txt", "SkillCard"),
-        0x5000: ("Clothes.txt", "Protector"),
+        0x5000: ("Protectors.txt", "Protector"),
         0x6000: ("Tools&materials.txt", "Infiltration"),
         0x7000: ("Weapon ranged.txt", "Ranged"),
         0x8000: ("Treasure.txt", "Treasure"),
         0x9000: ("Keyitems&essentials.txt", "KeyItem"),
+        0xA000: ("Outfits.txt", "Outfit"),
     }
 
     def _resolve_item_info(self, item_id: int) -> Tuple[str, str]:
@@ -1072,7 +1356,6 @@ class SaveEditor:
                 t = SaveEditor._TABLE_CACHE[fname]
                 if idx in t:
                     return t[idx], cat
-            # Fallback to direct file read if needed
             p_dir = Path(__file__).parent.parent / "data" / fname
             if p_dir.exists():
                 try:
@@ -1081,95 +1364,415 @@ class SaveEditor:
                             if line_idx == idx:
                                 parts = line.strip().split("\t")
                                 name = parts[3].strip() if len(parts) >= 4 else parts[0].strip()
+                                if prefix == 0x5000 and len(parts) >= 5 and parts[4].strip() and parts[4].strip() != "-":
+                                    role = parts[4].strip()
+                                    char_map = {
+                                        "主人公": "Joker", "坂本龙司": "Ryuji", "摩尔加纳": "Morgana",
+                                        "高卷杏": "Ann", "喜多川佑介": "Yusuke", "新岛真": "Makoto",
+                                        "奥村春": "Haru", "佐仓双叶": "Futaba", "明智吾郎": "Akechi",
+                                        "芳泽霞": "Kasumi", "ALL": "All"
+                                    }
+                                    eng_role = char_map.get(role, role)
+                                    if eng_role:
+                                        name = f"{name} ({eng_role})"
                                 return name, cat
                 except Exception:
                     pass
         return f"Item 0x{item_id:04X}", "Consumable"
 
-    def get_inventory(self) -> List[Dict[str, Any]]:
-        """Read all active inventory items in Joker's bag across all compartments."""
-        if not self.is_real_save():
-            return []
-        d = self.parser.data_payload
-        items_map: Dict[int, int] = {}
+    TOOL_OFFSET_BY_DB_ID = {
+        0x6001: 0x2547,  # Vanish Ball
+        0x6002: 0x2594,  # Spotlight
+        0x6003: 0x2595,  # Goho-M
+        0x6005: 0x2597,  # Smokescreen
+        0x6007: 0x2599,  # Hypno Mist
+        0x6008: 0x259A,  # Calming Aroma
+        0x6009: 0x259B,  # Covertizer
+        0x600B: 0x259D,  # Silk Yarn
+        0x600C: 0x259E,  # Thick Parchment
+        0x600D: 0x259F,  # Tin Clasp
+        0x600E: 0x25A0,  # Plant Balm
+        0x600F: 0x25A1,  # Cork Bark
+        0x6010: 0x25A2,  # Iron Sand
+        0x6011: 0x25A3,  # Condenser Lens
+        0x6012: 0x25A4,  # Aluminum Sheet
+        0x6013: 0x25A5,  # Tanned Leather
+        0x6014: 0x25A6,  # Red Phosphorus
+        0x6015: 0x25A7,  # Liquid Mercury
+        0x6017: 0x25CD,  # Element Set
+        0x6018: 0x25CE,  # Forces Set
+        0x6019: 0x25EB,  # Limelight
+        0x601A: 0x2680,  # Lockpick
+        0x601B: 0x2681,  # Perma-Pick
+        0x601C: 0x2682,  # Reserve Ammo
+        0x601E: 0x2684,  # Megido Bomb
+    }
 
-        # 1. Quick 30-Slot Active Array (0x2410 + 0x3530)
+    @staticmethod
+    def get_item_count_offset(item_id: int) -> int:
+        """Resolve memory offset in master item count table.
+
+        Stackable paradigms:
+          - 0x2000 Consumables (0x2530 / 0x25AA / 0x2600 sub-ranges)
+          - 0x3000 Accessories (0x2330 + idx)
+          - 0x4000 Skill Cards (0x2E30 + idx)
+          - 0x6000 Infiltration Tools (TOOL_OFFSET_BY_DB_ID)
+          - 0x8000 Treasure / Materials (0x2A30 + idx)
+        Unique Gear (0x1000 Melee, 0x5000 Protector, 0x7000 Ranged) return 0.
+        """
+        prefix = item_id & 0xF000
+        idx = item_id & 0x0FFF
+        if prefix == 0x2000:  # Consumables — verified sub-bases
+            if idx <= 0x60:  # Medicines & Battle Items (0x2001..0x2060)
+                return 0x2530 + idx
+            elif 0x70 <= idx <= 0x85:  # Gym & Workout Proteins
+                return 0x25AA + idx
+            elif idx > 0x85:
+                return 0x2600 + idx
+            return 0
+        elif prefix == 0x3000:  # Accessories — stackable count byte (0x2330 + idx)
+            return SaveEditor.PC31_ACCESSORY_OWNED_BASE + idx
+        elif prefix == 0x5000:  # Protectors / Armor — stackable count byte (0x1F30 + idx)
+            return SaveEditor.PC31_PROTECTOR_OWNED_BASE + idx
+        elif prefix == 0x4000:  # Skill Cards — verified engine base (0x2E30 + idx)
+            return 0x2E30 + idx
+        elif prefix == 0x6000:  # Infiltration Tools — direct memory mapping
+            return SaveEditor.TOOL_OFFSET_BY_DB_ID.get(item_id, 0)
+        elif prefix == 0x8000:  # Treasure/Materials — verified engine base (0x2A30 + idx)
+            return 0x2A30 + idx
+        elif prefix == 0x9000:  # Key Items & Essentials — verified engine offsets (0x2576..0x2A2F)
+            return KEY_ITEM_OFFSET_BY_DB_ID.get(item_id, 0)
+        return 0
+
+    @staticmethod
+    def get_item_owned_offset(item_id: int) -> int:
+        """Resolve the equipment OWNED-flag byte for unique gear (Melee, Ranged).
+
+        Bases:
+          - Melee (0x1000): 0x1B30 + idx
+          - Ranged (0x7000): 0x3430 + save_idx
+        Accessories (0x3000) and Protectors (0x5000) are stackable count bytes handled by get_item_count_offset().
+        """
+        prefix = item_id & 0xF000
+        idx = item_id & 0x0FFF
+        if prefix == 0x1000:  # Melee (verified, 3 points)
+            return SaveEditor.PC31_MELEE_OWNED_BASE + idx
+        if prefix == 0x7000:  # Ranged (verified mechanism)
+            save_idx = SaveEditor.RANGED_SAVE_IDX_BY_DB_ID.get(item_id)
+            if save_idx is not None:
+                return SaveEditor.PC31_RANGED_OWNED_BASE + save_idx
+            return 0  # unverified ranged id -> do not guess
+        if prefix == 0xA000:  # Outfits & Costumes (0x3230 + idx)
+            return 0x3230 + idx
+        return 0
+
+    # ------------------------------------------------------------------
+    # S1 normalized inventory model (INVENTORY_SPEC.md S1)
+    # ------------------------------------------------------------------
+    def get_normalized_inventory(self) -> Dict[str, Any]:
+        """Truthful inventory read — one canonical source per item.
+
+        Returns dict with:
+          owned_gear: {item_id: bool} — melee/protector/accessory/ranged flags
+          stacks: {item_id: int 0..99} — consumable/tool counts
+          key_flags: {item_id: flag} — placeholder (S4 guarded)
+          unknown: [item_id] — unmapped ranged ids surfaced, not edited
+          conflicts: [{item_id, count_region, quick_array, winner}]
+          mirror_mismatches: [{offset, primary, mirror, item_id}]
+        Count-region (0x2410..0x2800) is canonical; 30-slot quick-array is
+        only diagnostic (surfaced as conflicts, never merged). Mirror
+        +0x18510 mismatches are reported, not silently tolerated.
+        """
+        out: Dict[str, Any] = {
+            "owned_gear": {}, "stacks": {}, "key_flags": {},
+            "unknown": [], "conflicts": [], "mirror_mismatches": [],
+        }
+        if not self.is_real_save():
+            return out
+        d = self.parser.data_payload
+        delta = self.PC31_MIRROR_DELTA
+
+        # Probe the reference item universe if available; fallback to
+        # scanning the sparse count region for any nonzero byte so tests
+        # with synthetic payloads and no server import still work.
+        probe_ids: List[int] = []
+        try:
+            import server  # type: ignore
+            ref_items = getattr(server, "REFERENCE_DB", {}).get("items", [])
+            probe_ids = [it.get("id", 0) for it in ref_items if it.get("id", 0)]
+        except Exception:
+            probe_ids = []
+        # Always also probe raw count offsets for 0x2000/0x6000 so synthetic
+        # payloads without REFERENCE_DB still surface counts.
+        # Probe stackable/count paradigms: Consumables (0x2000), Accessories (0x3000), SkillCards (0x4000), Protectors (0x5000), Tools (0x6000), Treasure (0x8000), KeyItems (0x9000)
+        raw_stack_ids: List[int] = []
+        for iid in probe_ids:
+            if (iid & 0xF000) in (0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x8000, 0x9000):
+                raw_stack_ids.append(iid)
+        # If no REFERENCE_DB, fall back to brute sparse scan of known count sub-bases
+        if not raw_stack_ids:
+            for idx in range(1, 0x300):
+                cand = 0x2000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for idx in range(1, 0x200):
+                cand = 0x3000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for idx in range(1, 0x200):
+                cand = 0x5000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for idx in range(1, 0x200):
+                cand = 0x6000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for idx in range(1, 0x300):
+                cand = 0x4000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for idx in range(1, 0x200):
+                cand = 0x8000 | idx
+                off = self.get_item_count_offset(cand)
+                if off and off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+            for cand, off in KEY_ITEM_OFFSET_BY_DB_ID.items():
+                if off < len(d) and d[off] > 0:
+                    raw_stack_ids.append(cand)
+
+        for iid in raw_stack_ids:
+            off = self.get_item_count_offset(iid)
+            if not off or off >= len(d):
+                continue
+            qty = d[off]
+            mirror_off = off + delta
+            mirror_qty = d[mirror_off] if mirror_off < len(d) else None
+            if mirror_qty is not None and mirror_qty != qty:
+                out["mirror_mismatches"].append({
+                    "offset": off, "primary": qty, "mirror": mirror_qty,
+                    "item_id": iid,
+                })
+            if qty > 0 or (mirror_qty is not None and mirror_qty > 0):
+                # canonical is primary; clamp 0..99 on read
+                clamped = max(0, min(int(qty), 99))
+                if clamped > 0:
+                    out["stacks"][iid] = clamped
+
+        # Unique Gear: owned-flag bytes (Melee 0x1000, Ranged 0x7000, Outfits 0xA000)
+        probe_gear_ids: List[int] = []
+        if probe_ids:
+            probe_gear_ids = [i for i in probe_ids
+                              if (i & 0xF000) in (0x1000, 0x7000, 0xA000)]
+        else:
+            # Synthetic fallback: scan owned-flag regions for nonzero flags
+            for base, prefix in ((self.PC31_MELEE_OWNED_BASE, 0x1000),
+                                 (0x3230, 0xA000)):
+                for idx in range(0x300):
+                    off = base + idx
+                    if off < len(d) and d[off] in (1, 0):
+                        if d[off] == 1:
+                            probe_gear_ids.append(prefix | idx)
+            # Ranged via map keys only (unknown otherwise)
+            for db_id in self.RANGED_SAVE_IDX_BY_DB_ID:
+                probe_gear_ids.append(db_id)
+
+        seen_gear: set = set()
+        for iid in probe_gear_ids:
+            if iid in seen_gear:
+                continue
+            seen_gear.add(iid)
+            prefix = iid & 0xF000
+            # Unmapped ranged -> unknown, never read as bool
+            if prefix == 0x7000 and iid not in self.RANGED_SAVE_IDX_BY_DB_ID:
+                if iid not in out["unknown"]:
+                    # Only surface if REFERENCE_DB would have exposed it;
+                    # for synthetic payloads, only surface known map-misses
+                    # when explicitly probed.
+                    pass
+                continue
+            owned_off = self.get_item_owned_offset(iid)
+            if not owned_off or owned_off >= len(d):
+                # Genuinely unmapped (e.g. ranged 0x7001) -> unknown
+                if prefix == 0x7000 and iid not in out["unknown"]:
+                    out["unknown"].append(iid)
+                continue
+            flag = d[owned_off]
+            mirror_off = owned_off + delta
+            mirror_flag = d[mirror_off] if mirror_off < len(d) else None
+            if mirror_flag is not None and mirror_flag != flag:
+                out["mirror_mismatches"].append({
+                    "offset": owned_off, "primary": flag,
+                    "mirror": mirror_flag, "item_id": iid,
+                })
+            is_owned = flag == 1
+            # Only surface owned gear (S1: flag 0x01 -> Owned, 0x00 -> not)
+            # but record the bool for the caller.
+            if is_owned:
+                out["owned_gear"][iid] = True
+            else:
+                # Report Not owned as False so UI can render ◇; tests check.
+                # Only include if the id was in the probe universe (avoid
+                # flooding with 0x300 zeros). We include False for probed ids.
+                if iid in probe_gear_ids:
+                    out["owned_gear"][iid] = False
+
+        # Quick-array conflicts: read 30-slot ring and compare to canonical
         for slot in range(self.PC31_INVENTORY_SLOTS):
+            off_ring = self.PC31_RING_BUFFER_BASE + slot * 4
+            off_qty = self.PC31_INVENTORY_BASE + slot * self.PC31_INVENTORY_STRIDE
+            if off_ring + 4 > len(d) or off_qty >= len(d):
+                continue
+            iid = struct.unpack_from("<H", d, off_ring)[0]
+            if iid == 0 or (iid & 0xF000) not in self.CATEGORY_MAP:
+                continue
+            quick_qty = d[off_qty]
+            if quick_qty == 0 and iid != 0:
+                # quick slot holds id but zero qty -> stale residue vs empty
+                # Only surface if canonical also empty (otherwise phantom)
+                pass
+            # Compare to canonical stacks / gear
+            canon = None
+            prefix = iid & 0xF000
+            if prefix in (0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x8000):
+                canon = out["stacks"].get(iid, 0)
+            elif prefix in (0x1000, 0x7000, 0xA000):
+                canon = 1 if out["owned_gear"].get(iid, False) else 0
+            if canon is not None and quick_qty != canon:
+                # quick has a qty but canonical disagrees (or zero)
+                if iid not in [c["item_id"] for c in out["conflicts"]]:
+                    out["conflicts"].append({
+                        "item_id": iid, "count_region": canon,
+                        "quick_array": quick_qty, "winner": "count_region",
+                    })
+
+        # Surface unmapped ranged ids that appear in quick-array as unknown
+        for slot in range(self.PC31_INVENTORY_SLOTS):
+            off_ring = self.PC31_RING_BUFFER_BASE + slot * 4
+            if off_ring + 4 > len(d):
+                continue
+            iid = struct.unpack_from("<H", d, off_ring)[0]
+            if (iid & 0xF000) == 0x7000 and self.get_item_owned_offset(iid) == 0:
+                if iid not in out["unknown"]:
+                    out["unknown"].append(iid)
+        # Also any probed ranged not in map
+        for iid in probe_gear_ids:
+            if (iid & 0xF000) == 0x7000 and self.get_item_owned_offset(iid) == 0:
+                if iid not in out["unknown"]:
+                    out["unknown"].append(iid)
+
+        return out
+
+    def get_inventory(self) -> List[Dict[str, Any]]:
+        """Legacy flat inventory read — delegates to normalized model.
+
+        Preserved for backwards compat (server.py / tests / web-app).
+        Now canonical: gear is owned-flag, consumables are count-region;
+        quick-array is NOT merged (conflicts surfaced in normalized model).
+        """
+        norm = self.get_normalized_inventory()
+        out: List[Dict[str, Any]] = []
+        # Stacks (consumables/tools/protectors/accessories/skillcards/treasure) -> quantity entries
+        for iid, qty in norm.get("stacks", {}).items():
+            if qty <= 0:
+                continue
+            name, cat = self._resolve_item_info(iid)
+            if not name or name in ["EN_NAME", "BLANK", "RESERVE", "----------",
+                                     "使用禁止", "Unused", "unused", "Unused Item"] \
+               or "RESERVE" in name or "BLANK" in name \
+               or name.startswith("Item 0x") or name.startswith("item_") \
+               or name.lower().startswith("unused"):
+                continue
+            if name.startswith("0x"):
+                continue
+            out.append({"slot": len(out), "item_id": iid, "name": name,
+                        "category": cat, "quantity": qty, "active": True})
+        # Owned gear (melee, ranged, outfits) -> quantity 1 entries (for legacy callers)
+        for iid, owned in norm.get("owned_gear", {}).items():
+            if not owned:
+                continue
+            name, cat = self._resolve_item_info(iid)
+            if not name or name in ["EN_NAME", "BLANK", "RESERVE", "----------",
+                                     "使用禁止", "Unused", "unused", "Unused Item"] \
+               or "RESERVE" in name or "BLANK" in name \
+               or name.startswith("Item 0x") or name.startswith("item_") \
+               or name.lower().startswith("unused"):
+                continue
+            if name.startswith("0x"):
+                continue
+            out.append({"slot": len(out), "item_id": iid, "name": name,
+                        "category": cat, "quantity": 1, "active": True,
+                        "owned": True})
+        return out
+
+    def set_item_quantity(self, item_id: int, quantity: int = 1) -> Dict[str, Any]:
+        """Paradigm-correct write — routes by category.
+
+        Stacks (0x2000/0x3000/0x4000/0x5000/0x6000/0x8000): sets count byte + mirror (clamped 0..99).
+        Unique Gear (0x1000/0x7000/0xA000): sets owned-flag byte + mirror
+        (1=owned, 0=cleared) — count byte is NOT touched for gear.
+        """
+        if not self.is_real_save():
+            return {"status": "noop", "message": "PC payload required"}
+        prefix = item_id & 0xF000
+        # Gear -> owned flag path (clears on 0, sets on >0)
+        if prefix in (0x1000, 0x7000, 0xA000):
+            owned_off = self.get_item_owned_offset(item_id)
+            if owned_off == 0:
+                return {"status": "unsupported",
+                        "message": f"Item 0x{item_id:04X} not in verified owned map — refusing."}
+            d = bytearray(self.parser.data_payload)
+            is_owned = max(0, min(int(quantity), 99)) > 0
+            if owned_off < len(d):
+                d[owned_off] = 1 if is_owned else 0
+                mo = owned_off + self.PC31_MIRROR_DELTA
+                if mo < len(d):
+                    d[mo] = 1 if is_owned else 0
+            self.parser.data_payload = bytes(d)
+            return {"status": "success", "item_id": item_id, "owned": is_owned}
+        # Stacks -> count path
+        off = self.get_item_count_offset(item_id)
+        if off == 0:
+            return {"status": "unsupported",
+                    "message": f"Item 0x{item_id:04X} has no verified count offset — refusing."}
+        d = bytearray(self.parser.data_payload)
+        q = max(0, min(int(quantity), 99))
+        if off < len(d):
+            d[off] = q
+            mo = off + self.PC31_MIRROR_DELTA
+            if mo < len(d):
+                d[mo] = q
+        self.parser.data_payload = bytes(d)
+        return {"status": "success", "item_id": item_id, "quantity": q, "owned": False}
+
+    def set_inventory_slot(self, slot: int, item_id: int, quantity: int = 1) -> Dict[str, Any]:
+        """Legacy quick-array slot write — now delegates to paradigm-correct path.
+
+        Quick-array bytes are legacy cache; writes still update it for
+        backwards compat but the canonical write is via set_item_quantity's
+        paradigm routing (gear=owned, stack=count). No phantom merge on read.
+        """
+        if not self.is_real_save():
+            return {"status": "noop", "message": "PC payload required"}
+        # Paradigm-correct canonical write first
+        res = self.set_item_quantity(item_id, quantity)
+        # Also mirror to quick-array slot for legacy callers that enumerate slots
+        d = bytearray(self.parser.data_payload)
+        q = max(0, min(int(quantity), 99))
+        if 0 <= slot < self.PC31_INVENTORY_SLOTS:
             off_qty = self.PC31_INVENTORY_BASE + slot * self.PC31_INVENTORY_STRIDE
             off_ring = self.PC31_RING_BUFFER_BASE + slot * 4
             if off_qty < len(d) and off_ring + 4 <= len(d):
-                qty = d[off_qty]
-                iid = struct.unpack_from("<H", d, off_ring)[0]
-                if iid > 0 and (iid & 0xF000) in self.CATEGORY_MAP:
-                    items_map[iid] = max(items_map.get(iid, 0), max(1, qty))
-
-        # 2. Master Inventory Tables in 0x13000..0x18000
-        for off in range(0x13000, 0x18000, 2):
-            val = struct.unpack_from("<H", d, off)[0]
-            high = val & 0xF000
-            low = val & 0x0FFF
-            if high in self.CATEGORY_MAP and 1 <= low <= 600:
-                name, cat = self._resolve_item_info(val)
-                if (
-                    name
-                    and name not in ["EN_NAME", "BLANK", "RESERVE", "----------", "使用禁止", "Unused", "unused", "Unused Item"]
-                    and "RESERVE" not in name
-                    and "BLANK" not in name
-                    and not name.startswith("Item 0x")
-                    and not name.startswith("item_")
-                    and not name.lower().startswith("unused")
-                ):
-                    qty = 1
-                    for q_offset in [off + 0x3C, off + 0x3E, off + 0x40, off + 0x42]:
-                        if q_offset < len(d) and 1 <= d[q_offset] <= 99:
-                            qty = d[q_offset]
-                            break
-                    items_map[val] = max(items_map.get(val, 0), qty)
-
-        out = []
-        for idx, (iid, qty) in enumerate(items_map.items()):
-            name, cat = self._resolve_item_info(iid)
-            out.append({
-                "slot": idx,
-                "item_id": iid,
-                "name": name,
-                "category": cat,
-                "quantity": qty,
-                "active": True
-            })
-        return out
-
-    def set_inventory_slot(self, slot: int, item_id: int, quantity: int = 1) -> Dict[str, Any]:
-        """Write ONE inventory slot in active buffer with item_id and quantity (0..99)."""
-        if not self.is_real_save():
-            return {"status": "noop", "message": "PC payload required"}
-        if not (0 <= slot < self.PC31_INVENTORY_SLOTS):
-            return {"status": "invalid", "message": "Slot out of range (0..29)"}
-        d = bytearray(self.parser.data_payload)
-        off_qty = self.PC31_INVENTORY_BASE + slot * self.PC31_INVENTORY_STRIDE
-        off_ring = self.PC31_RING_BUFFER_BASE + slot * 4
-        if off_qty >= len(d) or off_ring + 4 > len(d):
-            return {"status": "noop", "message": "Offset out of range"}
-        
-        clamped_qty = max(0, min(quantity, 99))
-        d[off_qty] = clamped_qty
-        struct.pack_into("<H", d, off_ring, max(0, item_id))
-        struct.pack_into("<H", d, off_ring + 2, 1 if clamped_qty > 0 else 0)
-
-        # Also write to Master Count Table at 0x2410..0x2780 (0x2535 + item_index for Consumables)
-        prefix = item_id & 0xF000
-        idx = item_id & 0x0FFF
-        if prefix == 0x2000: # Consumables
-            master_off = 0x2535 + idx
-            if master_off < len(d):
-                d[master_off] = clamped_qty
-        elif prefix == 0x6000: # Infiltration Tools
-            master_off = 0x25D0 + idx
-            if master_off < len(d):
-                d[master_off] = clamped_qty
-
-        self.parser.data_payload = bytes(d)
-        return {"status": "success", "slot": slot, "item_id": item_id, "quantity": clamped_qty}
+                d[off_qty] = q
+                struct.pack_into("<H", d, off_ring, max(0, item_id))
+                struct.pack_into("<H", d, off_ring + 2, 1 if q > 0 else 0)
+                self.parser.data_payload = bytes(d)
+        return {"status": "success", "slot": slot, "item_id": item_id,
+                "quantity": q, "owned": res.get("owned", False)}
 
     # -------------------------------------------------------------------------
     # Confidant Read/Write API

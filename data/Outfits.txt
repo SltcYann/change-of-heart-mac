@@ -1,0 +1,287 @@
+基址	名称	JP_NAME	EN_NAME	角色/性别	备注&二级类别
+main+02272254	----------	----------	----------	-
+main+02272255	Shujin Uniform (All)	秀尽学園高校制服・冬	Shujin Uniform (All)	ALL
+main+02272256	----------	----------	----------	-
+main+02272257	----------	----------	----------	-
+main+02272258	----------	----------	----------	-
+main+02272259	----------	----------	----------	-
+main+0227225A	----------	----------	----------	-
+main+0227225B	----------	----------	----------	-
+main+0227225C	----------	----------	----------	-
+main+0227225D	----------	----------	----------	-
+main+0227225E	----------	----------	----------	-
+main+0227225F	----------	----------	----------	-
+main+02272260	----------	----------	----------	-
+main+02272261	Dark Suit (Akechi)	ダークスーツ	Dark Suit (Akechi)	明智吾郎
+main+02272262	----------	----------	----------	-
+main+02272263	----------	----------	----------	-
+main+02272264	Phantom Suit (Joker)	ファントムスーツ	Phantom Suit (Joker)	主人公
+main+02272265	Pirate Armor (Ryuji)	パイレーツアーマー	Pirate Armor (Ryuji)	坂本龙司
+main+02272266	Morgana Classic (Morgana)	モルガナセット	Morgana Classic (Morgana)	摩尔加纳
+main+02272267	Red Latex Suit (Ann)	レッドラバースーツ	Red Latex Suit (Ann)	高卷杏
+main+02272268	Outlaw's Attire (Yusuke)	盗み装束	Outlaw's Attire (Yusuke)	喜多川佑介
+main+02272269	Metal Rider (Makoto)	メタルライダース	Metal Rider (Makoto)	新岛真
+main+0227226A	Musketeer Suit (Haru)	銃士の正装	Musketeer Suit (Haru)	奥村春
+main+0227226B	Cyber Gear (Futaba)	サイバースーツ	Cyber Gear (Futaba)	佐仓双叶
+main+0227226C	Prince Suit (Akechi)	プリンススーツ	Prince Suit (Akechi)	明智吾郎
+main+0227226D	Black Leotard (Kasumi)	ブラックレオタード	Black Leotard (Kasumi)	芳泽霞
+main+0227226E	Summer Uniform (Joker)	反逆の制服・夏	Summer Uniform (Joker)	主人公
+main+0227226F	Summer Uniform (Ryuji)	反逆の制服・夏	Summer Uniform (Ryuji)	坂本龙司
+main+02272270	----------	----------	----------	-
+main+02272271	Summer Uniform (Ann)	反逆の制服・夏	Summer Uniform (Ann)	高卷杏
+main+02272272	Summer Uniform (Yusuke)	反逆の制服・夏	Summer Uniform (Yusuke)	喜多川佑介
+main+02272273	Summer Uniform (Makoto)	反逆の制服・夏	Summer Uniform (Makoto)	新岛真
+main+02272274	Summer Uniform (Haru)	反逆の制服・夏	Summer Uniform (Haru)	奥村春
+main+02272275	----------	----------	----------	-
+main+02272276	Summer Uniform (Akechi)	反逆の制服・夏	Summer Uniform (Akechi)	明智吾郎
+main+02272277	Summer Uniform (Kasumi)	反逆の制服・夏	Summer Uniform (Kasumi)	芳泽霞
+main+02272278	Winter Uniform (Joker)	反逆の制服・冬	Winter Uniform (Joker)	主人公
+main+02272279	Winter Uniform (Ryuji)	反逆の制服・冬	Winter Uniform (Ryuji)	坂本龙司
+main+0227227A	----------	----------	----------	-
+main+0227227B	Winter Uniform (Ann)	反逆の制服・冬	Winter Uniform (Ann)	高卷杏
+main+0227227C	Winter Uniform (Yusuke)	反逆の制服・冬	Winter Uniform (Yusuke)	喜多川佑介
+main+0227227D	Winter Uniform (Makoto)	反逆の制服・冬	Winter Uniform (Makoto)	新岛真
+main+0227227E	Winter Uniform (Haru)	反逆の制服・冬	Winter Uniform (Haru)	奥村春
+main+0227227F	----------	----------	----------	-
+main+02272280	Winter Uniform (Akechi)	反逆の制服・冬	Winter Uniform (Akechi)	明智吾郎
+main+02272281	Winter Uniform (Kasumi)	反逆の制服・冬	Winter Uniform (Kasumi)	芳泽霞
+main+02272282	Summer Clothes (Joker)	反逆の私服・夏	Summer Clothes (Joker)	主人公
+main+02272283	Summer Clothes (Ryuji)	反逆の私服・夏	Summer Clothes (Ryuji)	坂本龙司
+main+02272284	----------	----------	----------	-
+main+02272285	Summer Clothes (Ann)	反逆の私服・夏	Summer Clothes (Ann)	高卷杏
+main+02272286	Summer Clothes (Yusuke)	反逆の私服・夏	Summer Clothes (Yusuke)	喜多川佑介
+main+02272287	Summer Clothes (Makoto)	反逆の私服・夏	Summer Clothes (Makoto)	新岛真
+main+02272288	Summer Clothes (Haru)	反逆の私服・夏	Summer Clothes (Haru)	奥村春
+main+02272289	Summer Clothes (Futaba)	反逆の私服・夏	Summer Clothes (Futaba)	佐仓双叶
+main+0227228A	----------	----------	----------	-
+main+0227228B	Summer Clothes (Kasumi)	反逆の私服・夏	Summer Clothes (Kasumi)	芳泽霞
+main+0227228C	Winter Clothes (Joker)	反逆の私服・冬	Winter Clothes (Joker)	主人公
+main+0227228D	Winter Clothes (Ryuji)	反逆の私服・冬	Winter Clothes (Ryuji)	坂本龙司
+main+0227228E	----------	----------	----------	-
+main+0227228F	Winter Clothes (Ann)	反逆の私服・冬	Winter Clothes (Ann)	高卷杏
+main+02272290	Winter Clothes (Yusuke)	反逆の私服・冬	Winter Clothes (Yusuke)	喜多川佑介
+main+02272291	Winter Clothes (Makoto)	反逆の私服・冬	Winter Clothes (Makoto)	新岛真
+main+02272292	Winter Clothes (Haru)	反逆の私服・冬	Winter Clothes (Haru)	奥村春
+main+02272293	Winter Clothes (Futaba)	反逆の私服・冬	Winter Clothes (Futaba)	佐仓双叶
+main+02272294	Winter Clothes (Akechi)	反逆の私服・冬	Winter Clothes (Akechi)	明智吾郎
+main+02272295	Winter Clothes (Kasumi)	反逆の私服・冬	Winter Clothes (Kasumi)	芳泽霞
+main+02272296	Tracksuit (Joker)	反逆のジャージ	Tracksuit (Joker)	主人公
+main+02272297	Tracksuit (Ryuji)	反逆のジャージ	Tracksuit (Ryuji)	坂本龙司
+main+02272298	----------	----------	----------	-
+main+02272299	Tracksuit (Ann)	反逆のジャージ	Tracksuit (Ann)	高卷杏
+main+0227229A	Tracksuit (Yusuke)	反逆のジャージ	Tracksuit (Yusuke)	喜多川佑介
+main+0227229B	Tracksuit (Makoto)	反逆のジャージ	Tracksuit (Makoto)	新岛真
+main+0227229C	Tracksuit (Haru)	反逆のジャージ	Tracksuit (Haru)	奥村春
+main+0227229D	Tracksuit (Futaba)	反逆のジャージ	Tracksuit (Futaba)	佐仓双叶
+main+0227229E	Tracksuit (Akechi)	反逆のジャージ	Tracksuit (Akechi)	明智吾郎
+main+0227229F	Tracksuit (Kasumi)	反逆のジャージ	Tracksuit (Kasumi)	芳泽霞
+main+022722A0	Swimsuit (Joker)	反逆の水着	Swimsuit (Joker)	主人公
+main+022722A1	Swimsuit (Ryuji)	反逆の水着	Swimsuit (Ryuji)	坂本龙司
+main+022722A2	----------	----------	----------	-
+main+022722A3	Swimsuit (Ann)	反逆の水着	Swimsuit (Ann)	高卷杏
+main+022722A4	Swimsuit (Yusuke)	反逆の水着	Swimsuit (Yusuke)	喜多川佑介
+main+022722A5	Swimsuit (Makoto)	反逆の水着	Swimsuit (Makoto)	新岛真
+main+022722A6	Swimsuit (Haru)	反逆の水着	Swimsuit (Haru)	奥村春
+main+022722A7	Swimsuit (Futaba)	反逆の水着	Swimsuit (Futaba)	佐仓双叶
+main+022722A8	----------	----------	----------	-
+main+022722A9	Swimsuit (Kasumi)	反逆の水着	Swimsuit (Kasumi)	芳泽霞
+main+022722AA	Loungewear (Joker)	反逆の部屋着	Loungewear (Joker)	主人公
+main+022722AB	----------	----------	----------	-
+main+022722AC	----------	----------	----------	-
+main+022722AD	----------	----------	----------	-
+main+022722AE	----------	----------	----------	-
+main+022722AF	----------	----------	----------	-
+main+022722B0	----------	----------	----------	-
+main+022722B1	Loungewear (Futaba)	反逆の部屋着	Loungewear (Futaba)	佐仓双叶
+main+022722B2	----------	----------	----------	-
+main+022722B3	----------	----------	----------	-
+main+022722B4	Gekkoukan High (Joker)	月光館学園制服	Gekkoukan High (Joker)	主人公
+main+022722B5	Gekkoukan High (Ryuji)	月光館学園制服	Gekkoukan High (Ryuji)	坂本龙司
+main+022722B6	Aigis Costume (Morgana)	アイギス衣装	Aigis Costume (Morgana)	摩尔加纳
+main+022722B7	Gekkoukan High (Ann)	月光館学園制服	Gekkoukan High (Ann)	高卷杏
+main+022722B8	Gekkoukan High (Yusuke)	月光館学園制服	Gekkoukan High (Yusuke)	喜多川佑介
+main+022722B9	Gekkoukan High (Makoto)	月光館学園制服	Gekkoukan High (Makoto)	新岛真
+main+022722BA	Gekkoukan High (Haru)	月光館学園制服	Gekkoukan High (Haru)	奥村春
+main+022722BB	Gekkoukan High (Futaba)	月光館学園制服	Gekkoukan High (Futaba)	佐仓双叶
+main+022722BC	Gekkoukan High (Akechi)	月光館学園制服	Gekkoukan High (Akechi)	明智吾郎
+main+022722BD	Gekkoukan High (Kasumi)	月光館学園制服	Gekkoukan High (Kasumi)	芳泽霞
+main+022722BE	Yasogami High (Joker)	八十神高校制服	Yasogami High (Joker)	主人公
+main+022722BF	Yasogami High (Ryuji)	八十神高校制服	Yasogami High (Ryuji)	坂本龙司
+main+022722C0	Teddie Costume (Morgana)	クマ衣装	Teddie Costume (Morgana)	摩尔加纳
+main+022722C1	Yasogami High (Ann)	八十神高校制服	Yasogami High (Ann)	高卷杏
+main+022722C2	Yasogami High (Yusuke)	八十神高校制服	Yasogami High (Yusuke)	喜多川佑介
+main+022722C3	Yasogami High (Makoto)	八十神高校制服	Yasogami High (Makoto)	新岛真
+main+022722C4	Yasogami High (Haru)	八十神高校制服	Yasogami High (Haru)	奥村春
+main+022722C5	Yasogami High (Futaba)	八十神高校制服	Yasogami High (Futaba)	佐仓双叶
+main+022722C6	Yasogami High (Akechi)	八十神高校制服	Yasogami High (Akechi)	明智吾郎
+main+022722C7	Yasogami High (Kasumi)	八十神高校制服	Yasogami High (Kasumi)	芳泽霞
+main+022722C8	St. Hermelin High (Joker)	聖エルミン学園制服	St. Hermelin High (Joker)	主人公
+main+022722C9	St. Hermelin High (Ryuji)	聖エルミン学園制服	St. Hermelin High (Ryuji)	坂本龙司
+main+022722CA	Trish Costume v1 (Morgana)	トリッシュ衣装1	Trish Costume v1 (Morgana)	摩尔加纳
+main+022722CB	St. Hermelin High (Ann)	聖エルミン学園制服	St. Hermelin High (Ann)	高卷杏
+main+022722CC	St. Hermelin High (Yusuke)	聖エルミン学園制服	St. Hermelin High (Yusuke)	喜多川佑介
+main+022722CD	St. Hermelin High (Makoto)	聖エルミン学園制服	St. Hermelin High (Makoto)	新岛真
+main+022722CE	St. Hermelin High (Haru)	聖エルミン学園制服	St. Hermelin High (Haru)	奥村春
+main+022722CF	St. Hermelin High (Futaba)	聖エルミン学園制服	St. Hermelin High (Futaba)	佐仓双叶
+main+022722D0	St. Hermelin High (Akechi)	聖エルミン学園制服	St. Hermelin High (Akechi)	明智吾郎
+main+022722D1	St. Hermelin High (Kasumi)	聖エルミン学園制服	St. Hermelin High (Kasumi)	芳泽霞
+main+022722D2	Seven Sisters High (Joker)	七姉妹学園制服	Seven Sisters High (Joker)	主人公
+main+022722D3	Seven Sisters High (Ryuji)	七姉妹学園制服	Seven Sisters High (Ryuji)	坂本龙司
+main+022722D4	Trish Costume v2 (Morgana)	トリッシュ衣装2	Trish Costume v2 (Morgana)	摩尔加纳
+main+022722D5	Seven Sisters High (Ann)	七姉妹学園制服	Seven Sisters High (Ann)	高卷杏
+main+022722D6	Seven Sisters High (Yusuke)	七姉妹学園制服	Seven Sisters High (Yusuke)	喜多川佑介
+main+022722D7	Seven Sisters High (Makoto)	七姉妹学園制服	Seven Sisters High (Makoto)	新岛真
+main+022722D8	Seven Sisters High (Haru)	七姉妹学園制服	Seven Sisters High (Haru)	奥村春
+main+022722D9	Seven Sisters High (Futaba)	七姉妹学園制服	Seven Sisters High (Futaba)	佐仓双叶
+main+022722DA	Kasugayama High (Akechi)	七姉妹学園制服	Kasugayama High (Akechi)	明智吾郎
+main+022722DB	Seven Sisters High (Kasumi)	七姉妹学園制服	Seven Sisters High (Kasumi)	芳泽霞
+main+022722DC	Vincent's Outfit (Joker)	ヴィンセントの普段着	Vincent's Outfit (Joker)	主人公
+main+022722DD	Orlando's Fashion (Ryuji)	オーランドのシャレ着	Orlando's Fashion (Ryuji)	坂本龙司
+main+022722DE	Stray Sheep's Suit (Morgana)	子羊の着ぐるみ	Stray Sheep's Suit (Morgana)	摩尔加纳
+main+022722DF	Catherine's Cami (Ann)	キャサリンの白キャミ	Catherine's Cami (Ann)	高卷杏
+main+022722E0	Johnny's Coat (Yusuke)	ジョニーのコート	Johnny's Coat (Yusuke)	喜多川佑介
+main+022722E1	Katherine's Outfit (Makoto)	キャサリンの普段着	Katherine's Outfit (Makoto)	新岛真
+main+022722E2	Erica's Uniform (Haru)	エリカの給仕服	Erica's Uniform (Haru)	奥村春
+main+022722E3	Toby's Overalls (Futaba)	トビーのツナギ	Toby's Overalls (Futaba)	佐仓双叶
+main+022722E4	Boss's Suit (Akechi)	バーマスターのスーツ	Boss's Suit (Akechi)	明智吾郎
+main+022722E5	Rin's One Piece (Kasumi)	リンのワンピース	Rin's One Piece (Kasumi)	芳泽霞
+main+022722E6	Karukozaka High (Joker)	軽子坂高校制服	Karukozaka High (Joker)	主人公
+main+022722E7	Karukozaka High (Ryuji)	軽子坂高校制服	Karukozaka High (Ryuji)	坂本龙司
+main+022722E8	Karukozaka High (Morgana)	軽子坂高校制服	Karukozaka High (Morgana)	摩尔加纳
+main+022722E9	Karukozaka High (Ann)	軽子坂高校制服	Karukozaka High (Ann)	高卷杏
+main+022722EA	Karukozaka High (Yusuke)	軽子坂高校制服	Karukozaka High (Yusuke)	喜多川佑介
+main+022722EB	Karukozaka High (Makoto)	軽子坂高校制服	Karukozaka High (Makoto)	新岛真
+main+022722EC	Karukozaka High (Haru)	軽子坂高校制服	Karukozaka High (Haru)	奥村春
+main+022722ED	Karukozaka High (Futaba)	軽子坂高校制服	Karukozaka High (Futaba)	佐仓双叶
+main+022722EE	Hazama's Uniform (Akechi)	魔神皇の正装	Hazama's Uniform (Akechi)	明智吾郎
+main+022722EF	Karukozaka High (Kasumi)	軽子坂高校制服	Karukozaka High (Kasumi)	芳泽霞
+main+022722F0	Butler Suit (Joker)	執事服	Butler Suit (Joker)	主人公
+main+022722F1	Butler Suit (Ryuji)	執事服	Butler Suit (Ryuji)	坂本龙司
+main+022722F2	Maid Uniform (Morgana)	メイド服	Maid Uniform (Morgana)	摩尔加纳
+main+022722F3	Maid Uniform (Ann)	メイド服	Maid Uniform (Ann)	高卷杏
+main+022722F4	Butler Suit (Yusuke)	執事服	Butler Suit (Yusuke)	喜多川佑介
+main+022722F5	Maid Uniform (Makoto)	メイド服	Maid Uniform (Makoto)	新岛真
+main+022722F6	Maid Uniform (Haru)	メイド服	Maid Uniform (Haru)	奥村春
+main+022722F7	Maid Uniform (Futaba)	メイド服	Maid Uniform (Futaba)	佐仓双叶
+main+022722F8	Butler Suit (Akechi)	執事服	Butler Suit (Akechi)	明智吾郎
+main+022722F9	Maid Uniform (Kasumi)	メイド服	Maid Uniform (Kasumi)	芳泽霞
+main+022722FA	Christmas Outfit (Joker)	クリスマスウェア	Christmas Outfit (Joker)	主人公
+main+022722FB	Christmas Outfit (Ryuji)	クリスマスウェア	Christmas Outfit (Ryuji)	坂本龙司
+main+022722FC	Christmas Outfit (Morgana)	クリスマスウェア	Christmas Outfit (Morgana)	摩尔加纳
+main+022722FD	Christmas Outfit (Ann)	クリスマスウェア	Christmas Outfit (Ann)	高卷杏
+main+022722FE	Christmas Outfit (Yusuke)	クリスマスウェア	Christmas Outfit (Yusuke)	喜多川佑介
+main+022722FF	Christmas Outfit (Makoto)	クリスマスウェア	Christmas Outfit (Makoto)	新岛真
+main+02272300	Christmas Outfit (Haru)	クリスマスウェア	Christmas Outfit (Haru)	奥村春
+main+02272301	Christmas Outfit (Futaba)	クリスマスウェア	Christmas Outfit (Futaba)	佐仓双叶
+main+02272302	Christmas Outfit (Akechi)	クリスマスウェア	Christmas Outfit (Akechi)	明智吾郎
+main+02272303	Christmas Outfit (Kasumi)	クリスマスウェア	Christmas Outfit (Kasumi)	芳泽霞
+main+02272304	Dancewear (Joker)	ダンシングウェア	Dancewear (Joker)	主人公
+main+02272305	Dancewear (Ryuji)	ダンシングウェア	Dancewear (Ryuji)	坂本龙司
+main+02272306	Dancewear (Morgana)	ダンシングウェア	Dancewear (Morgana)	摩尔加纳
+main+02272307	Dancewear (Ann)	ダンシングウェア	Dancewear (Ann)	高卷杏
+main+02272308	Dancewear (Yusuke)	ダンシングウェア	Dancewear (Yusuke)	喜多川佑介
+main+02272309	Dancewear (Makoto)	ダンシングウェア	Dancewear (Makoto)	新岛真
+main+0227230A	Dancewear (Haru)	ダンシングウェア	Dancewear (Haru)	奥村春
+main+0227230B	Dancewear (Futaba)	ダンシングウェア	Dancewear (Futaba)	佐仓双叶
+main+0227230C	Dancewear (Akechi)	ダンシングウェア	Dancewear (Akechi)	明智吾郎
+main+0227230D	Dancewear (Kasumi)	ダンシングウェア	Dancewear (Kasumi)	芳泽霞
+main+0227230E	Shadow Ops Uniform (Joker)	シャドウワーカー制服	Shadow Ops Uniform (Joker)	主人公
+main+0227230F	Shadow Ops Uniform (Ryuji)	シャドウワーカー制服	Shadow Ops Uniform (Ryuji)	坂本龙司
+main+02272310	Shadow Ops Uniform (Morgana)	シャドウワーカー制服	Shadow Ops Uniform (Morgana)	摩尔加纳
+main+02272311	Shadow Ops Uniform (Ann)	シャドウワーカー制服	Shadow Ops Uniform (Ann)	高卷杏
+main+02272312	Shadow Ops Uniform (Yusuke)	シャドウワーカー制服	Shadow Ops Uniform (Yusuke)	喜多川佑介
+main+02272313	Shadow Ops Uniform (Makoto)	シャドウワーカー制服	Shadow Ops Uniform (Makoto)	新岛真
+main+02272314	Shadow Ops Uniform (Haru)	シャドウワーカー制服	Shadow Ops Uniform (Haru)	奥村春
+main+02272315	Shadow Ops Uniform (Futaba)	シャドウワーカー制服	Shadow Ops Uniform (Futaba)	佐仓双叶
+main+02272316	Shadow Ops Uniform (Akechi)	シャドウワーカー制服	Shadow Ops Uniform (Akechi)	明智吾郎
+main+02272317	Shadow Ops Uniform (Kasumi)	シャドウワーカー制服	Shadow Ops Uniform (Kasumi)	芳泽霞
+main+02272318	Samurai Garb (Joker)	サムライ衆衣装	Samurai Garb (Joker)	主人公
+main+02272319	Samurai Garb (Ryuji)	サムライ衆衣装	Samurai Garb (Ryuji)	坂本龙司
+main+0227231A	Burroughs Costume (Morgana)	バロウズ衣装	Burroughs Costume (Morgana)	摩尔加纳
+main+0227231B	Samurai Garb (Ann)	サムライ衆衣装	Samurai Garb (Ann)	高卷杏
+main+0227231C	Samurai Garb (Yusuke)	サムライ衆衣装	Samurai Garb (Yusuke)	喜多川佑介
+main+0227231D	Samurai Garb (Makoto)	サムライ衆衣装	Samurai Garb (Makoto)	新岛真
+main+0227231E	Samurai Garb (Haru)	サムライ衆衣装	Samurai Garb (Haru)	奥村春
+main+0227231F	Samurai Garb (Futaba)	サムライ衆衣装	Samurai Garb (Futaba)	佐仓双叶
+main+02272320	Samurai Garb (Akechi)	サムライ衆衣装	Samurai Garb (Akechi)	明智吾郎
+main+02272321	Samurai Garb (Kasumi)	サムライ衆衣装	Samurai Garb (Kasumi)	芳泽霞
+main+02272322	Yumizuki High (Joker)	高等師範学校制服	Yumizuki High (Joker)	主人公
+main+02272323	Yumizuki High (Ryuji)	高等師範学校制服	Yumizuki High (Ryuji)	坂本龙司
+main+02272324	Gouto Costume (Morgana)	業斗童子衣装	Gouto Costume (Morgana)	摩尔加纳
+main+02272325	Ouran High (Ann)	桜爛女学院制服	Ouran High (Ann)	高卷杏
+main+02272326	Yumizuki High (Yusuke)	高等師範学校制服	Yumizuki High (Yusuke)	喜多川佑介
+main+02272327	Ouran (Makoto)	桜爛女学院制服	Ouran (Makoto)	新岛真
+main+02272328	Ouran (Haru)	高等師範学校制服	Ouran (Haru)	奥村春
+main+02272329	Ouran High (Futaba)	桜爛女学院制服	Ouran High (Futaba)	佐仓双叶
+main+0227232A	Imperial Uniform (Akechi)	帝国陸軍の軍服	Imperial Uniform (Akechi)	明智吾郎
+main+0227232B	Ouran High (Kasumi)	桜爛女学院制服	Ouran High (Kasumi)	芳泽霞
+main+0227232C	Starlight Outfit (Joker)	スターナイトウェア	Starlight Outfit (Joker)	主人公
+main+0227232D	Starlight Outfit (Ryuji)	スターナイトウェア	Starlight Outfit (Ryuji)	坂本龙司
+main+0227232E	Starlight Outfit (Morgana)	スターナイトウェア	Starlight Outfit (Morgana)	摩尔加纳
+main+0227232F	Starlight Outfit (Ann)	スターナイトウェア	Starlight Outfit (Ann)	高卷杏
+main+02272330	Starlight Outfit (Yusuke)	スターナイトウェア	Starlight Outfit (Yusuke)	喜多川佑介
+main+02272331	Starlight Outfit (Makoto)	スターナイトウェア	Starlight Outfit (Makoto)	新岛真
+main+02272332	Starlight Outfit (Haru)	スターナイトウェア	Starlight Outfit (Haru)	奥村春
+main+02272333	Starlight Outfit (Futaba)	スターナイトウェア	Starlight Outfit (Futaba)	佐仓双叶
+main+02272334	Starlight Outfit (Akechi)	スターナイトウェア	Starlight Outfit (Akechi)	明智吾郎
+main+02272335	Starlight Outfit (Kasumi)	スターナイトウェア	Starlight Outfit (Kasumi)	芳泽霞
+main+02272336	Moonlight Outfit (Joker)	ムーンナイトウェア	Moonlight Outfit (Joker)	主人公
+main+02272337	Moonlight Outfit (Ryuji)	ムーンナイトウェア	Moonlight Outfit (Ryuji)	坂本龙司
+main+02272338	Moonlight Outfit (Morgana)	ムーンナイトウェア	Moonlight Outfit (Morgana)	摩尔加纳
+main+02272339	Moonlight Outfit (Ann)	ムーンナイトウェア	Moonlight Outfit (Ann)	高卷杏
+main+0227233A	Moonlight Outfit (Yusuke)	ムーンナイトウェア	Moonlight Outfit (Yusuke)	喜多川佑介
+main+0227233B	Moonlight Outfit (Makoto)	ムーンナイトウェア	Moonlight Outfit (Makoto)	新岛真
+main+0227233C	Moonlight Outfit (Haru)	ムーンナイトウェア	Moonlight Outfit (Haru)	奥村春
+main+0227233D	Moonlight Outfit (Futaba)	ムーンナイトウェア	Moonlight Outfit (Futaba)	佐仓双叶
+main+0227233E	Moonlight Outfit (Akechi)	ムーンナイトウェア	Moonlight Outfit (Akechi)	明智吾郎
+main+0227233F	Moonlight Outfit (Kasumi)	ムーンナイトウェア	Moonlight Outfit (Kasumi)	芳泽霞
+main+02272340	Ultramarine Outfit (Joker)	群青色の衣服	Ultramarine Outfit (Joker)	主人公
+main+02272341	Ultramarine Outfit (Ryuji)	群青色の衣服	Ultramarine Outfit (Ryuji)	坂本龙司
+main+02272342	Long Nose Outfit (Morgana)	長鼻の服	Long Nose Outfit (Morgana)	摩尔加纳
+main+02272343	Ultramarine Outfit (Ann)	群青色の衣服	Ultramarine Outfit (Ann)	高卷杏
+main+02272344	Ultramarine Outfit (Yusuke)	群青色の衣服	Ultramarine Outfit (Yusuke)	喜多川佑介
+main+02272345	Ultramarine Outfit (Makoto)	群青色の衣服	Ultramarine Outfit (Makoto)	新岛真
+main+02272346	Ultramarine Outfit (Haru)	群青色の衣服	Ultramarine Outfit (Haru)	奥村春
+main+02272347	Ultramarine Outfit (Futaba)	群青色の衣服	Ultramarine Outfit (Futaba)	佐仓双叶
+main+02272348	Ultramarine Outfit (Akechi)	群青色の衣服	Ultramarine Outfit (Akechi)	明智吾郎
+main+02272349	Ultramarine Outfit (Kasumi)	群青色の衣服	Ultramarine Outfit (Kasumi)	芳泽霞
+main+0227234A	Featherman Suit (Joker)	フェザーマンスーツ	Featherman Suit (Joker)	主人公
+main+0227234B	Featherman Suit (Ryuji)	フェザーマンスーツ	Featherman Suit (Ryuji)	坂本龙司
+main+0227234C	Featherman Suit (Morgana)	フェザーマンスーツ	Featherman Suit (Morgana)	摩尔加纳
+main+0227234D	Featherman Suit (Ann)	フェザーマンスーツ	Featherman Suit (Ann)	高卷杏
+main+0227234E	Featherman Suit (Yusuke)	フェザーマンスーツ	Featherman Suit (Yusuke)	喜多川佑介
+main+0227234F	Featherman Suit (Makoto)	フェザーマンスーツ	Featherman Suit (Makoto)	新岛真
+main+02272350	Featherman Suit (Haru)	フェザーマンスーツ	Featherman Suit (Haru)	奥村春
+main+02272351	Featherman Suit (Futaba)	フェザーマンスーツ	Featherman Suit (Futaba)	佐仓双叶
+main+02272352	Featherman Suit (Akechi)	フェザーマンスーツ	Featherman Suit (Akechi)	明智吾郎
+main+02272353	Featherman Suit (Kasumi)	フェザーマンスーツ	Featherman Suit (Kasumi)	芳泽霞
+main+02272354	Demonica Head (Joker)	頭部有りデモニカスーツ	Demonica Head (Joker)	主人公
+main+02272355	Demonica Head (Ryuji)	頭部有りデモニカスーツ	Demonica Head (Ryuji)	坂本龙司
+main+02272356	Demonica Head (Morgana)	頭部有りデモニカスーツ	Demonica Head (Morgana)	摩尔加纳
+main+02272357	Demonica Head (Ann)	頭部有りデモニカスーツ	Demonica Head (Ann)	高卷杏
+main+02272358	Demonica Head (Yusuke)	頭部有りデモニカスーツ	Demonica Head (Yusuke)	喜多川佑介
+main+02272359	Demonica Head (Makoto)	頭部有りデモニカスーツ	Demonica Head (Makoto)	新岛真
+main+0227235A	Demonica Head (Haru)	頭部有りデモニカスーツ	Demonica Head (Haru)	奥村春
+main+0227235B	Demonica Head (Futaba)	頭部有りデモニカスーツ	Demonica Head (Futaba)	佐仓双叶
+main+0227235C	Demonica Head (Akechi)	頭部有りデモニカスーツ	Demonica Head (Akechi)	明智吾郎
+main+0227235D	Demonica Head (Kasumi)	頭部有りデモニカスーツ	Demonica Head (Kasumi)	芳泽霞
+main+0227235E	Demonica Suit (Joker)	頭部無しデモニカスーツ	Demonica Suit (Joker)	主人公
+main+0227235F	Demonica Suit (Ryuji)	頭部無しデモニカスーツ	Demonica Suit (Ryuji)	坂本龙司
+main+02272360	Demonica Suit (Morgana)	頭部無しデモニカスーツ	Demonica Suit (Morgana)	摩尔加纳
+main+02272361	Demonica Suit (Ann)	頭部無しデモニカスーツ	Demonica Suit (Ann)	高卷杏
+main+02272362	Demonica Suit (Yusuke)	頭部無しデモニカスーツ	Demonica Suit (Yusuke)	喜多川佑介
+main+02272363	Demonica Suit (Makoto)	頭部無しデモニカスーツ	Demonica Suit (Makoto)	新岛真
+main+02272364	Demonica Suit (Haru)	頭部無しデモニカスーツ	Demonica Suit (Haru)	奥村春
+main+02272365	Demonica Suit (Futaba)	頭部無しデモニカスーツ	Demonica Suit (Futaba)	佐仓双叶
+main+02272366	Demonica Suit (Akechi)	頭部無しデモニカスーツ	Demonica Suit (Akechi)	明智吾郎
+main+02272367	Demonica Suit (Kasumi)	頭部無しデモニカスーツ	Demonica Suit (Kasumi)	芳泽霞
+main+02272368	New Cinema Outfit (Joker)	ニューシネマウェア	New Cinema Outfit (Joker)	主人公
+main+02272369	New Cinema Outfit (Ryuji)	ニューシネマウェア	New Cinema Outfit (Ryuji)	坂本龙司
+main+0227236A	New Cinema Outfit (Morgana)	ニューシネマウェア	New Cinema Outfit (Morgana)	摩尔加纳
+main+0227236B	New Cinema Outfit (Ann)	ニューシネマウェア	New Cinema Outfit (Ann)	高卷杏
+main+0227236C	New Cinema Outfit (Yusuke)	ニューシネマウェア	New Cinema Outfit (Yusuke)	喜多川佑介
+main+0227236D	New Cinema Outfit (Makoto)	ニューシネマウェア	New Cinema Outfit (Makoto)	新岛真
+main+0227236E	New Cinema Outfit (Haru)	ニューシネマウェア	New Cinema Outfit (Haru)	奥村春
+main+0227236F	New Cinema Outfit (Futaba)	ニューシネマウェア	New Cinema Outfit (Futaba)	佐仓双叶
+main+02272370	New Cinema Outfit (Akechi)	ニューシネマウェア	New Cinema Outfit (Akechi)	明智吾郎
+main+02272371	New Cinema Outfit (Kasumi)	ニューシネマウェア	New Cinema Outfit (Kasumi)	芳泽霞

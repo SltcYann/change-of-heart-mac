@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P5R Save Editor — Authentic In-Game Command Prototype</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,700;0,900;1,900&family=Permanent+Marker&family=Rubik+Mono+One&family=Special+Elite&display=swap');
+
+    body {
+      background: #000;
+      color: #FFF;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .p5-canvas-frame {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      background: url('/assets/joker_command_bg.png') no-repeat center center;
+      background-size: cover;
+      overflow: hidden;
+      box-shadow: 0 0 50px rgba(230,0,18,0.5);
+      border: 4px solid #111;
+    }
+
+    /* Comic Halftone Overlay */
+    .halftone-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.18) 20%, transparent 20%);
+      background-size: 8px 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Live Interactive Command Overlay Stack */
+    .command-nav-stack {
+      position: absolute;
+      left: 310px;
+      top: 155px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5px;
+      z-index: 30;
+      transform: rotate(-7deg);
+    }
+
+    .p5-cmd-pill {
+      position: relative;
+      cursor: pointer;
+      display: inline-block;
+      text-decoration: none;
+      transition: all 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .p5-cmd-pill span {
+      display: inline-block;
+      font-family: 'Rubik Mono One', 'Permanent Marker', sans-serif;
+      font-size: 26px;
+      color: #000;
+      background: #FFF;
+      padding: 4px 18px 4px 14px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      clip-path: polygon(4% 0%, 100% 0%, 96% 100%, 0% 100%);
+      box-shadow: 5px 5px 0px #000;
+      border: 2px solid #000;
+      transform: skew(-10deg);
+      transition: all 0.1s ease;
+    }
+
+    /* Distinct Ransom-Note Colors on Hover / Focus */
+    .p5-cmd-pill:hover span, .p5-cmd-pill.active span {
+      background: #FFE600 !important;
+      color: #000 !important;
+      transform: scale(1.12) skew(-12deg) rotate(-2deg);
+      box-shadow: 8px 8px 0px #E60012, 12px 12px 0px #000;
+    }
+
+    .p5-cmd-pill:nth-child(1) span { background: #00F0FF; color: #000; clip-path: polygon(0 0, 98% 2%, 94% 98%, 2% 96%); }
+    .p5-cmd-pill:nth-child(2) span { background: #FFF; clip-path: polygon(3% 0, 100% 4%, 96% 100%, 0 94%); }
+    .p5-cmd-pill:nth-child(3) span { background: #FFF; clip-path: polygon(2% 2%, 98% 0%, 100% 96%, 0% 100%); }
+    .p5-cmd-pill:nth-child(4) span { background: #FFF; clip-path: polygon(0 0, 96% 2%, 94% 98%, 4% 96%); }
+    .p5-cmd-pill:nth-child(5) span { background: #FFE600; color: #000; }
+    .p5-cmd-pill:nth-child(6) span { background: #FFF; }
+    .p5-cmd-pill:nth-child(7) span { background: #FF2A6D; color: #FFF; }
+
+    /* Top Right Menu Card */
+    .top-right-badge {
+      position: absolute;
+      right: 45px;
+      top: 40px;
+      background: #FFF;
+      color: #000;
+      padding: 10px 24px;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0 #E60012, 14px 14px 0 #000;
+      transform: rotate(5deg) skew(-5deg);
+      z-index: 25;
+      text-align: center;
+    }
+
+    .top-right-badge h2 {
+      font-family: 'Rubik Mono One', sans-serif;
+      font-size: 28px;
+      margin: 0;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .top-right-badge p {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      margin: 4px 0 0 0;
+      letter-spacing: 2px;
+    }
+
+    /* Active Tooltip Spotlight Box */
+    .command-spotlight {
+      position: absolute;
+      left: 540px;
+      bottom: 75px;
+      background: #000;
+      border: 3px solid #FFF;
+      padding: 12px 28px;
+      box-shadow: 6px 6px 0 #FFE600;
+      transform: skew(-8deg) rotate(2deg);
+      z-index: 30;
+    }
+
+    .command-spotlight h3 {
+      font-family: 'Rubik Mono One', sans-serif;
+      font-size: 32px;
+      color: #FFE600;
+      margin: 0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 3px 3px 0 #E60012;
+    }
+
+    .command-spotlight p {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #FFF;
+      margin: 2px 0 0 0;
+      letter-spacing: 1.5px;
+    }
+
+    /* Live Currency HUD */
+    .hud-wallet-card {
+      position: absolute;
+      left: 280px;
+      bottom: 45px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: #FFF;
+      background: #000;
+      padding: 4px 20px;
+      border: 3px solid #FFF;
+      box-shadow: 6px 6px 0 #E60012;
+      transform: rotate(-3deg) skew(-10deg);
+      z-index: 30;
+      letter-spacing: 2px;
+    }
+
+    /* Bottom Right Keybind Bar */
+    .keybind-bar {
+      position: absolute;
+      right: 35px;
+      bottom: 25px;
+      display: flex;
+      gap: 15px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #FFF;
+      z-index: 30;
+    }
+    .key-badge {
+      background: #FFF;
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 900;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="p5-canvas-frame">
+    <div class="halftone-overlay"></div>
+
+    <!-- Top Right Brand Card -->
+    <div class="top-right-badge">
+      <div style="font-family:'Special Elite', cursive; font-size:11px; font-weight:bold; letter-spacing:1px; margin-bottom:2px;">
+        P5R SAVE STUDIO
+      </div>
+      <h2>MeNu: MaiN</h2>
+      <p>SeLeCt a CoMMaND</p>
+    </div>
+
+    <!-- The Authentic Command Spine -->
+    <nav class="command-nav-stack">
+      <div class="p5-cmd-pill" onmouseenter="setFocus('SKiLL', 'Inspect & modify active party combat skills.')">
+        <span>SKiLL</span>
+      </div>
+      <div class="p5-cmd-pill active" onmouseenter="setFocus('iTeM', 'Access Cheat Shop, Master Catalog & Infiltration tools.')">
+        <span>iTeM</span>
+      </div>
+      <div class="p5-cmd-pill" onmouseenter="setFocus('EQUiP', 'Manage Phantom Thief weapons, armor, & accessories.')">
+        <span>EQUiP</span>
+      </div>
+      <div class="p5-cmd-pill" onmouseenter="setFocus('PeRSONA', 'Velvet Room 100% Compendium & Joker Stock Personas.')">
+        <span>PeRSONA</span>
+      </div>
+      <div class="p5-cmd-pill" onmouseenter="setFocus('StAtS', 'Max Social Stats (Knowledge, Charm, Guts, Kindness, Prof).')">
+        <span>StAtS</span>
+      </div>
+      <div class="p5-cmd-pill" onmouseenter="setFocus('CONFIDaNT', 'Unlock rank 10 bonds & romance flags.')">
+        <span>CONFIDaNT</span>
+      </div>
+      <div class="p5-cmd-pill" onmouseenter="setFocus('SYSTeM', 'Save & Re-sign bytes, rescue backups & slot management.')">
+        <span>SYSTeM</span>
+      </div>
+    </nav>
+
+    <!-- Bottom Left Wallet Display -->
+    <div class="hud-wallet-card">
+      <span style="color:#FFE600; margin-right:6px;">¥</span>9,861,779
+    </div>
+
+    <!-- Active Command Spotlight -->
+    <div class="command-spotlight">
+      <h3 id="spotTitle">CoMMaND: iTeM</h3>
+      <p id="spotDesc">Access Cheat Shop, Master Catalog & Infiltration tools.</p>
+    </div>
+
+    <!-- Bottom Right Gamepad / Keyboard Indicators -->
+    <div class="keybind-bar">
+      <div><span class="key-badge">ESC</span> Close</div>
+      <div><span class="key-badge">ENTER</span> Confirm</div>
+    </div>
+  </div>
+
+  <script>
+    function setFocus(title, desc) {
+      document.getElementById('spotTitle').textContent = 'CoMMaND: ' + title;
+      document.getElementById('spotDesc').textContent = desc;
+      document.querySelectorAll('.p5-cmd-pill').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>

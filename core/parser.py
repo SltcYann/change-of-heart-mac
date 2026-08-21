@@ -52,13 +52,29 @@ class SaveHeader:
             raw_desc,
         ) = struct.unpack("<IHBBBBxBBBBB64s64s256s", buffer[:0x190])
 
-        self.lname = raw_lname.rstrip(b"\x00").decode("utf-8", errors="ignore")
-        self.fname = raw_fname.rstrip(b"\x00").decode("utf-8", errors="ignore")
+        import unicodedata
+        self.lname = unicodedata.normalize("NFKC", raw_lname.rstrip(b"\x00").decode("utf-8", errors="ignore")).strip()
+        self.fname = unicodedata.normalize("NFKC", raw_fname.rstrip(b"\x00").decode("utf-8", errors="ignore")).strip()
         self.desc = raw_desc.rstrip(b"\x00").decode("utf-8", errors="ignore")
 
+    @staticmethod
+    def _to_fullwidth(text: str) -> str:
+        res = []
+        for c in text:
+            code = ord(c)
+            if 0x21 <= code <= 0x7E:
+                res.append(chr(code + 0xFEE0))
+            elif code == 0x20:
+                res.append(" ")
+            else:
+                res.append(c)
+        return "".join(res)
+
     def pack(self) -> bytes:
-        lname_b = pack_fixed_string(self.lname, 64)
-        fname_b = pack_fixed_string(self.fname, 64)
+        fw_lname = self._to_fullwidth(self.lname)
+        fw_fname = self._to_fullwidth(self.fname)
+        lname_b = pack_fixed_string(fw_lname, 64)
+        fname_b = pack_fixed_string(fw_fname, 64)
         desc_b = pack_fixed_string(self.desc, 256)
 
         return struct.pack(

@@ -1,0 +1,12 @@
+{
+  "name": "p5r-save-editor",
+  "version": "1.0.10-dev",
+  "private": true,
+  "description": "Persona 5 Royal save editor (Change of Heart). UI lint shim only — see AGENTS.md lint:context gate.",
+  "scripts": {
+    "lint:context": "node tools/lint_context.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

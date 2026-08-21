@@ -263,8 +263,19 @@ async function loadDatabase() {
   try {
     const res = await fetch("/api/database");
     DB = await res.json();
+    hydrateItemOwnerMap();
     populatePersonaDropdown();
     populateTraitDropdown();
+    // restore inventory view/chara/search from hash (ADR 0002 hash persistence)
+    try {
+      const h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const v = h.get("inv"); if (v === "pouch" || v === "catalog") INVENTORY_VIEW = v;
+      const c = h.get("cat"); if (c) CURRENT_UNIFIED_CATEGORY = c;
+      const w = h.get("who"); if (w) INVENTORY_CHARA = w;
+      const q = h.get("q"); if (q !== null) { UNIFIED_SEARCH_QUERY = decodeURIComponent(q); const inp = document.getElementById("unifiedItemSearchBox"); if (inp) inp.value = UNIFIED_SEARCH_QUERY; }
+      setInventoryView(INVENTORY_VIEW);
+      renderCharacterChips();
+    } catch {}
     renderInventoryViews();
   } catch (err) {
     console.error("DB Load Error:", err);
@@ -322,14 +333,41 @@ async function loadSaveFile() {
       INITIAL_CONFIDANT_RANKS[arc] = c.rank || 0;
     });
 
-    // Populate Active Inventory from Save
+    // Populate Active Inventory from Save — prefer normalized payload (S1)
+    INVENTORY_NORMALIZED = data.inventory_normalized || null;
     INVENTORY_ITEM_COUNTS = {};
-    (data.inventory || []).forEach(entry => {
-      if (entry.item_id > 0 && entry.quantity > 0) {
-        INVENTORY_ITEM_COUNTS[entry.item_id] = entry.quantity;
+    if (INVENTORY_NORMALIZED && (INVENTORY_NORMALIZED.stacks || INVENTORY_NORMALIZED.owned_gear)) {
+      Object.entries(INVENTORY_NORMALIZED.stacks || {}).forEach(([k, qty]) => {
+        const id = parseInt(k);
+        if (id > 0 && qty > 0) INVENTORY_ITEM_COUNTS[id] = Math.min(99, parseInt(qty));
+      });
+      Object.entries(INVENTORY_NORMALIZED.owned_gear || {}).forEach(([k, owned]) => {
+        const id = parseInt(k);
+        if (id > 0 && owned) INVENTORY_ITEM_COUNTS[id] = 1;
+      });
+      KEY_ITEM_UNLOCKED = false;
+      if (INVENTORY_NORMALIZED.conflicts && INVENTORY_NORMALIZED.conflicts.length > 0) {
+        console.warn("Inventory conflicts (count_region wins):", INVENTORY_NORMALIZED.conflicts);
+        setStatus(`⚠ ${INVENTORY_NORMALIZED.conflicts.length} conflict(s) — count_region canonical.`);
       }
-    });
+      if (INVENTORY_NORMALIZED.mirror_mismatches && INVENTORY_NORMALIZED.mirror_mismatches.length > 0) {
+        console.warn("Mirror mismatches:", INVENTORY_NORMALIZED.mirror_mismatches);
+        // surface via footer description bar too
+        const descEl = document.getElementById("activeItemDescText");
+        if (descEl) descEl.textContent = `⚠ Mirror mismatch detected — will be healed on save (primary wins).`;
+      }
+    } else {
+      (data.inventory || []).forEach(entry => {
+        if (entry.item_id > 0 && entry.quantity > 0) {
+          INVENTORY_ITEM_COUNTS[entry.item_id] = entry.quantity;
+        }
+      });
+    }
 
+    STAGED_DIRTY.clear();
+    // snapshot for discard
+    window.__INVENTORY_BASELINE = JSON.stringify(INVENTORY_ITEM_COUNTS);
+    refreshStagedBadge();
     renderSaveData();
     refreshBackups();
     updateIntegrityBadge(data.integrity);
@@ -1547,6 +1585,10 @@ let COMPENDIUM_DATA = null; // { supported, registered: [ids], count }
 let ORIGINAL_COMPENDIUM_REGISTERED = [];
 let COMPENDIUM_FILTER_MODE = "all"; // "all" | "registered" | "unregistered"
 let COMPENDIUM_SEARCH_QUERY = "";
+// Armed by Unlock ALL; makes /api/save run the verified backend
+// unlock_compendium_100() (exact genuine-100% oracle parity) instead of the
+// staged per-pid list, which silently cleared party/story mask bits.
+let UNLOCK_COMPENDIUM_PENDING = false;
 
 // Known DLC & Treasure Demon IDs in P5R
 const DLC_PERSONA_IDS = [181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 362, 363, 366, 367, 368, 369, 370, 371];
@@ -1575,6 +1617,8 @@ function renderCompendium() {
   }
   if (!COMPENDIUM_DATA || !COMPENDIUM_DATA.supported) return;
 
+  // Authentic P5R Velvet Room Compendium: All 246 summonable demon fusions (Base + Royal/DLC)
+  // Non-summonable party/story entries and dead bits are excluded from the registerable denominator.
   const playableIds = (DB.personas || [])
     .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
     .map(p => p.id)
@@ -1583,7 +1627,7 @@ function renderCompendium() {
       && !STORY_COMPENDIUM_IDS.has(id)
       && !PARTY_COMPENDIUM_IDS.has(id));
 
-  const total = playableIds.length; // 243 summonable Personas
+  const total = playableIds.length; // 246 authentic summonable Personas
   const regSet = new Set(COMPENDIUM_DATA.registered || []);
   const count = playableIds.filter(id => regSet.has(id)).length;
   COMPENDIUM_DATA.count = count;
@@ -1630,20 +1674,26 @@ function filterCompendiumGrid() {
     .concat([...STORY_COMPENDIUM_IDS])
     .concat([...PARTY_COMPENDIUM_IDS])
     .sort((a, b) => a - b);
+  const regCount = regIds.filter(id => regSet.has(id)).length;
+  const unregCount = regIds.length - regCount;
 
   const allBtn = document.getElementById("filterCompAll");
   if (allBtn) allBtn.textContent = `ALL (${renderIds.length})`;
+
+  const regBtn = document.getElementById("filterCompReg");
+  if (regBtn) regBtn.textContent = `REGISTERED (${regCount})`;
+
+  const unregBtn = document.getElementById("filterCompUnreg");
+  if (unregBtn) unregBtn.textContent = `UNREGISTERED (${unregCount})`;
 
   for (const pid of renderIds) {
     const isStory = STORY_COMPENDIUM_IDS.has(pid);
     const isParty = PARTY_COMPENDIUM_IDS.has(pid);
     const isReg = !isStory && !isParty && regSet.has(pid);
 
-    // Status filter (story/party cards always render; they cannot be toggled)
-    if (!isStory && !isParty) {
-      if (COMPENDIUM_FILTER_MODE === "registered" && !isReg) continue;
-      if (COMPENDIUM_FILTER_MODE === "unregistered" && isReg) continue;
-    }
+    // Status filter
+    if (COMPENDIUM_FILTER_MODE === "registered" && !isReg) continue;
+    if (COMPENDIUM_FILTER_MODE === "unregistered" && (isReg || isStory || isParty)) continue;
 
     const name = byId[pid] || "?";
     const hexId = "0x" + pid.toString(16).toUpperCase().padStart(2, "0");
@@ -1786,16 +1836,14 @@ function unlockFullCompendium() {
   const regIds = (DB.personas || [])
     .filter(p => !UNNAMED_PERSONA_NAMES.has(p.name) && !p.name.startsWith("Lab "))
     .map(p => p.id)
-    .filter(id => id >= 1 && id <= 437
-      && !STUB_COMPENDIUM_IDS.has(id)
-      && !STORY_COMPENDIUM_IDS.has(id)
-      && !PARTY_COMPENDIUM_IDS.has(id));
+    .filter(id => id >= 1 && id <= 437);
 
-  if (!confirm(`Unlock ALL ${regIds.length} registerable personas in the Compendium?\n\nStory-exclusive & Party personas are excluded — the game never registers them.\n\nRemember to RE-SIGN SAVE.`)) return;
+  if (!confirm(`Unlock ALL ${regIds.length} registerable personas in the Compendium?\n\nWrites a genuine 100% state: full registration bitmask + all Velvet Room records, matching a real 100% save.\n\nRemember to RE-SIGN SAVE.`)) return;
+  UNLOCK_COMPENDIUM_PENDING = true;
   COMPENDIUM_DATA.registered = regIds.slice();
   COMPENDIUM_DATA.count = regIds.length;
   renderCompendium();
-  setStatus(`★ All ${regIds.length} registerable Personas registered in Compendium matrix. Click RE-SIGN SAVE to write to disk.`);
+  setStatus(`★ 100% compendium unlock armed — click RE-SIGN SAVE to apply the verified full unlock.`);
 }
 
 function unlockDlcPersonas() {
@@ -1818,6 +1866,7 @@ function unlockTreasureDemons() {
 
 function resetCompendiumToOriginal() {
   if (!confirm("Reset compendium back to the save file's original registration state?")) return;
+  UNLOCK_COMPENDIUM_PENDING = false;
   COMPENDIUM_DATA.registered = [...ORIGINAL_COMPENDIUM_REGISTERED];
   COMPENDIUM_DATA.count = ORIGINAL_COMPENDIUM_REGISTERED.length;
   renderCompendium();
@@ -1832,7 +1881,77 @@ function resetCompendiumToOriginal() {
 let CURRENT_UNIFIED_CATEGORY = "Consumable";
 let UNIFIED_SEARCH_QUERY = "";
 let SELECTED_ITEM_ID = null;
-let INVENTORY_ITEM_COUNTS = {}; // id -> qty (1..99)
+let INVENTORY_ITEM_COUNTS = {}; // id -> count (0..99 or 0/1)
+// VERIFIED write categories only — AGENTS.md: 0xA000 Outfits frozen until diff proves.
+const GEAR_CATEGORIES = new Set(["Melee", "Ranged", "Protector"]);
+// VERIFIED count-array categories (0x2410..0x2800 multi-base). Infiltration/Treasure/KeyItem/SkillCard
+// are listed in STACK_CATEGORIES but their save offsets are NOT yet 2-save-diff verified — see Risks §8.
+const STACK_CATEGORIES = new Set(["Consumable", "Protector", "Accessory", "Infiltration", "SkillCard", "Treasure"]);
+// Categories with NO verified save offset yet — UI renders read-only rows (controls disabled).
+const UNWIRED_CATEGORIES = new Set(["Outfit", "KeyItem", "SkillCard", "Treasure", "Infiltration"]);
+function getItemById(id) { return (DB.items || []).find(it => String(it.id) === String(id)) || null; }
+function isGearCategory(cat) { return GEAR_CATEGORIES.has(cat); }
+function isStackCategory(cat) { return STACK_CATEGORIES.has(cat); }
+// Normalized payload mirrors for gear sentinel
+let INVENTORY_NORMALIZED = null; // { owned_gear, stacks, conflicts, mirror_mismatches, unknown } from /api/load
+let KEY_ITEM_UNLOCKED = false; // S4 guard: Key Items editing disabled until confirm
+
+// ── S5b Dual-view + Character chips (Plan Phase 1-2) ──────────────────
+let INVENTORY_VIEW = "pouch"; // "pouch" | "catalog"  (ADR 0002)
+let INVENTORY_CHARA = "All";  // filter chip value (name, not EN_NAME)
+const THIEF_LABELS = ["Joker","Ryuji","Morgana","Ann","Yusuke","Makoto","Haru","Futaba","Akechi","Kasumi"];
+const CHIP_SUPPORT_CATS = new Set(["Melee","Ranged","Protector","Outfit"]); // where owner matters
+// id -> owner English label (parsed from data/Weapon*.txt col 5; hydrated after DB load)
+const ITEM_OWNER_BY_ID = new Map();
+let STAGED_DIRTY = new Set(); // item_ids with unsaved staged delta (shared buffer mirror)
+
+function belongsToChara(itemId, chara) {
+  if (chara === "All") return true;
+  const own = ITEM_OWNER_BY_ID.get(String(itemId)) || ITEM_OWNER_BY_ID.get(Number(itemId));
+  if (!own) return chara === "All"; // no owner data → only visible under All
+  return own === chara || own === "All";
+}
+function setInventoryView(view) {
+  INVENTORY_VIEW = view === "catalog" ? "catalog" : "pouch";
+  document.getElementById("viewPouchBtn")?.classList.toggle("active", INVENTORY_VIEW === "pouch");
+  document.getElementById("viewCatalogBtn")?.classList.toggle("active", INVENTORY_VIEW === "catalog");
+  const hint = document.getElementById("viewScopeHint");
+  const catalog = document.getElementById("catalogSizeHint");
+  if (hint) hint.textContent = INVENTORY_VIEW === "pouch" ? "Owned items only — fix your bag." : "Full game catalog — browse & own.";
+  if (catalog) catalog.textContent = INVENTORY_VIEW === "catalog" && DB.items ? `${DB.items.length} knowable items` : "";
+  // hash persistence
+  try { const u = new URL(window.location.href); u.hash = `inv=${INVENTORY_VIEW}&cat=${CURRENT_UNIFIED_CATEGORY}&who=${INVENTORY_CHARA}&q=${encodeURIComponent(UNIFIED_SEARCH_QUERY)}`; history.replaceState(null,"",u); } catch {}
+  renderUnifiedItemList();
+}
+function setInventoryChara(chara) {
+  INVENTORY_CHARA = THIEF_LABELS.includes(chara) || chara === "All" ? chara : "All";
+  try { const u = new URL(window.location.href); u.hash = `inv=${INVENTORY_VIEW}&cat=${CURRENT_UNIFIED_CATEGORY}&who=${INVENTORY_CHARA}&q=${encodeURIComponent(UNIFIED_SEARCH_QUERY)}`; history.replaceState(null,"",u); } catch {}
+  renderCharacterChips();
+  renderUnifiedItemList();
+}
+function renderCharacterChips() {
+  const bar = document.getElementById("inventoryCharaChips");
+  if (!bar) return;
+  const enabled = CHIP_SUPPORT_CATS.has(CURRENT_UNIFIED_CATEGORY);
+  bar.style.display = enabled ? "flex" : "none";
+  if (!enabled) return;
+  bar.innerHTML = "";
+  for (const label of ["All", ...THIEF_LABELS]) {
+    const btn = document.createElement("button");
+    btn.className = "filter-pill" + (INVENTORY_CHARA === label ? " active" : "");
+    btn.innerHTML = `<span>${label}</span>`;
+    btn.title = label === "All" ? "Show all owners" : `Only ${label}'s gear`;
+    btn.onclick = () => setInventoryChara(label);
+    bar.appendChild(btn);
+  }
+}
+function hydrateItemOwnerMap() {
+  // data/ role column ("主人公"/"高卷杏"...) is already mapped to English display names in server.py's REFERENCE_DB (`... (Joker)` suffix), so we extract parenthesized owner.
+  for (const it of (DB.items || [])) {
+    const m = it.name.match(/\((Joker|Ryuji|Morgana|Ann|Yusuke|Makoto|Haru|Futaba|Akechi|Kasumi|All)\)\s*$/);
+    if (m) ITEM_OWNER_BY_ID.set(String(it.id), m[1]);
+  }
+}
 
 // Canonical Category Visual Themes & Glyph Badges
 const P5R_CATEGORY_THEMES = {
@@ -1842,6 +1961,7 @@ const P5R_CATEGORY_THEMES = {
   Melee:        { glyph: "BLD",  color: "#FF3D00", bg: "#330D00", name: "Melee Weapon" },
   Ranged:       { glyph: "GUN",  color: "#76FF03", bg: "#133300", name: "Firearm / Gun" },
   Protector:    { glyph: "ARM",  color: "#2979FF", bg: "#001733", name: "Protector / Armor" },
+  Outfit:       { glyph: "CLO",  color: "#D500F9", bg: "#280033", name: "Outfit & Costume" },
   Accessory:    { glyph: "ACC",  color: "#FF4081", bg: "#330018", name: "Accessory / Ring" },
   Treasure:     { glyph: "GEM",  color: "#00E676", bg: "#003318", name: "Material & Loot" },
   KeyItem:      { glyph: "KEY",  color: "#FFAB00", bg: "#332200", name: "Key & Story Item" }
@@ -1914,11 +2034,16 @@ function switchItemCategory(cat, btnEl) {
   CURRENT_UNIFIED_CATEGORY = cat;
   document.querySelectorAll("#unifiedItemTabs .filter-pill").forEach(el => el.classList.remove("active"));
   if (btnEl) btnEl.classList.add("active");
+  // reset character chip if category no longer supports it (keeps state sane)
+  if (!CHIP_SUPPORT_CATS.has(cat)) INVENTORY_CHARA = "All";
+  renderCharacterChips();
+  try { const u = new URL(window.location.href); u.hash = `inv=${INVENTORY_VIEW}&cat=${cat}&who=${INVENTORY_CHARA}&q=${encodeURIComponent(UNIFIED_SEARCH_QUERY)}`; history.replaceState(null,"",u); } catch {}
   renderUnifiedItemList();
 }
 
 function onUnifiedSearchInput() {
   UNIFIED_SEARCH_QUERY = (document.getElementById("unifiedItemSearchBox")?.value || "").toLowerCase().trim();
+  try { const u = new URL(window.location.href); u.hash = `inv=${INVENTORY_VIEW}&cat=${CURRENT_UNIFIED_CATEGORY}&who=${INVENTORY_CHARA}&q=${encodeURIComponent(UNIFIED_SEARCH_QUERY)}`; history.replaceState(null,"",u); } catch {}
   renderUnifiedItemList();
 }
 
@@ -1926,7 +2051,7 @@ function updateCategoryTabBadges() {
   const allOwned = Object.entries(INVENTORY_ITEM_COUNTS)
     .map(([idStr, qty]) => {
       const id = parseInt(idStr);
-      const item = (DB.items || []).find(it => it.id === id) || { id, category: "Consumable" };
+      const item = getItemById(id) || { id, category: "Consumable" };
       return { ...item, qty: parseInt(qty) };
     })
     .filter(it => it.qty > 0);
@@ -1939,6 +2064,7 @@ function updateCategoryTabBadges() {
   if (document.getElementById("catBadgeMelee")) document.getElementById("catBadgeMelee").textContent = countByCat("Melee");
   if (document.getElementById("catBadgeRanged")) document.getElementById("catBadgeRanged").textContent = countByCat("Ranged");
   if (document.getElementById("catBadgeProtector")) document.getElementById("catBadgeProtector").textContent = countByCat("Protector");
+  if (document.getElementById("catBadgeOutfit")) document.getElementById("catBadgeOutfit").textContent = countByCat("Outfit");
   if (document.getElementById("catBadgeAccessory")) document.getElementById("catBadgeAccessory").textContent = countByCat("Accessory");
   if (document.getElementById("catBadgeTreasure")) document.getElementById("catBadgeTreasure").textContent = countByCat("Treasure");
   if (document.getElementById("catBadgeKeyItem")) document.getElementById("catBadgeKeyItem").textContent = countByCat("KeyItem");
@@ -2002,35 +2128,62 @@ function getItemSortRank(item) {
   return 1000 + (Number(item.id) & 0x0FFF);
 }
 
-// Render the In-Game Active Carried Items Roster
+// Render the In-Game Active Carried Items Roster — S5b dual view
 function renderUnifiedItemList() {
   const container = document.getElementById("unifiedItemListContainer");
   if (!container || !DB.items) return;
 
   updateCategoryTabBadges();
+  renderCharacterChips();
 
-  // 1. Show only items currently owned in the save file (Strict In-Game Behavior)
-  const allOwnedInCat = Object.entries(INVENTORY_ITEM_COUNTS)
-    .map(([idStr, qty]) => {
-      const id = parseInt(idStr);
-      const item = DB.items.find(it => it.id === id) || { id, name: `Item 0x${id.toString(16).toUpperCase()}`, category: "Consumable" };
-      return { ...item, qty: parseInt(qty) };
-    })
-    .filter(item => {
+  const isCatalog = INVENTORY_VIEW === "catalog";
+  let list;
+  if (isCatalog) {
+    // Full game catalog: every knowable item, joined with owned flag
+    list = (DB.items || []).map(it => {
+      const qty = INVENTORY_ITEM_COUNTS[it.id] || 0;
+      const owned = qty > 0;
+      const qtyView = isGearCategory(it.category) ? (owned ? 1 : 0) : qty;
+      return { ...it, qty: qtyView, owned };
+    }).filter(item => {
       const matchCat = CURRENT_UNIFIED_CATEGORY === "All" || item.category === CURRENT_UNIFIED_CATEGORY;
       const matchSearch = !UNIFIED_SEARCH_QUERY || item.name.toLowerCase().includes(UNIFIED_SEARCH_QUERY);
-      return matchCat && matchSearch && item.qty > 0;
-    })
-    .sort((a, b) => getItemSortRank(a) - getItemSortRank(b));
+      const matchChara = CHIP_SUPPORT_CATS.has(item.category) ? belongsToChara(item.id, INVENTORY_CHARA) : true;
+      return matchCat && matchSearch && matchChara;
+    });
+  } else {
+    // Owned Pouch: only owned in this save
+    list = Object.entries(INVENTORY_ITEM_COUNTS)
+      .map(([idStr, qty]) => {
+        const id = parseInt(idStr);
+        const item = getItemById(id) || { id, name: `Item 0x${id.toString(16).toUpperCase()}`, category: "Consumable" };
+        return { ...item, qty: parseInt(qty), owned: parseInt(qty) > 0 };
+      })
+      .filter(item => {
+        const matchCat = CURRENT_UNIFIED_CATEGORY === "All" || item.category === CURRENT_UNIFIED_CATEGORY;
+        const matchSearch = !UNIFIED_SEARCH_QUERY || item.name.toLowerCase().includes(UNIFIED_SEARCH_QUERY);
+        const matchChara = CHIP_SUPPORT_CATS.has(item.category) ? belongsToChara(item.id, INVENTORY_CHARA) : true;
+        return matchCat && matchSearch && matchChara && item.qty > 0;
+      });
+  }
+  const allOwnedInCat = list.slice().sort((a, b) => {
+    // Catalog: owned first, then effect rank / id
+    if (isCatalog && a.owned !== b.owned) return a.owned ? -1 : 1;
+    return getItemSortRank(a) - getItemSortRank(b);
+  });
 
   container.innerHTML = "";
 
   if (allOwnedInCat.length === 0) {
+    const emptyTitle = isCatalog ? "NO MATCH" : "POCKET IS EMPTY";
+    const emptySub = isCatalog ? `No catalog items match your filters.` : `Joker is not carrying any ${CURRENT_UNIFIED_CATEGORY}${INVENTORY_CHARA !== "All" ? ` for ${INVENTORY_CHARA}` : ""} items right now.`;
+    const emptyCTA = isCatalog ? "" : `<button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px; margin-top:6px;" onclick="setInventoryView('catalog')"><span>📚 BROWSE FULL CATALOG</span></button>`;
     container.innerHTML = `
       <div style="text-align:center; padding:60px 20px; color:var(--p5-muted);">
-        <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); margin-bottom:8px;">POCKET IS EMPTY</div>
-        <p style="font-size:12px; margin-bottom:16px;">Joker is not carrying any ${CURRENT_UNIFIED_CATEGORY} items right now.</p>
-        <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px;" onclick="openAddItemModal()">
+        <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); margin-bottom:8px;">${emptyTitle}</div>
+        <p style="font-size:12px; margin-bottom:16px;">${emptySub}</p>
+        ${emptyCTA}
+        <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px; margin-left:6px;" onclick="openAddItemModal()">
           <span>+ ADD ${CURRENT_UNIFIED_CATEGORY.toUpperCase()} ITEM</span>
         </button>
       </div>
@@ -2047,14 +2200,17 @@ function renderUnifiedItemList() {
   allOwnedInCat.forEach(item => {
     const isSelected = String(item.id) === String(SELECTED_ITEM_ID);
     const theme = P5R_CATEGORY_THEMES[item.category] || P5R_CATEGORY_THEMES.Consumable;
+    const isGear = isGearCategory(item.category);
+    const isKey = item.category === "KeyItem";
+    const isOwnedDimmed = isCatalog && !item.owned;
 
     const row = document.createElement("div");
     row.onclick = () => selectUnifiedItem(item.id);
 
-    // Authentic P5R In-Game Slanted Pill Styling
+    // Authentic P5R In-Game Slanted Pill Styling — catalog dimms unowned
     row.style.cssText = `
-      background: ${isSelected ? 'linear-gradient(90deg, #E60012 0%, #B8000E 100%)' : '#11151E'};
-      border: 1px solid ${isSelected ? '#FFF' : '#26334D'};
+      background: ${isSelected ? 'linear-gradient(90deg, #E60012 0%, #B8000E 100%)' : (isOwnedDimmed ? '#0B0B12' : '#11151E')};
+      border: 1px solid ${isSelected ? '#FFF' : (isOwnedDimmed ? '#1E2538' : '#26334D')};
       border-left: 6px solid ${isSelected ? '#FFF' : theme.color};
       padding: 8px 12px;
       display: flex;
@@ -2065,7 +2221,46 @@ function renderUnifiedItemList() {
       box-shadow: ${isSelected ? '4px 4px 0 #000' : '2px 2px 0 #000'};
       transition: transform 0.1s ease, background 0.1s ease;
       margin-bottom: 2px;
+      opacity: ${isOwnedDimmed ? '0.62' : '1'};
     `;
+    // Staged dirty dot
+    const dirty = STAGED_DIRTY.has(String(item.id)) || STAGED_DIRTY.has(item.id);
+    const dirtyDot = dirty ? `<span title="Staged (unsaved)" style="width:8px; height:8px; background:#FFD54F; border-radius:50%; display:inline-block; margin-left:6px; box-shadow:0 0 6px #FFD54F;"></span>` : '';
+    // Mirror/conflict warning on this id
+    const mm = (INVENTORY_NORMALIZED?.mirror_mismatches || []).some(m => String(m.item_id) === String(item.id));
+    const cf = (INVENTORY_NORMALIZED?.conflicts || []).some(c => String(c.item_id) === String(item.id));
+    const warnBadge = mm ? `<span title="Mirror mismatch — will heal on Save" style="font-size:10px; color:#FF5252; font-weight:800; margin-left:6px;">⚠ MIRROR</span>` : cf ? `<span title="Count-region wins over pouch cache" style="font-size:10px; color:#FFA726; font-weight:800; margin-left:6px;">⚠ CONFLICT</span>` : '';
+
+    const gearBadge = isGear ? `<span style="font-size:11px; color:${theme.color}; font-weight:900; margin-left:6px;">${item.qty ? '◆ OWNED' : '◇ NOT OWNED'}</span>` : '';
+    // keyBadge enriched with owner when relevant
+    const ownerSuffix = (item.ownerOwner || ITEM_OWNER_BY_ID.get(String(item.id)) || "");
+    const ownerChip = ownerSuffix ? `<span style="font-size:10px; color:#BBB; background:#1E1E2A; padding:1px 5px; border-radius:3px; margin-left:6px;">${ownerSuffix}</span>` : "";
+    const keyBadge = isKey ? `<span style="font-size:10px; color:#FFAB00; font-weight:800; background:#332200; padding:1px 5px; border-radius:3px; margin-left:6px;">🔒 KEY</span>` : ownerChip;
+    const controls = isGear
+      ? `<div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
+           <span style="font-size:11px; color:${item.owned === false || item.qty === 0 ? '#888' : '#00E676'}; font-weight:800;">${(item.owned === false || item.qty === 0) ? 'NOT OWNED' : 'OWNED'}</span>
+           <button class="p5-btn-action" style="padding:2px 10px; font-size:11px; ${(item.owned === false || item.qty === 0) ? 'background:#00E676; border-color:#00E676; color:#000;' : 'background:#330000; border-color:#FF3333; color:#FF8888;'}" onclick="setUnifiedItemQty(${item.id}, ${(item.owned === false || item.qty === 0) ? 1 : 0})">
+             <span>${(item.owned === false || item.qty === 0) ? 'OWN' : 'UNEQUIP'}</span>
+           </button>
+           ${isCatalog ? `<span style="font-size:10px; color:${warnBadge ? '#BBB' : '#666'};">${warnBadge || dirtyDot || ''}</span>` : (warnBadge+dirtyDot)}
+         </div>`
+      : isKey
+        ? `<div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
+             <span style="font-size:10px; color:#FFAB00;">Guarded</span>
+             <button style="background:${KEY_ITEM_UNLOCKED ? '#332200' : '#222'}; border:1px solid #FFAB00; color:#FFAB00; cursor:pointer; padding:2px 8px; font-size:11px; font-weight:800;" onclick="toggleKeyItemLock()" title="Toggle key-item editing">${KEY_ITEM_UNLOCKED ? 'UNLOCKED' : 'LOCKED'}</button>
+             <button style="background:#330000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:24px; height:24px; border-radius:3px; font-size:11px; display:flex; align-items:center; justify-content:center;" onclick="setUnifiedItemQty(${item.id}, 0)" title="Remove (guarded)">✕</button>
+           </div>`
+        : `<div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
+             <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-</button>
+             <div style="background:#000; border:1px solid ${isSelected ? '#FFF' : 'var(--p5-yellow)'}; min-width:55px; text-align:center; padding:2px 8px; font-family:var(--font-p5); font-size:15px; color:var(--p5-yellow); border-radius:12px; transform:skew(-6deg);">
+               <span style="display:inline-block; transform:skew(6deg);">✕ ${item.qty}</span>
+             </div>
+             <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+</button>
+             <button class="p5-btn-action" style="padding:2px 6px; font-size:10px; ${item.qty === 99 ? 'background:#00E676; border-color:#00E676; color:#000;' : ''}" onclick="setUnifiedItemQty(${item.id}, ${item.qty === 99 ? 1 : 99})">
+               <span>${item.qty === 99 ? 'MAX' : '99x'}</span>
+             </button>
+             <button style="background:#330000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:24px; height:24px; border-radius:3px; font-size:11px; display:flex; align-items:center; justify-content:center;" onclick="setUnifiedItemQty(${item.id}, 0)" title="Remove item from bag">✕</button>
+           </div>`;
 
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px; min-width:0; transform:skew(4deg);">
@@ -2077,20 +2272,10 @@ function renderUnifiedItemList() {
         <div style="font-family:var(--font-p5); font-size:16px; font-weight:800; color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">
           ${item.name}
         </div>
+        ${gearBadge}${keyBadge}
       </div>
 
-      <!-- Quantity Pill & Inline Stepper -->
-      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
-        <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-</button>
-        <div style="background:#000; border:1px solid ${isSelected ? '#FFF' : 'var(--p5-yellow)'}; min-width:55px; text-align:center; padding:2px 8px; font-family:var(--font-p5); font-size:15px; color:var(--p5-yellow); border-radius:12px; transform:skew(-6deg);">
-          <span style="display:inline-block; transform:skew(6deg);">✕ ${item.qty}</span>
-        </div>
-        <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+</button>
-        <button class="p5-btn-action" style="padding:2px 6px; font-size:10px; ${item.qty === 99 ? 'background:#00E676; border-color:#00E676; color:#000;' : ''}" onclick="setUnifiedItemQty(${item.id}, ${item.qty === 99 ? 1 : 99})">
-          <span>${item.qty === 99 ? 'MAX' : '99x'}</span>
-        </button>
-        <button style="background:#330000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:24px; height:24px; border-radius:3px; font-size:11px; display:flex; align-items:center; justify-content:center;" onclick="setUnifiedItemQty(${item.id}, 0)" title="Remove item from bag">✕</button>
-      </div>
+      ${controls}
     `;
 
     container.appendChild(row);
@@ -2156,51 +2341,128 @@ function renderItemDossierSpotlight() {
         </div>
       </div>
 
-      <!-- Quantity Stepper & Quick Adjustment -->
-      <div style="background:#14141F; border:2px solid #000; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000;">
-        <div style="font-size:11px; font-weight:800; color:var(--p5-muted); margin-bottom:8px; text-transform:uppercase;">BAG QUANTITY</div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -10)">-10</button>
-          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-1</button>
-          <div style="background:#000; border:2px solid var(--p5-yellow); min-width:80px; text-align:center; padding:6px 12px; font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow);">
-            ${qty}
+      ${(() => {
+        if (isGearCategory(item.category)) {
+          const owned = qty > 0;
+          return `<div style="background:#14141F; border:2px solid #000; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000; text-align:center;">
+            <div style="font-size:11px; font-weight:800; color:var(--p5-muted); margin-bottom:8px; text-transform:uppercase;">OWNED STATUS</div>
+            <div style="font-family:var(--font-p5); font-size:22px; color:${owned ? '#00E676' : '#888'}; margin-bottom:10px;">${owned ? '◆ OWNED' : '◇ NOT OWNED'}</div>
+            <button class="p5-btn-action" style="padding:8px 18px; ${owned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#00E676; border-color:#00E676; color:#000;'}" onclick="setUnifiedItemQty(${item.id}, ${owned ? 0 : 1})">
+              <span>${owned ? 'UNEQUIP / REMOVE' : 'OWN THIS GEAR'}</span>
+            </button>
+          </div>`;
+        }
+        if (item.category === "KeyItem") {
+          const locked = !KEY_ITEM_UNLOCKED;
+          return `<div style="background:#332200; border:2px solid #FFAB00; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000;">
+            <div style="font-size:11px; font-weight:800; color:#FFAB00; margin-bottom:6px;">⚠ KEY ITEM — GUARDED</div>
+            <div style="font-size:12px; color:#E0E0EE; margin-bottom:10px;">Story-flag risk — editing may break progression. Keep read-only unless you know what you're doing.</div>
+            <button class="p5-btn-action" style="padding:6px 12px; background:${locked ? '#222' : '#FFAB00'}; border-color:#FFAB00; color:${locked ? '#FFAB00' : '#000'}" onclick="toggleKeyItemLock()">
+              <span>${locked ? '🔒 UNLOCK FOR EDITING' : '🔓 LOCK AGAIN'}</span>
+            </button>
+          </div>`;
+        }
+        return `<div style="background:#14141F; border:2px solid #000; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000;">
+          <div style="font-size:11px; font-weight:800; color:var(--p5-muted); margin-bottom:8px; text-transform:uppercase;">BAG QUANTITY</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -10)">-10</button>
+            <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, -1)">-1</button>
+            <div style="background:#000; border:2px solid var(--p5-yellow); min-width:80px; text-align:center; padding:6px 12px; font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow);">
+              ${qty}
+            </div>
+            <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+1</button>
+            <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 10)">+10</button>
           </div>
-          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+1</button>
-          <button class="rank-stepper-btn" style="width:36px; height:36px; font-size:18px;" onclick="stepUnifiedItemQty(${item.id}, 10)">+10</button>
-        </div>
-      </div>
+        </div>`;
+      })()}
     </div>
 
     <!-- Bottom Action Buttons -->
     <div style="display:flex; gap:10px;">
-      <button class="p5-btn-action" style="flex:1; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 99)">
-        <span>SET TO 99x (MAX)</span>
-      </button>
-      <button class="p5-btn-action" style="flex:1; background:#330000; border-color:#FF3333; color:#FF8888; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 0)">
-        <span>DISCARD (REMOVE)</span>
-      </button>
+      ${isGearCategory(item.category)
+        ? `<button class="p5-btn-action" style="flex:1; padding:10px; background:#330000; border-color:#FF3333; color:#FF8888;" onclick="setUnifiedItemQty(${item.id}, 0)"><span>DISCARD</span></button>`
+        : item.category === "KeyItem"
+          ? `<button class="p5-btn-action" style="flex:1; padding:10px; background:#222; border-color:#444; color:#888;" disabled><span>READ-ONLY (UNLOCK TO EDIT)</span></button>`
+          : `<button class="p5-btn-action" style="flex:1; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 99)"><span>SET TO 99x (MAX)</span></button>
+             <button class="p5-btn-action" style="flex:1; background:#330000; border-color:#FF3333; color:#FF8888; padding:10px;" onclick="setUnifiedItemQty(${item.id}, 0)"><span>DISCARD (REMOVE)</span></button>`}
     </div>
   `;
 }
 
+function toggleKeyItemLock() {
+  if (!KEY_ITEM_UNLOCKED) {
+    if (!confirm("⚠ Key Items are story flags — editing may break progression (e.g. confidant locks, 3rd semester). Unlock anyway?")) return;
+  }
+  KEY_ITEM_UNLOCKED = !KEY_ITEM_UNLOCKED;
+  renderUnifiedItemList();
+}
+
+function _markDirty(itemId) { STAGED_DIRTY.add(String(itemId)); refreshStagedBadge(); }
+function _clearDirty(itemId) { STAGED_DIRTY.delete(String(itemId)); STAGED_DIRTY.delete(itemId); refreshStagedBadge(); }
+function refreshStagedBadge() {
+  const badge = document.getElementById("stagedDirtyBadge");
+  const btn = document.getElementById("discardStagedBtn");
+  const n = STAGED_DIRTY.size;
+  if (badge) { badge.style.display = n ? "inline-block" : "none"; badge.textContent = `● ${n} STAGED`; }
+  if (btn) btn.style.display = n ? "inline-flex" : "none";
+}
+function discardStagedChanges() {
+  try {
+    const base = JSON.parse(window.__INVENTORY_BASELINE || "{}");
+    INVENTORY_ITEM_COUNTS = base;
+    STAGED_DIRTY.clear();
+    refreshStagedBadge();
+    renderUnifiedItemList();
+    setStatus("Staged changes discarded — reverted to loaded save.");
+  } catch {}
+}
+
 function stepUnifiedItemQty(itemId, delta) {
+  const item = getItemById(itemId);
+  const cat = item ? item.category : "Consumable";
+  if (isGearCategory(cat)) {
+    // Gear is owned toggle — any step flips
+    const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
+    const next = cur ? 0 : 1;
+    if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
+    else INVENTORY_ITEM_COUNTS[itemId] = 1;
+    _markDirty(itemId); if (next === 0) {} // keep dirty even on discard
+    renderUnifiedItemList();
+    return;
+  }
+  if (cat === "KeyItem" && !KEY_ITEM_UNLOCKED) {
+    alert("🔒 Key Items are guarded — unlock first.");
+    return;
+  }
+  if (cat === "KeyItem" && !confirm("Modify Key Item? May break story flags — proceed?")) return;
   const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
   const next = Math.max(0, Math.min(99, cur + delta));
-  if (next === 0) {
-    delete INVENTORY_ITEM_COUNTS[itemId];
-  } else {
-    INVENTORY_ITEM_COUNTS[itemId] = next;
-  }
+  if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
+  else INVENTORY_ITEM_COUNTS[itemId] = next;
+  _markDirty(itemId);
   renderUnifiedItemList();
 }
 
 function setUnifiedItemQty(itemId, targetQty) {
-  const next = Math.max(0, Math.min(99, targetQty));
-  if (next === 0) {
-    delete INVENTORY_ITEM_COUNTS[itemId];
-  } else {
-    INVENTORY_ITEM_COUNTS[itemId] = next;
+  const item = getItemById(itemId);
+  const cat = item ? item.category : "Consumable";
+  if (isGearCategory(cat)) {
+    const next = targetQty > 0 ? 1 : 0;
+    if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
+    else INVENTORY_ITEM_COUNTS[itemId] = 1;
+    _markDirty(itemId);
+    renderUnifiedItemList();
+    return;
   }
+  if (cat === "KeyItem" && !KEY_ITEM_UNLOCKED) {
+    alert("🔒 Key Items are guarded — unlock first.");
+    return;
+  }
+  if (cat === "KeyItem" && targetQty !== 0 && !confirm("Modify Key Item? May break story flags — write anyway?")) return;
+  const next = Math.max(0, Math.min(99, targetQty));
+  if (next === 0) delete INVENTORY_ITEM_COUNTS[itemId];
+  else INVENTORY_ITEM_COUNTS[itemId] = next;
+  _markDirty(itemId);
   renderUnifiedItemList();
 }
 
@@ -2208,13 +2470,15 @@ function setUnifiedItemQty(itemId, targetQty) {
 // ADD ITEM MODAL / CATALOG BROWSER
 // =========================================================================
 let MODAL_SEARCH_QUERY = "";
+let MODAL_BATCH_SIZE = 50; // incremental virtualization (replaces slice(0,50) hard limit)
 
 function openAddItemModal() {
   const modal = document.getElementById("addItemModal");
   const title = document.getElementById("modalCategoryTitle");
   if (!modal) return;
-  if (title) title.textContent = CURRENT_UNIFIED_CATEGORY.toUpperCase();
+  if (title) title.textContent = `CHEAT SHOP — ${CURRENT_UNIFIED_CATEGORY.toUpperCase()}`;
   MODAL_SEARCH_QUERY = "";
+  MODAL_BATCH_SIZE = 50;
   if (document.getElementById("modalItemSearchBox")) document.getElementById("modalItemSearchBox").value = "";
   modal.style.display = "flex";
   renderModalCatalog();
@@ -2235,9 +2499,12 @@ function renderModalCatalog() {
   const container = document.getElementById("modalCatalogList");
   if (!container || !DB.items) return;
 
+  // Cheat Shop — single-category scoped (inherits main-tab category + chara chip).
+  // NO global "All 2,204" desync; search is category-scoped. Unwired categories
+  // (Outfit/KeyItem/SkillCard/Treasure/Infiltration) render read-only rows.
   const catalog = DB.items
     .filter(item => {
-      const matchCat = CURRENT_UNIFIED_CATEGORY === "All" || item.category === CURRENT_UNIFIED_CATEGORY;
+      const matchCat = item.category === CURRENT_UNIFIED_CATEGORY;
       const matchSearch = !MODAL_SEARCH_QUERY || item.name.toLowerCase().includes(MODAL_SEARCH_QUERY);
       return matchCat && matchSearch;
     })
@@ -2245,8 +2512,15 @@ function renderModalCatalog() {
 
   container.innerHTML = "";
 
+  // ---- totals header ----
+  const ownedCount = catalog.filter(it => (INVENTORY_ITEM_COUNTS[it.id] || 0) > 0).length;
+  const totalsDiv = document.createElement("div");
+  totalsDiv.style.cssText = "font-size:11px; color:var(--p5-muted); padding:6px 12px 8px 12px; border-bottom:1px solid #26334D;";
+  totalsDiv.textContent = `Showing 1–${Math.min(MODAL_BATCH_SIZE, catalog.length)} of ${catalog.length} · ${ownedCount} Owned · ${catalog.length - ownedCount} Missing`;
+  container.appendChild(totalsDiv);
+
   if (catalog.length === 0) {
-    container.innerHTML = `
+    container.innerHTML += `
       <div style="text-align:center; padding:30px; color:var(--p5-muted);">
         <div style="font-family:var(--font-p5); font-size:18px; color:var(--p5-yellow); margin-bottom:4px;">NO ITEMS FOUND</div>
         <p style="font-size:12px;">No item matches "${MODAL_SEARCH_QUERY}".</p>
@@ -2255,11 +2529,28 @@ function renderModalCatalog() {
     return;
   }
 
-  // Render top 50 items for instant performance
-  catalog.slice(0, 50).forEach(item => {
+  // ---- incremental batch render (replaces hard 50-slice) ----
+  const batch = catalog.slice(0, MODAL_BATCH_SIZE);
+  batch.forEach(item => {
     const curQty = INVENTORY_ITEM_COUNTS[item.id] || 0;
     const isOwned = curQty > 0;
+    const isGear = isGearCategory(item.category);
+    const isKey = item.category === "KeyItem";
+    const isUnwired = UNWIRED_CATEGORIES.has(item.category);
     const theme = P5R_CATEGORY_THEMES[item.category] || P5R_CATEGORY_THEMES.Consumable;
+
+    // Action buttons — disabled for unwired categories (no save-offset yet)
+    let actionBtns;
+    if (isUnwired) {
+      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#333; border-color:#555; color:#888; cursor:not-allowed;" disabled><span>⚠ UNWIRED</span></button>`;
+    } else if (isGear) {
+      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; ${isOwned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#00E676; border-color:#00E676; color:#000;'}" onclick="addItemFromModal(${item.id}, 1)"><span>${isOwned ? 'OWNED ◆' : 'OWN'}</span></button>`;
+    } else if (isKey) {
+      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#332200; border-color:#FFAB00; color:#FFAB00;" onclick="addItemFromModal(${item.id}, 1)"><span>🔒 ADD KEY</span></button>`;
+    } else {
+      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px;" onclick="addItemFromModal(${item.id}, 1)"><span>+ 1x</span></button>
+         <button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#FF9F1C; border-color:#FF9F1C; color:#000;" onclick="addItemFromModal(${item.id}, 99)"><span>+ 99x</span></button>`;
+    }
 
     const row = document.createElement("div");
     row.style.cssText = `
@@ -2282,7 +2573,9 @@ function renderModalCatalog() {
           <span style="font-family:var(--font-p5); font-size:15px; color:#FFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             ${item.name}
           </span>
-          ${isOwned ? `<span style="font-size:10px; color:#00E676; font-weight:800; background:#003311; padding:0 5px; border-radius:3px;">IN BAG (✕${curQty})</span>` : ''}
+          ${isOwned ? `<span style="font-size:10px; color:#00E676; font-weight:800; background:#003311; padding:0 5px; border-radius:3px;">${isGear ? 'OWNED ◆' : `IN BAG (✕${curQty})`}</span>` : ''}
+          ${isGear && !isOwned ? `<span style="font-size:10px; color:#888; font-weight:800; background:#222; padding:0 5px; border-radius:3px;">NOT OWNED ◇</span>` : ''}
+          ${isUnwired ? `<span style="font-size:9px; color:#FFAB00; font-weight:800; background:#221100; padding:0 5px; border-radius:3px;">OFFSET UNVERIFIED</span>` : ''}
         </div>
         <div style="font-size:11px; color:#999; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
           ${getItemDescription(item)}
@@ -2290,65 +2583,73 @@ function renderModalCatalog() {
       </div>
 
       <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-        <button class="p5-btn-action" style="padding:4px 10px; font-size:11px;" onclick="addItemFromModal(${item.id}, 1)">
-          <span>+ 1x</span>
-        </button>
-        <button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#FF9F1C; border-color:#FF9F1C; color:#000;" onclick="addItemFromModal(${item.id}, 99)">
-          <span>+ 99x</span>
-        </button>
+        ${actionBtns}
       </div>
     `;
 
     container.appendChild(row);
   });
+
+  // ---- Load More (incremental virtualization) ----
+  if (catalog.length > MODAL_BATCH_SIZE) {
+    const loadMore = document.createElement("button");
+    loadMore.className = "p5-btn-action";
+    loadMore.style.cssText = "margin:8px 12px; padding:6px 14px; font-size:12px;";
+    loadMore.textContent = `Load ${Math.min(50, catalog.length - MODAL_BATCH_SIZE)} more`;
+    loadMore.onclick = () => {
+      MODAL_BATCH_SIZE = Math.min(MODAL_BATCH_SIZE + 50, 300); // hard cap — never render >300 DOM rows
+      renderModalCatalog();
+    };
+    container.appendChild(loadMore);
+  }
 }
 
 function addItemFromModal(itemId, addQty) {
-  const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
-  INVENTORY_ITEM_COUNTS[itemId] = Math.min(99, cur + addQty);
+  const item = getItemById(itemId);
+  const cat = item ? item.category : "Consumable";
+  if (isGearCategory(cat)) {
+    INVENTORY_ITEM_COUNTS[itemId] = 1;
+  } else if (cat === "KeyItem") {
+    if (!KEY_ITEM_UNLOCKED && !confirm("Add Key Item? Story-flag risk — proceed?")) return;
+    if (!KEY_ITEM_UNLOCKED) KEY_ITEM_UNLOCKED = true;
+    INVENTORY_ITEM_COUNTS[itemId] = 1;
+  } else {
+    const cur = INVENTORY_ITEM_COUNTS[itemId] || 0;
+    INVENTORY_ITEM_COUNTS[itemId] = Math.min(99, cur + addQty);
+  }
   SELECTED_ITEM_ID = itemId;
+  _markDirty(itemId);          // shared staged buffer — main tab pill shows ● STAGED
   renderModalCatalog();
   renderUnifiedItemList();
 }
 
 // Batch Actions
-function maxCurrentTabItems() {
-  if (!DB.items) return;
-  const itemsInCat = DB.items.filter(it => it.category === CURRENT_UNIFIED_CATEGORY);
-  if (itemsInCat.length === 0) return;
-  if (confirm(`Max all ${itemsInCat.length} items in '${CURRENT_UNIFIED_CATEGORY}' to 99x?`)) {
-    itemsInCat.forEach(it => {
-      INVENTORY_ITEM_COUNTS[it.id] = 99;
-    });
-    renderUnifiedItemList();
-  }
-}
+// maxCurrentTabItems() — REMOVED (bulk-own any category crosses unwired offsets 0xA000+/0x9000+/0x4000+;
+// one-click corruption vector killed per speedrunner review — see docs/ITEM_STUDIO_REBUILD_PLAN.md §8)
 
 function stockLeblancKitchen() {
+  // Consumable-only preset (0x2000, verified 0x2530 base) — safe bulk write.
   const leblancItems = [
     8355, 8358, 8359, 8360, 8361, // Leblanc Coffee, Master Coffee, Decent Curry, Leblanc Curry, Master Curry
     8215, 8203, 8204, 8205, 8206  // Soma, Soul Drop, Snuff Soul, Chewing Soul, Soul Food
   ];
+  if (!confirm(`Stock 99x of ${leblancItems.length} Leblanc consumables?`)) return;
   leblancItems.forEach(id => {
     INVENTORY_ITEM_COUNTS[id] = 99;
   });
   renderUnifiedItemList();
 }
 
-function stockInfiltrationKit() {
-  if (!DB.items) return;
-  const tools = DB.items.filter(it => it.category === "Infiltration");
-  tools.forEach(it => {
-    INVENTORY_ITEM_COUNTS[it.id] = 99;
-  });
-  renderUnifiedItemList();
-}
+// stockInfiltrationKit() — REMOVED (writes Infiltration 0x6000, count-array offset UNVERIFIED by 2-save diff;
+// docs/ITEM_STUDIO_REBUILD_PLAN.md §8 Risk: scope creep into wiring)
 
 function stockClinicMedicine() {
+  // Clinic meds = all Consumable 0x2000 (verified 0x2530..0x2600) — safe to 99x.
   const clinicIds = [
     8194, 8195, 8196, 8199, 8200, 8201, 8202, // Recov-R, Takemedic, Takemedic-All V/Z
     8207, 8208, 8210, 8211, 8212, 8216        // Revival Bead, Balm of Life, Nohar-M, Relax Gel, Amrita Soda
   ];
+  if (!confirm(`Stock 99x of ${clinicIds.length} clinic meds?`)) return;
   clinicIds.forEach(id => {
     INVENTORY_ITEM_COUNTS[id] = 99;
   });
@@ -2515,23 +2816,41 @@ async function executeSavePayload() {
     mem.persona.skills = skills;
   }
 
-  // Persist Active Inventory
+  // Persist Active Inventory — S1 normalized payload (preferred) + legacy
+  const normPayload = { stacks: {}, owned_gear: {} };
+  Object.entries(INVENTORY_ITEM_COUNTS).forEach(([idStr, qty]) => {
+    const id = parseInt(idStr);
+    const item = getItemById(id);
+    const cat = item ? item.category : "Consumable";
+    if (cat === "KeyItem" && qty > 0 && !KEY_ITEM_UNLOCKED) return; // guarded
+    if (isGearCategory(cat)) {
+      if (qty > 0) normPayload.owned_gear[id] = true;
+      else normPayload.owned_gear[id] = false;
+    } else if (qty > 0) {
+      normPayload.stacks[id] = Math.min(99, parseInt(qty));
+    }
+  });
+  CURRENT_SAVE.inventory_normalized = normPayload;
+  // Legacy flat list also sent for backwards compat
   CURRENT_SAVE.inventory = [];
   let slotIdx = 0;
   Object.entries(INVENTORY_ITEM_COUNTS).forEach(([idStr, qty]) => {
-    if (qty > 0 && slotIdx < 30) {
-      CURRENT_SAVE.inventory.push({
-        slot: slotIdx,
-        item_id: parseInt(idStr),
-        quantity: parseInt(qty)
-      });
-      slotIdx++;
+    if (qty > 0) {
+      const id = parseInt(idStr);
+      const item = getItemById(id);
+      const cat = item ? item.category : "Consumable";
+      if (cat === "KeyItem" && !KEY_ITEM_UNLOCKED) return;
+      const q = isGearCategory(cat) ? 1 : parseInt(qty);
+      CURRENT_SAVE.inventory.push({ slot: slotIdx++, item_id: id, quantity: q });
     }
   });
 
   // Attach modified Compendium registration state
   if (COMPENDIUM_DATA) {
     CURRENT_SAVE.compendium = COMPENDIUM_DATA;
+  }
+  if (UNLOCK_COMPENDIUM_PENDING) {
+    CURRENT_SAVE.unlock_compendium = true;
   }
 
   setStatus("Creating timestamped backup & re-signing save...");
@@ -2550,6 +2869,11 @@ async function executeSavePayload() {
 
     updateIntegrityBadge(result.integrity);
     refreshBackups();
+    STAGED_DIRTY.clear(); refreshStagedBadge();
+    UNLOCK_COMPENDIUM_PENDING = false;
+    delete CURRENT_SAVE.unlock_compendium;
+    window.__INVENTORY_BASELINE = JSON.stringify(INVENTORY_ITEM_COUNTS);
+    // mirror/conflict will refresh on next load
     if (result.notice) renderSameSaveNotice(result.notice);
     setStatus(`✔ Changes re-signed & saved! Auto-backup created: ${result.backup}`);
     alert("★ Save successful! CRCs & AES integrity verified and re-signed.");

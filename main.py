@@ -18,9 +18,14 @@ else:
 
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import webview
+try:
+    import webview
+except ImportError:
+    webview = None
+
 import server as web_server
 from core import instances
+import webbrowser
 
 _HTTPD = None
 
@@ -78,22 +83,34 @@ def main() -> None:
 
     url = f"http://127.0.0.1:{port}/"
 
-    # 3. Create native single desktop window (Edge WebView2)
-    window = webview.create_window(
-        title="PERSONA 5 ROYAL — Change of Heart Save Editor",
-        url=url,
-        width=1280,
-        height=850,
-        min_size=(1024, 700),
-        background_color="#0A0A0F",
-        text_select=True,
-    )
+    # 3. If webview is available, create native desktop window (Edge WebView2)
+    if webview is not None:
+        try:
+            window = webview.create_window(
+                title="PERSONA 5 ROYAL — Change of Heart Save Editor",
+                url=url,
+                width=1280,
+                height=850,
+                min_size=(1024, 700),
+                background_color="#0A0A0F",
+                text_select=True,
+            )
+            webview.start(gui="edgechromium", debug=False)
+            return
+        except Exception as e:
+            print(f"[Change of Heart] WebView2 init notice ({e}), launching in browser: {url}")
+        finally:
+            instances.clear()
+            stop_background_server()
 
+    # 4. Fallback: Launch in default web browser
+    webbrowser.open(url)
     try:
-        # 4. Start native GUI event loop (blocks until window is closed)
-        webview.start(gui="edgechromium", debug=False)
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
     finally:
-        # 5. Clean teardown on window exit
         instances.clear()
         stop_background_server()
     sys.exit(0)

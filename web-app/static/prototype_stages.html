@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P5R Save Editor — Authentic Multi-Stage Prototype</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,700;0,900;1,900&family=Permanent+Marker&family=Rubik+Mono+One&family=Special+Elite&display=swap');
+
+    :root {
+      --p5-crimson: #E60012;
+      --p5-blood: #8A000A;
+      --p5-black: #060608;
+      --p5-yellow: #FFE600;
+      --p5-cyan: #00F0FF;
+      --p5-green: #00E676;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      background: #000;
+      color: #FFF;
+      font-family: 'Montserrat', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .p5-viewport {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      background: #000;
+      overflow: hidden;
+      border: 4px solid #1A1A24;
+      box-shadow: 0 0 60px rgba(230,0,18,0.4);
+    }
+
+    /* Comic Halftone Overlay across entire viewport */
+    .halftone-screen {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.18) 20%, transparent 20%);
+      background-size: 6px 6px;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* Screen Slash Transition Layer */
+    .slash-transition {
+      position: absolute;
+      inset: 0;
+      z-index: 999;
+      pointer-events: none;
+      background: var(--p5-crimson);
+      transform: translateX(-100%) skewX(-20deg);
+      transition: transform 0.22s cubic-bezier(0.85, 0, 0.15, 1);
+    }
+    .slash-transition.active {
+      transform: translateX(0%) skewX(-20deg);
+    }
+
+    /* =========================================================================
+       STAGE 1: JOKER COMMAND HUB
+       ========================================================================= */
+    .stage-hub {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 75% 50%, #E60012 0%, #7A000A 60%, #1A0002 100%);
+      display: flex;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
+    }
+
+    /* High-contrast manga background rays */
+    .manga-burst-lines {
+      position: absolute;
+      inset: 0;
+      background: repeating-conic-gradient(from 0deg at 70% 50%, rgba(0,0,0,0.2) 0deg 10deg, transparent 10deg 20deg);
+      opacity: 0.7;
+    }
+
+    /* Stylized Joker Silhouette Framing (Pure Vector SVG) */
+    .joker-silhouette-art {
+      position: absolute;
+      right: -20px;
+      bottom: -40px;
+      width: 760px;
+      height: 760px;
+      pointer-events: none;
+      z-index: 5;
+      filter: drop-shadow(-15px 0px 0px #000);
+    }
+
+    /* Newspaper Clipping Brand Plate */
+    .brand-plate {
+      position: absolute;
+      right: 60px;
+      top: 40px;
+      background: #FFF;
+      color: #000;
+      padding: 10px 24px;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0px var(--p5-crimson), 14px 14px 0px #000;
+      transform: rotate(4deg) skew(-6deg);
+      z-index: 20;
+    }
+    .brand-plate h2 {
+      font-family: 'Rubik Mono One', sans-serif;
+      font-size: 26px;
+      letter-spacing: -1px;
+    }
+    .brand-plate p {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+
+    /* The Iconic Slanted Command Stack */
+    .command-stack {
+      position: absolute;
+      left: 120px;
+      top: 130px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 25;
+      transform: rotate(-6deg);
+    }
+
+    .cmd-pill {
+      cursor: pointer;
+      display: inline-block;
+      transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .cmd-pill span {
+      display: inline-block;
+      font-family: 'Rubik Mono One', 'Permanent Marker', sans-serif;
+      font-size: 30px;
+      color: #000;
+      background: #FFF;
+      padding: 6px 24px 6px 18px;
+      text-transform: uppercase;
+      box-shadow: 6px 6px 0px #000;
+      border: 3px solid #000;
+      transform: skew(-10deg);
+      transition: all 0.12s ease;
+    }
+
+    .cmd-pill:hover span, .cmd-pill.selected span {
+      background: var(--p5-yellow) !important;
+      color: #000 !important;
+      transform: scale(1.1) skew(-12deg) rotate(-2deg);
+      box-shadow: 10px 10px 0px var(--p5-crimson), 16px 16px 0px #000;
+    }
+
+    .cmd-pill:nth-child(1) span { background: var(--p5-cyan); clip-path: polygon(2% 0, 100% 2%, 96% 100%, 0% 96%); }
+    .cmd-pill:nth-child(2) span { background: #FFF; clip-path: polygon(0% 2%, 98% 0%, 100% 96%, 4% 100%); }
+    .cmd-pill:nth-child(3) span { background: #FFF; clip-path: polygon(3% 0, 96% 4%, 94% 98%, 0 96%); }
+    .cmd-pill:nth-child(4) span { background: var(--p5-yellow); clip-path: polygon(2% 2%, 100% 0, 96% 100%, 0 98%); }
+    .cmd-pill:nth-child(5) span { background: #FFF; clip-path: polygon(0 0, 98% 4%, 96% 96%, 2% 100%); }
+    .cmd-pill:nth-child(6) span { background: #FF2A6D; color: #FFF; }
+
+    /* Active Tooltip Spotlight Box */
+    .cmd-spotlight-card {
+      position: absolute;
+      left: 480px;
+      bottom: 60px;
+      background: #000;
+      border: 3px solid #FFF;
+      padding: 12px 28px;
+      box-shadow: 6px 6px 0px var(--p5-yellow);
+      transform: skew(-8deg) rotate(2deg);
+      z-index: 25;
+    }
+    .cmd-spotlight-card h3 {
+      font-family: 'Rubik Mono One', sans-serif;
+      font-size: 26px;
+      color: var(--p5-yellow);
+      text-transform: uppercase;
+      text-shadow: 3px 3px 0px var(--p5-crimson);
+    }
+    .cmd-spotlight-card p {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 17px;
+      color: #FFF;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+    }
+
+    /* Live Currency HUD */
+    .wallet-hud {
+      position: absolute;
+      left: 100px;
+      bottom: 40px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: #FFF;
+      background: #000;
+      padding: 4px 22px;
+      border: 3px solid #FFF;
+      box-shadow: 6px 6px 0px var(--p5-crimson);
+      transform: rotate(-3deg) skew(-10deg);
+      z-index: 25;
+      letter-spacing: 2px;
+    }
+
+    /* Keybind Footer */
+    .key-footer {
+      position: absolute;
+      right: 40px;
+      bottom: 25px;
+      display: flex;
+      gap: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #FFF;
+      z-index: 25;
+    }
+    .key-badge {
+      background: #FFF;
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 2px;
+      font-weight: 900;
+      margin-right: 4px;
+    }
+
+    /* =========================================================================
+       STAGE 2: BESPOKE ITEM & CHEAT SHOP STAGE
+       ========================================================================= */
+    .stage-sub {
+      position: absolute;
+      inset: 0;
+      display: none;
+      z-index: 20;
+      padding: 30px 40px;
+    }
+
+    .stage-item {
+      background: linear-gradient(135deg, #10141A 0%, #1A1F29 60%, #080A0D 100%);
+    }
+
+    .stage-velvet {
+      background: radial-gradient(circle at 50% 50%, #0D1B3E 0%, #050B1A 70%, #000 100%);
+    }
+
+    .stage-header-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--p5-crimson);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stage-header-title h2 {
+      font-family: 'Rubik Mono One', sans-serif;
+      font-size: 34px;
+      color: var(--p5-yellow);
+      text-transform: uppercase;
+      text-shadow: 4px 4px 0px var(--p5-crimson);
+      transform: skew(-6deg);
+    }
+
+    .p5-btn-back {
+      background: #FFF;
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      padding: 6px 18px;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px var(--p5-crimson);
+      cursor: pointer;
+      transform: skew(-6deg);
+      transition: all 0.1s ease;
+    }
+    .p5-btn-back:hover {
+      background: var(--p5-yellow);
+      transform: scale(1.05) skew(-6deg);
+    }
+  </style>
+</head>
+<body>
+  <div class="p5-viewport">
+    <div class="halftone-screen"></div>
+    <div id="slashLayer" class="slash-transition"></div>
+
+    <!-- 1. JOKER COMMAND HUB STAGE -->
+    <div id="stageHub" class="stage-hub">
+      <div class="manga-burst-lines"></div>
+
+      <!-- Clean Handcrafted Persona 5 Joker Silhouette SVG -->
+      <svg class="joker-silhouette-art" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Mask Slash Shadow -->
+        <path d="M120 180 L380 40 L440 220 L300 480 L180 450 Z" fill="#000" />
+        <!-- Joker Glove Slash in Signature Crimson -->
+        <path d="M220 150 Q300 100 420 180 Q320 280 200 420 Q160 300 220 150 Z" fill="#E60012" />
+        <!-- Mask Cutout White -->
+        <path d="M280 140 Q320 110 380 150 Q330 200 260 210 Q260 170 280 140 Z" fill="#FFF" />
+        <circle cx="310" cy="160" r="10" fill="#000" />
+        <!-- Manga Shading Lines -->
+        <line x1="180" y1="200" x2="350" y2="400" stroke="#000" stroke-width="8" />
+        <line x1="200" y1="220" x2="370" y2="420" stroke="#000" stroke-width="6" />
+        <line x1="220" y1="240" x2="390" y2="440" stroke="#000" stroke-width="5" />
+      </svg>
+
+      <!-- Brand Plate -->
+      <div class="brand-plate">
+        <div style="font-family:'Special Elite', cursive; font-size:10px; font-weight:bold; letter-spacing:1px;">
+          CHANGE OF HEART
+        </div>
+        <h2>MeNu: MaiN</h2>
+        <p>SeLeCt a CoMMaND</p>
+      </div>
+
+      <!-- Live Command Stack -->
+      <nav class="command-stack">
+        <div class="cmd-pill" onclick="transitionTo('stageItem')" onmouseenter="setFocus('iTeM', 'Cheat Shop, Master Catalog (195 Melee, 106 Guns) & Infiltration Tools.')">
+          <span>iTeM</span>
+        </div>
+        <div class="cmd-pill" onclick="transitionTo('stageVelvet')" onmouseenter="setFocus('PeRSONA', 'Velvet Room 246/246 100% Compendium Matrix & Stock Personas.')">
+          <span>PeRSONA</span>
+        </div>
+        <div class="cmd-pill" onmouseenter="setFocus('EQUiP', 'Manage weapon loadouts, protectors, and accessories per Phantom Thief.')">
+          <span>EQUiP</span>
+        </div>
+        <div class="cmd-pill" onmouseenter="setFocus('StAtS', 'Social Stat Meters (Knowledge, Charm, Guts, Kindness, Proficiency).')">
+          <span>StAtS</span>
+        </div>
+        <div class="cmd-pill" onmouseenter="setFocus('CONFIDaNT', 'Max Rank 10 Confidant Bonds, point gates, and romance triggers.')">
+          <span>CONFIDaNT</span>
+        </div>
+        <div class="cmd-pill" onmouseenter="setFocus('SYSTeM', 'Save & Re-sign bytes, rescue backups, and Steam slot discovery.')">
+          <span>SYSTeM</span>
+        </div>
+      </nav>
+
+      <!-- Live Currency HUD -->
+      <div class="wallet-hud">
+        <span style="color:var(--p5-yellow); margin-right:6px;">¥</span>9,861,779
+      </div>
+
+      <!-- Spotlight Card -->
+      <div class="cmd-spotlight-card">
+        <h3 id="spotTitle">CoMMaND: iTeM</h3>
+        <p id="spotDesc">Cheat Shop, Master Catalog (195 Melee, 106 Guns) & Infiltration Tools.</p>
+      </div>
+
+      <!-- Keybind Footer -->
+      <div class="key-footer">
+        <div><span class="key-badge">CLICK</span> Open</div>
+        <div><span class="key-badge">ESC</span> Close</div>
+      </div>
+    </div>
+
+    <!-- 2. BESPOKE ITEM & CHEAT SHOP STAGE -->
+    <div id="stageItem" class="stage-sub stage-item">
+      <div class="stage-header-title">
+        <h2>★ CHEAT SHOP & INVENTORY</h2>
+        <button class="p5-btn-back" onclick="transitionTo('stageHub')">◀ [ESC] RETURN TO COMMAND</button>
+      </div>
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+        <div style="background:#0D1117; border:3px solid #FFF; padding:20px; box-shadow:8px 8px 0px var(--p5-crimson); transform:skew(-2deg);">
+          <div style="font-family:'Bebas Neue'; font-size:24px; color:var(--p5-yellow); margin-bottom:10px;">
+            10-CATEGORY MASTER CATALOG (2,204 ITEMS)
+          </div>
+          <p style="font-size:13px; color:#AAA; line-height:1.5;">
+            Equip all 195 Melee weapons, 106 Firearms, 301 Protectors, and 286 Outfits with character filter chips.
+          </p>
+        </div>
+        <div style="background:#000; border:3px solid var(--p5-green); padding:20px; box-shadow:8px 8px 0px #000; transform:skew(-2deg);">
+          <div style="font-family:'Bebas Neue'; font-size:22px; color:var(--p5-green);">⚡ INSTANT OWN ACTIONS</div>
+          <button style="margin-top:10px; width:100%; background:var(--p5-green); color:#000; font-family:'Bebas Neue'; font-size:18px; padding:8px; border:2px solid #000; cursor:pointer; font-weight:bold;">
+            OWN ALL VISIBLE ITEMS
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. BESPOKE VELVET ROOM STAGE -->
+    <div id="stageVelvet" class="stage-sub stage-velvet">
+      <div class="stage-header-title" style="border-bottom-color:var(--p5-cyan);">
+        <h2 style="color:var(--p5-cyan); text-shadow:4px 4px 0px #000;">⚔️ VELVET ROOM COMPENDIUM</h2>
+        <button class="p5-btn-back" onclick="transitionTo('stageHub')" style="box-shadow:4px 4px 0px var(--p5-cyan);">◀ [ESC] RETURN TO COMMAND</button>
+      </div>
+      <div style="background:rgba(5, 11, 26, 0.9); border:3px solid var(--p5-cyan); padding:24px; box-shadow:8px 8px 0px #000; transform:skew(-2deg);">
+        <div style="font-family:'Bebas Neue'; font-size:26px; color:#FFF; margin-bottom:6px;">
+          246 / 246 REGISTERED DEMON MATRIX (100%)
+        </div>
+        <p style="font-size:13px; color:#88A0D0;">
+          Full authentic Velvet Room registry with Igor fusion recipes and Level 99 stats.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setFocus(title, desc) {
+      document.getElementById('spotTitle').textContent = 'CoMMaND: ' + title;
+      document.getElementById('spotDesc').textContent = desc;
+      document.querySelectorAll('.cmd-pill').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+    }
+
+    function transitionTo(stageId) {
+      const slash = document.getElementById('slashLayer');
+      slash.classList.add('active');
+      
+      setTimeout(() => {
+        document.getElementById('stageHub').style.display = 'none';
+        document.getElementById('stageItem').style.display = 'none';
+        document.getElementById('stageVelvet').style.display = 'none';
+        
+        document.getElementById(stageId).style.display = stageId === 'stageHub' ? 'flex' : 'block';
+        slash.classList.remove('active');
+      }, 200);
+    }
+  </script>
+</body>
+</html>

@@ -6,25 +6,9 @@ block_cipher = None
 
 SPEC_DIR = Path(SPECPATH).resolve()
 
-# Complete list of data files
+# Complete list of data files - automatically include the whole data directory
 data_files = [
-    ('data/Accessories.txt', 'data'),
-    ('data/Clothes.txt', 'data'),
-    ('data/Compendium.txt', 'data'),
-    ('data/Items.txt', 'data'),
-    ('data/Keyitems&essentials.txt', 'data'),
-    ('data/Personas.txt', 'data'),
-    ('data/Royal_ConsumableItemNames.txt', 'data'),
-    ('data/Royal_KeyItemNames.txt', 'data'),
-    ('data/Skill Cards.txt', 'data'),
-    ('data/Skill ID.txt', 'data'),
-    ('data/SkillMeta.txt', 'data'),
-    ('data/Tools&materials.txt', 'data'),
-    ('data/Traits.txt', 'data'),
-    ('data/Treasure.txt', 'data'),
-    ('data/Weapon melee.txt', 'data'),
-    ('data/Weapon ranged.txt', 'data'),
-    ('data/compendium_templates.json', 'data'),
+    ('data', 'data'),
     ('web-app/templates', 'web-app/templates'),
     ('web-app/static', 'web-app/static'),
 ]
@@ -32,9 +16,20 @@ data_files = [
 if (SPEC_DIR / 'p5r-game-client').exists():
     data_files.append(('p5r-game-client', 'p5r-game-client'))
 
+import site
+import sys
+
+user_site = site.getusersitepackages()
+search_paths = [str(SPEC_DIR)]
+if os.path.exists(user_site):
+    search_paths.append(user_site)
+for p in sys.path:
+    if p and os.path.exists(p) and p not in search_paths:
+        search_paths.append(p)
+
 a = Analysis(
     ['main.py'],
-    pathex=[str(SPEC_DIR)],
+    pathex=search_paths,
     binaries=[],
     datas=data_files,
     hiddenimports=[
