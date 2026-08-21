@@ -29,6 +29,6 @@
 - None (no upstream dependencies)
 
 ## Build
-- Latest: `dist/P5R_Save_Editor.exe` (61.5 MB, rebuilt 2026-08-21 03:21 ET)
+- Latest: `dist/P5R_Save_Editor.exe` (61.5 MB, rebuilt 2026-08-21 05:50 ET — includes inventory UX pass R1-R9)
 - PyInstaller 6.22.0 / Python 3.14.6
 - NOT pushed to GitHub (v1.0.8 on GitHub predates all compendium + equipment fixes)
