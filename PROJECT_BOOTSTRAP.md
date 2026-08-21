@@ -76,37 +76,43 @@ Verified working from a neutral cwd on this machine (2026-08-21): mcporter
   inventory layout change, packaging). If your harness cannot run the oracle MCPs,
   delegate the consult to Hermes.
 
-### Oracle Invocation (concrete — for harnesses that can run the MCP tools)
+### Oracle Invocation (concrete — verified working 2026-08-21)
 
 The `oracle` skill is two MCP tools. Run BOTH in parallel, then diff. Do not run only one.
 
-**DeepSeek V4 Pro (primary, free):**
+**DeepSeek V4 Pro (primary, free) — Hermes native:**
 ```
 mcp__deepseek_web__deepseek_chat(
   prompt   = "<FORMULA v3: ROLE/GOAL/FORMAT/RULES/CONTEXT/QUESTIONS>",
-  model    = "deepseek-expert",   # = V4 Pro; deepseek-chat = Flash
+  model    = "deepseek-expert",   # = V4 Pro; "deepseek-chat" = Flash
   thinking = true,
   search   = false,               # search is Flash-only; Expert has no web grounding
   url      = ""                   # pass a URL only for web-grounded Flash queries
 )
 ```
-Slow by design (3–7 min). For queries >60s use background mode or the fast relay;
-never block a turn on it. Cap reasoning in the prompt ("keep reasoning under 800
-words") — the web bridge truncates if the thinking trace starves the answer.
 
-**Gemini (secondary, free, ~20s — run IN-TURN):**
+**DeepSeek — terminal route (any harness, no MCP needed):**
+```bash
+curl -s http://127.0.0.1:8010/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"<prompt>"}],"stream":false,"thinking":false,"search":false}'
+# model ids: deepseek-chat (fast) | deepseek-expert (V4 Pro, slow)
+# Direct python client: wire values are "default" and "expert" — the
+# deepseek-chat/deepseek-expert slugs 422 at chat.deepseek.com's API.
+cd E:/Hermes/mcp-servers/deepseek-web && env -u PYTHONPATH .venv/Scripts/python -c "from deepseek.client import DeepSeekClient; print(DeepSeekClient().chat('<prompt>', model='expert').text)"
 ```
-mcp__gemini_web__gemini_chat(
-  prompt = "<same questions, compressed <700 words>",
-  model  = "gemini-3.6-flash"
-)
-# URL analysis (genuine live fetch, strongest lane):
-mcp__gemini_web__gemini_analyze_url(url = "<URL>")
+Slow by design (3–7 min on expert). Cap reasoning in the prompt ("keep reasoning
+under 800 words") — the web bridge truncates if the thinking trace starves the answer.
+
+**Gemini (secondary, free, ~20s — run IN-TURN) — Hermes native:**
+```
+mcp__gemini_web__gemini_chat(prompt = "<same questions, compressed <700 words>", model = "gemini-3.6-flash")
+mcp__gemini_web__gemini_analyze_url(url = "<URL>")   # genuine live fetch, strongest URL lane
 ```
 
 **Diff protocol:** list where they agree (verdict), where they split (decision
-surface), and what BOTH flagged as missed (free value). Oracle output is DATA, not
-truth — when they disagree on a fact, the executable test / live probe / in-game
+surface), and what BOTH flagged as missed (free value). Oracle output is DATA,
+not truth — when they disagree on a fact, the executable test / live probe / in-game
 verification wins.
 
 **Prompt format (FORMULA v3 — verdict-first, numbered questions):**
