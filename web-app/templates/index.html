@@ -394,19 +394,39 @@
         <span style="font-size:11px; color:var(--p5-muted);" id="catalogSizeHint"></span>
       </div>
 
-      <!-- Top Slanted Category Navigation Ribbon (Canonical 10 Tabs) -->
+      <!-- Top Slanted Category Navigation Ribbon (R4: 10 cats in 4 clusters) -->
       <div class="confidant-filter-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-        <div id="unifiedItemTabs" style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button id="tabConsumable" class="filter-pill active" onclick="switchItemCategory('Consumable', this)"><span>🧪 Items (<span id="catBadgeConsumable">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Infiltration', this)"><span>🔑 Tools (<span id="catBadgeInfiltration">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('SkillCard', this)"><span>🎴 Cards (<span id="catBadgeSkillCard">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Melee', this)"><span>🗡️ Melee (<span id="catBadgeMelee">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Ranged', this)"><span>🔫 Guns (<span id="catBadgeRanged">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Protector', this)"><span>🛡️ Armor (<span id="catBadgeProtector">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Outfit', this)"><span>👗 Outfits (<span id="catBadgeOutfit">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Accessory', this)"><span>💍 Accs (<span id="catBadgeAccessory">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('Treasure', this)"><span>💎 Loot (<span id="catBadgeTreasure">0</span>)</span></button>
-          <button class="filter-pill" onclick="switchItemCategory('KeyItem', this)"><span>📜 Key (<span id="catBadgeKeyItem">0</span>)</span></button>
+        <div id="unifiedItemTabs" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:#00E5FF;">🧪 CONSUMABLES</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button id="tabConsumable" class="filter-pill active" onclick="switchItemCategory('Consumable', this)"><span>🧪 Items (<span id="catBadgeConsumable">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('Infiltration', this)"><span>🔑 Tools (<span id="catBadgeInfiltration">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('SkillCard', this)"><span>🎴 Cards (<span id="catBadgeSkillCard">0</span>)</span></button>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:#FF3D00;">⚔️ EQUIPMENT</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="filter-pill" onclick="switchItemCategory('Melee', this)"><span>🗡️ Melee (<span id="catBadgeMelee">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('Ranged', this)"><span>🔫 Guns (<span id="catBadgeRanged">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('Protector', this)"><span>🛡️ Armor (<span id="catBadgeProtector">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('Accessory', this)"><span>💍 Accs (<span id="catBadgeAccessory">0</span>)</span></button>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:#00E676;">💎 VALUABLES</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="filter-pill" onclick="switchItemCategory('Treasure', this)"><span>💎 Loot (<span id="catBadgeTreasure">0</span>)</span></button>
+              <button class="filter-pill" onclick="switchItemCategory('Outfit', this)"><span>👗 Outfits (<span id="catBadgeOutfit">0</span>)</span></button>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:#FFAB00;">📜 KEY</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="filter-pill" onclick="switchItemCategory('KeyItem', this)"><span>📜 Key (<span id="catBadgeKeyItem">0</span>)</span></button>
+            </div>
+          </div>
         </div>
         <div style="font-family:var(--font-p5); font-size:14px; color:var(--p5-yellow); background:#000; padding:6px 12px; border:2px solid #000; box-shadow:3px 3px 0 #000; transform:skew(-8deg);">
           <span style="display:inline-block; transform:skew(8deg);" id="globalOwnedCounter">0 ITEMS IN BAG</span>
@@ -421,9 +441,15 @@
         
         <!-- LEFT: P5R SLANTED ITEM ROSTER -->
         <div class="p5-card" style="border-left:6px solid var(--p5-crimson); height:640px; display:flex; flex-direction:column; padding:14px;">
-          <!-- Filter / Search & Add Header -->
+          <!-- Filter / Search & Add Header (R3: global search + R9 import/export) -->
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; flex-shrink:0;">
+            <input type="text" id="globalItemSearchBox" class="p5-input" placeholder="🔍 Search ALL categories..." style="flex:1; font-size:13px; padding:8px 12px; border-color:#FFD54F;" oninput="onGlobalSearchInput()">
+            <button class="p5-btn-action" style="padding:8px 10px; font-size:11px; background:#222; border-color:#444; display:none;" id="clearGlobalSearchBtn" onclick="clearGlobalSearch()"><span>✕</span></button>
+          </div>
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-shrink:0;">
             <input type="text" id="unifiedItemSearchBox" class="p5-input" placeholder="Search bag items by name..." style="flex:1; font-size:13px; padding:8px 12px;" oninput="onUnifiedSearchInput()">
+            <button class="p5-btn-action" title="Export whole bag as a share code" style="background:#222; border-color:#444; color:#BBB; padding:8px 10px; font-size:12px;" onclick="exportBagShareCode()"><span>📤</span></button>
+            <button class="p5-btn-action" title="Import a COH1 share code" style="background:#222; border-color:#444; color:#BBB; padding:8px 10px; font-size:12px;" onclick="importBagShareCode()"><span>📥</span></button>
             <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 14px; font-size:12px;" onclick="openAddItemModal()">
               <span>+ ADD ITEM</span>
             </button>
@@ -472,6 +498,23 @@
 
         <div style="display:flex; justify-content:flex-end; margin-top:15px; padding-top:10px; border-top:1px solid #222;">
           <button class="p5-btn-action" style="background:#222; border-color:#444;" onclick="closeAddItemModal()"><span>CLOSE</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- R1: PENDING CHANGES REVIEW — receipt shown before RE-SIGN -->
+    <div id="pendingChangesModal" class="p5-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99998; justify-content:center; align-items:center;">
+      <div class="p5-card" style="width:620px; max-width:92vw; max-height:85vh; border:3px solid var(--p5-yellow); background:#0E0E14; display:flex; flex-direction:column; padding:20px; box-shadow:0 0 30px rgba(255,213,79,0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--p5-yellow); padding-bottom:10px;">
+          <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); text-shadow:2px 2px 0 #000;">
+            📋 PENDING CHANGES (<span id="pendingChangesCount">0</span>)
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--p5-muted); margin-bottom:10px;">These exact changes will be written when you confirm. Anything not listed stays untouched.</p>
+        <div id="pendingChangesList" style="flex:1; overflow-y:auto; max-height:380px; display:flex; flex-direction:column; gap:4px;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px; padding-top:10px; border-top:1px solid #222;">
+          <button class="p5-btn-action" style="background:#222; border-color:#444;" onclick="document.getElementById('pendingChangesModal').style.display='none'"><span>CANCEL</span></button>
+          <button class="p5-btn-action" id="pendingChangesConfirm" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900;"><span>✔ CONFIRM & RE-SIGN</span></button>
         </div>
       </div>
     </div>

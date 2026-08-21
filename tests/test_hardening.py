@@ -432,12 +432,24 @@ class TestVirtualScrollPerfGate(unittest.TestCase):
                       "Load More must clamp batch size to a 300-row DOM cap")
 
     def test_unwired_categories_disabled_in_modal(self):
-        # Every category AGENTS.md freezes must be read-only in the modal.
-        for unwired in ["Outfit", "KeyItem", "SkillCard", "Treasure", "Infiltration"]:
-            self.assertIn(f'"{unwired}"', self.src, f"{unwired} must appear in UNWIRED_CATEGORIES set")
+        """R8 drift resolved 2026-08-21: SkillCard/Treasure/Infiltration are
+        backend-VERIFIED and writable; KeyItem is guarded (not unwired); only
+        Outfit remains read-only (D008 freeze)."""
+        m = re.search(r"const UNWIRED_CATEGORIES = new Set\(\[([^\]]*)\]\)", self.src)
+        self.assertIsNotNone(m, "UNWIRED_CATEGORIES set missing")
+        unwired = set(re.findall(r'"([^"]+)"', m.group(1)))
+        self.assertEqual(unwired, {"Outfit"},
+                         "only Outfit may remain in UNWIRED_CATEGORIES")
         # Disabled button must carry NO onclick handler (byte-level safety).
-        self.assertIn('" disabled><span>⚠ UNWIRED</span></button>', self.src,
-                      "unwired rows must render disabled with zero onclick")
+        self.assertIn('disabled title="Outfit writability frozen', self.src,
+                      "frozen rows must render disabled with zero onclick")
+        self.assertIn('"><span>🔒 FROZEN</span></button>', self.src)
+        # Key items get a guarded ADD (S4), never an unwired block.
+        key_idx = self.src.find("} else if (isKey) {")
+        unwired_idx = self.src.find("} else if (isUnwired) {")
+        self.assertGreaterEqual(key_idx, 0)
+        self.assertGreater(unwired_idx, key_idx,
+                           "KeyItem guarded-add branch must precede the frozen branch")
 
     def test_load_more_present(self):
         self.assertIn("Load", self.src)
@@ -603,6 +615,38 @@ class TestInventoryRemovalPersistence(unittest.TestCase):
         self.assertEqual(d2[goff], 0, "unequipped gear flag must persist as 0")
         self.assertEqual(d2[goff + 0x18510], 0, "gear mirror must be zeroed too")
         self.assertEqual(d2[soff_b], 3, "untouched id must NOT be written")
+
+
+class TestInventoryUXSuite(unittest.TestCase):
+    """UX pass 2026-08-21 (docs/INVENTORY_UX_REVIEW.md R1-R9): receipt review,
+    per-item revert, global search, context menu + keyboard, incremental main
+    list, share codes."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "web-app", "static", "app.js"), encoding="utf-8") as f:
+            self.src = f.read()
+
+    def _fn_src(self, name):
+        m = re.search(r"function %s\([^)]*\) \{.*?\n\}" % name, self.src, re.S)
+        self.assertIsNotNone(m, "%s() missing from app.js" % name)
+        return m.group(0)
+
+    def test_ux_suite_r1_r2_r3_r5_r7_r9_present(self):
+        for fn in ["buildPendingChangesReceipt", "showPendingChangesModal",
+                   "revertItemToBaseline", "onGlobalSearchInput",
+                   "openInvContextMenu", "initInventoryKeyboard",
+                   "makeShareCode", "parseShareCode", "importBagShareCode"]:
+            self.assertIn(f"function {fn}(", self.src, f"{fn} missing")
+        # R1: save flow reviews before writing
+        self.assertIn("if (!skipReview && changeCount > 0)", self.src)
+        # R2: dirty rows expose revert inside the roster renderer
+        self.assertIn("revertItemToBaseline(", self.src.split("function renderUnifiedItemList")[1])
+        # R5: keyboard guard — no stepping when typing in inputs
+        self.assertIn("INPUT", self._fn_src("initInventoryKeyboard"))
+        # R7: main list renders incrementally (batch state + Load more)
+        self.assertIn("MAIN_LIST_BATCH", self.src)
+        # R9: codes are namespaced
+        self.assertIn('"COH1."', self.src)
 
 
 if __name__ == "__main__":
