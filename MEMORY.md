@@ -24,6 +24,7 @@
 | D008 | 2026-08-19 | Outfit `0xA000+` frozen until live diff proves offset | Risk of corruption if wired from inference |
 | D009 | 2026-08-21 | 3rd Semester Emergency Rescue button RETIRED | Requires 43,008-bit Event Flag Matrix manipulation |
 | D010 | 2026-08-23 | Haru (Slot 6) / Futaba (Slot 7) aligned, Party Evolution Tiers (1-3) exposed, EXP autosync curve activated, PC Romance flags enabled | Solves save migration and post-battle EXP stalling reported by community (`u/Gruphius`) |
+| D011 | 2026-08-23 | PyInstaller compilation strictly bound to Python 3.14.6; process smoke test mandatory before release upload | Prevents ambient venv package omission (missing `pywebview` -> browser fallback regression) |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
