@@ -37,19 +37,45 @@ Path costs ~5 tokens; document behind it costs 2000 only when opened.
 4. Update `state.json`: phase, gate, last_session, test_count, next_action, blockers, updated_at.
 5. Update `STATUS.md` to match `state.json`.
 6. Commit hygiene files.
-7. If `HANDOFF.md` exists (legacy), archive it to `archive/handoffs/`.
+7. Verify working tree cleanliness — no scratch/prototype files tracked in git.
+8. If `HANDOFF.md` exists (legacy), archive it to `archive/handoffs/`.
+
+## Repository Cleanliness & Shipping Manifest
+
+- **Shipping Core (Tracked on GitHub):**
+  - App Engine: `main.py`, `server.py`, `core/`, `data/`, `web-app/` (clean templates, styles, assets, persona portraits).
+  - Test Suite: `tests/` (161+ unit tests).
+  - Public Docs: `README.md` (user-facing only), `SAFETY.md`, `STATUS.md`, `state.json`, `LICENSE`, `P5R_Save_Editor.spec`.
+- **Internal / Gitignored (Never Ship to GitHub):**
+  - Agent state: `HANDOFF.md`, `archive/`.
+  - Research & Reverse Engineering: `research/`, `diff/`, `scratch/`, `tools/`, `scripts/`.
+  - Binary & visual artifacts: `screenshots/`, `dist/`, `build/`, `*.zip`.
+  - Ephemeral experiments: Any `mockup_*.html`, `prototype_*.html`, or temporary test graphics must be deleted before release commits.
 
 ## Architectural Invariants (Falsifiable — each has a pass/fail test)
 
 1. **Save integrity:** Write primary + mirror (+0x18510), read warns on mismatch. Test: `test_mirror_sync.py`
 2. **No quick-array merges:** `0x3530` temp buffer never merged with master counts. Test: `check-invariants.py` banned pattern scan.
 3. **Ground truth from game data:** Offsets verified via 2-save diff (`tools/diff_mapper.py`), not web research. Test: manual verification gate.
-4. **Build/test gate passes:** 153+ tests pass before exit. Test: `check-invariants.py`.
+4. **Build/test gate passes:** 161+ tests pass before exit. Test: `check-invariants.py`.
 5. **Frozen offsets respected:** `0xA000+` Outfits not wired until diff proves. Test: manual check in code review.
+6. **Tool Output Hygiene:** Never run un-bounded terminal dump commands. Always pipe or truncate verbose outputs (`git status -s`, `pytest -q`, `head -n 50`, `tail -n 30`) to protect the context window from token bloat.
 
-## Circuit Breaker
+## Circuit Breaker & Git Revert Protocol
 
-If the same test or build fails **3 consecutive times**, HALT. Write blocker to `STATUS.md` + `state.json` (gate: `"blocked"`), append session log, and exit. Never silently change an invariant — propose the change in the session log/ADR.
+If the same test or build fails **3 consecutive times**, HALT immediately:
+1. **Preserve Work to Patch:** Save ongoing changes to research scratch:
+   ```bash
+   git diff > research/failed_attempt.patch
+   ```
+2. **Reset Working Tree:** Revert working directory to the last known green commit:
+   ```bash
+   git checkout .
+   git clean -fd
+   ```
+3. **Set Blocked State:** Update `state.json` and `STATUS.md` with `"gate": "blocked"`.
+4. **Log Blocker:** Append the root cause and failure trace to `STATUS.md` and `memory/YYYY-MM-DD-topic.md`.
+5. **Halt Execution:** Exit turn and request human guidance. Never silently change or bypass an invariant.
 
 ## Constraints (violating = corrupt save)
 

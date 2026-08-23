@@ -28,16 +28,17 @@ in-game-verified project knowledge. Read this before editing saves.
 5. Never exceed 0..9,999,999 money; both fields (0x35C0 and 0x3C) are always written together. (Enforced.)
 6. Never set HP/SP above the real derived max (max is NOT stored in the save — derived from level + persona in-game; proven 2026-08-13). Set to 1 if unsure.
 7. Never rank a confidant before they appear in the confidant block.
-8. Pre-ranking confidants accepts missing rank-up scenes. The 3rd-semester unlock is best-effort: it writes ranks only; story flags in 0x2F200 are not mapped and may block the semester. Test on a backup copy. (Warning added 2026-08-13.)
+8. Pre-ranking confidants accepts missing rank-up scenes. Confidants must be ranked before their in-game story deadlines (e.g. Maruki Rank 9 on/before 11/18 for 3rd semester); rank edits past a deadline cannot retroactively replay story events. (Updated 2026-08-21).
 9. Never touch day counter or calendar fields.
 10. Names are fixed-length UTF-8 (truncated at 64/25 chars) — no control characters.
-11. Never touch unsupported zones (compendium, SteamID, romance flags on PC) — the editor returns `unsupported` for these since 2026-08-13, not silent success.
+11. Level edits automatically sync minimum cumulative EXP curve (cubic Atlus formula) to prevent battle EXP calculation lockups. (Updated 2026-08-23).
+12. Romance route toggle on PC is verified at `0x136A0` bit 0x02 for Rank 9+ confidants. (Updated 2026-08-23).
 
-## Editor safety guarantees (as of 2026-08-13)
+## Editor safety guarantees (as of 2026-08-23)
 
 - All writes bounds-checked; PC payload passed through verbatim except verified offsets.
-- Every repack re-signs CRC + AES correctly (40/40 + 13 regression tests).
+- Every repack re-signs CRC + AES correctly (165/165 regression unit tests).
+- Teammate party personas scoped to authentic Tier 1 / 2 / 3 evolution lines; arbitrary cross-character persona assignment blocked to prevent battle animation crashes.
 - Unsupported operations return `{"status": "unsupported"}` — never fake success.
 - Persona stock writes validate ids against `data/Personas.txt` and `data/Skill ID.txt`.
-- `equip_persona` refuses to equip an empty slot.
-- Backup zip is created automatically before every CLI edit unless `--no-backup`.
+- Backup zip is created automatically before every save write.

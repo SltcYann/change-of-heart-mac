@@ -45,7 +45,7 @@
         <span>⚡ GOD-TIER BUILDS</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('rescue_vault', this)">
-        <span>🛡️ RESCUE & BACKUPS</span>
+        <span>🛡️ BACKUPS & SAFETY</span>
       </button>
     </nav>
 
@@ -232,8 +232,22 @@
               <select id="personaSelect" class="p5-select" style="width:100%; margin-top:6px; font-size:15px; font-weight:700; background:#0F0F16; border:2px solid var(--p5-crimson); padding:8px 12px;" onchange="onPersonaSelectChange()">
                 <!-- Personas -->
               </select>
+              
+              <!-- Party Member Evolution Tier Selector -->
+              <div id="partyEvolutionContainer" style="display:none; margin-top:10px; padding:10px; background:rgba(0,229,255,0.08); border:1px solid #00E5FF; border-radius:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="font-size:11px; font-weight:900; color:#00E5FF; letter-spacing:1px;">⚡ AWAKENING EVOLUTION TIER</label>
+                  <span id="partyEvolutionTierBadge" style="font-size:10px; color:#FFF; font-weight:800; background:#00E5FF; color:#000; padding:2px 6px; border-radius:3px;">TIER 1 (BASE)</span>
+                </div>
+                <select id="partyEvolutionSelect" class="p5-select" style="width:100%; font-size:14px; font-weight:700; background:#0A0A12; border:1px solid #00E5FF;" onchange="onPartyEvolutionChange()">
+                  <option value="1">🌱 Tier 1: Base Persona (Initial Awakening)</option>
+                  <option value="2">👑 Tier 2: Awakened Persona (Rank 10 Confidant)</option>
+                  <option value="3">🌟 Tier 3: Royal Persona (Third Semester)</option>
+                </select>
+              </div>
+
               <div id="personaLockNote" style="display:none; font-size:11px; font-weight:800; color:var(--p5-yellow); margin-top:6px; letter-spacing:0.5px;">
-                🔒 Story-locked persona
+                🔒 Joker selects from 12 stock slots; teammates use Awakening Tiers above.
               </div>
             </div>
           </div>
@@ -627,26 +641,15 @@
       </div>
     </section>
 
-    <!-- STAGE 5: Rescue Vault & Backups -->
+    <!-- STAGE 5: Reversible Backups & Safety Vault -->
     <section id="stage-rescue_vault" class="p5-stage-view">
       <div class="stage-headline">
-        <h2>🛡️ RESCUE TOOLS & 1-CLICK BACKUPS</h2>
-        <p>Guaranteed third semester unlocker and fully reversible timestamped save state rollbacks.</p>
+        <h2>🛡️ REVERSIBLE BACKUPS & SAFETY VAULT</h2>
+        <p>Automated timestamped ZIP snapshots created before every save write, with 1-click state rollback.</p>
       </div>
 
       <div class="grid-2">
-        <!-- 3rd Sem Rescue -->
-        <div class="p5-card">
-          <div class="p5-card-header">
-            <span>🌟 3RD SEMESTER GUARANTEE</span>
-          </div>
-          <p style="font-size:13px; color:var(--p5-muted); margin-bottom:18px;">
-            Missed Dr. Maruki's November 18 cutoff? This tool sets Maruki to Rank 9, Kasumi to Rank 5, and Akechi to Rank 8 with game-accurate points, unlocking the 3rd Semester palace route without restarting the game.
-          </p>
-          <button class="p5-btn-action" onclick="triggerRescueThirdSemester()"><span>APPLY 3RD SEMESTER RESCUE</span></button>
-        </div>
-
-        <!-- 1-Click Backups -->
+        <!-- 1-Click Backups & Restore -->
         <div class="p5-card">
           <div class="p5-card-header">
             <span>💾 REVERSIBLE RESTORE VAULT</span>
@@ -662,6 +665,21 @@
           <div style="display:flex; gap:10px;">
             <button class="p5-btn-action secondary" onclick="refreshBackups()"><span>REFRESH BACKUPS</span></button>
             <button class="p5-btn-action" onclick="restoreSelectedBackup()"><span>RESTORE SELECTED STATE</span></button>
+          </div>
+        </div>
+
+        <!-- Cryptographic Save Integrity Info -->
+        <div class="p5-card">
+          <div class="p5-card-header">
+            <span>🔒 AUTOMATIC CRC32 & AES-256 INTEGRITY</span>
+          </div>
+          <p style="font-size:13px; color:var(--p5-muted); margin-bottom:12px;">
+            Change of Heart maintains byte-for-byte save integrity across primary and mirror (+0x18510) offsets.
+          </p>
+          <div style="font-size:12px; color:#A0A0B5; line-height:1.6;">
+            • <strong>Dual CRC32 Calculation:</strong> Header and payload checksums are recalculated automatically on save.<br>
+            • <strong>Mirror Sync:</strong> Stacks and gear flags are mirrored simultaneously to prevent in-game save corruption.<br>
+            • <strong>Calendar Story Safety:</strong> Story flags and calendar progression are preserved intact.
           </div>
         </div>
       </div>

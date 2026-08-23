@@ -533,7 +533,8 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                     if cname in CONFIDANT_ARCANA_MAP:
                         arc_id = CONFIDANT_ARCANA_MAP[cname]
                         rank = int(cdata.get("rank", 0)) if isinstance(cdata, dict) else int(cdata)
-                        CURRENT_EDITOR.set_confidant_rank(arc_id, rank, auto_unlock=True)
+                        romance = bool(cdata.get("romance", False)) if isinstance(cdata, dict) and "romance" in cdata else None
+                        CURRENT_EDITOR.set_confidant_rank(arc_id, rank, romance=romance, auto_unlock=True)
 
                 # 5. Apply Party & Persona
                 party_in = data.get("party", [])
@@ -713,17 +714,6 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"status": "success", "safety_backup": safety.name})
             except Exception as e:
                 self.send_json(500, {"error": f"Restore failed: {str(e)}"})
-
-        elif parsed.path == "/api/emergency-rescue":
-            action = data.get("action")
-            if not CURRENT_EDITOR:
-                self.send_json(400, {"error": "No save loaded."})
-                return
-            if action == "third_semester":
-                res = CURRENT_EDITOR.unlock_third_semester()
-                self.send_json(200, res)
-            else:
-                self.send_json(400, {"error": "Unknown emergency action."})
 
     def send_json(self, code, payload):
         self.send_response(code)

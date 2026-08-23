@@ -4,19 +4,20 @@
 > Updated: 2026-08-21 05:30 EDT
 
 ## Current State
-- **Phase:** inventory UX pass shipped (R1-R5, R7-R9); R6 descoped (needs equipment-slot RE)
-- **Gate:** ready — user smoke-test of new UI pending
+- **Phase:** implementation
+- **Gate:** ready
 - **Mode:** single-agent
 
 ## Last Completed
+- 2026-08-23: Implemented Reddit community requests (`u/Gruphius`): Fixed Haru (Slot 6) / Futaba (Slot 7) party swap, added Party Persona Evolution Tier (1-3) selector, activated Level <-> EXP cubic curve auto-sync, enabled Romance route toggle (`0x02`) on PC `0x31` saves, unlocked Key Items in Cheat Shop; 165/165 unit tests pass.
+- 2026-08-21: Retired 3rd Semester Emergency Rescue false-promise feature; refactored Stage 5 to dedicated Reversible Backups & Safety Vault; removed dead `/api/emergency-rescue` endpoint and in-memory reload bug; updated Safety rule 8; 161/161 tests pass.
 - 2026-08-21: Inventory UX pass — receipt review before save, per-item revert, global search, tab clusters, context menu + keyboard, main-list batching, UNWIRED drift resolved (Cards/Loot/Tools now writable; Outfit honestly labeled FROZEN), COH1 share codes. 161/161 tests. Captures re-baselined + 4 UX shots.
 - 2026-08-21: v1.0.10 RELEASED — compendium fix verified in-game ×2 slots; GitHub Release with asset.
 - Item Studio Cheat Shop Phase A-D implemented + validated
 - Equipment ownership all 4 categories verified
 
 ## Next Action
-- User: smoke-test new UI in EXE (receipt modal, global search, right-click menu, Cards/Loot/Tools steppers now live).
-- Offset probes still wanted: equip-different-gear diff would ALSO unlock R6 comparison; outfit-ownership diff unfreezes D008.
+- Build updated release executable (`dist/P5R_Save_Editor.exe`), finalize Reddit reply to `u/Gruphius` and `u/ClearlyNotFake`, and push clean tree to GitHub.
 
 ## Blockers
 - None.

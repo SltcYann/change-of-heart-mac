@@ -612,10 +612,15 @@ function renderActiveMember() {
   const stockChipsBox = document.getElementById("stockChipsContainer");
   const stockBadge = document.getElementById("stockSlotBadge");
 
+  const evoBox = document.getElementById("partyEvolutionContainer");
+  const evoSelect = document.getElementById("partyEvolutionSelect");
+  const evoBadge = document.getElementById("partyEvolutionTierBadge");
+
   if (isJoker) {
     if (deckHeader) deckHeader.textContent = "🎭 EQUIPPED PERSONA & MOVESET";
     if (stockChipsBox) stockChipsBox.style.display = "flex";
     if (stockBadge) stockBadge.style.display = "inline";
+    if (evoBox) evoBox.style.display = "none";
     const lockNote = document.getElementById("personaLockNote");
     if (lockNote) lockNote.style.display = "none";
     document.getElementById("personaSelect").disabled = false;
@@ -625,22 +630,40 @@ function renderActiveMember() {
     if (deckHeader) deckHeader.textContent = `🎭 ${member.name.toUpperCase()}'S PERSONA`;
     if (stockChipsBox) stockChipsBox.style.display = "none";
     if (stockBadge) stockBadge.style.display = "none";
+    if (evoBox) evoBox.style.display = "block";
 
     const pers = member.persona || {};
     const personaSelect = document.getElementById("personaSelect");
     personaSelect.value = pers.persona_id || 1;
+    personaSelect.disabled = true;
+
+    // Detect current evolution tier from persona_id
+    const pid = pers.persona_id || 0;
+    const EVOS = {
+      1: { 0x00CA: 1, 0x00D4: 2, 0x00F2: 3 }, // Ryuji
+      2: { 0x00CB: 1, 0x00D5: 2, 0x00F3: 3 }, // Morgana
+      3: { 0x00CC: 1, 0x00E9: 2, 0x00F4: 3 }, // Ann
+      4: { 0x00CD: 1, 0x00EA: 2, 0x00F5: 3 }, // Yusuke
+      5: { 0x00CE: 1, 0x00EB: 2, 0x00F6: 3 }, // Makoto
+      6: { 0x00CF: 1, 0x00EC: 2, 0x00F7: 3 }, // Haru
+      7: { 0x00D0: 1, 0x00ED: 2, 0x00F8: 3 }, // Futaba
+      8: { 0x00D1: 1, 0x00D2: 2, 0x00F9: 3 }, // Akechi
+      9: { 0x00F0: 1, 0x00F1: 2, 0x00FA: 3 }, // Kasumi
+    };
+    const curTier = (EVOS[member.slot] && EVOS[member.slot][pid]) ? EVOS[member.slot][pid] : 1;
+    if (evoSelect) evoSelect.value = curTier;
+    if (evoBadge) {
+      evoBadge.textContent = curTier === 1 ? "TIER 1 (BASE)" : (curTier === 2 ? "TIER 2 (AWAKENED)" : "TIER 3 (ROYAL)");
+      evoBadge.style.background = curTier === 1 ? "#00E5FF" : (curTier === 2 ? "#FFD54F" : "#E040FB");
+    }
+
     document.getElementById("personaLevel").value = pers.level || 1;
     document.getElementById("personaTraitSelect").value = pers.trait_id || 0;
 
-    // Teammate personas are story-locked: P5R forces each member's canonical
-    // persona (backend refuses persona_id changes for slots 1-9 since the
-    // 2026-08-16 audit). Disable the identity selector; level/stats/skills
-    // remain editable.
-    personaSelect.disabled = true;
     const lockNote = document.getElementById("personaLockNote");
     if (lockNote) {
       lockNote.style.display = "block";
-      lockNote.textContent = `🔒 ${member.name}'s persona is story-locked — identity cannot be changed.`;
+      lockNote.textContent = `★ ${member.name}'s identity is locked to their canonical line — switch evolution tiers above.`;
     }
 
     const st = pers.stats || [10, 10, 10, 10, 10];
@@ -665,6 +688,51 @@ function renderActiveMember() {
       const pid = pers.persona_id || 1;
       idBadge.textContent = `ID: 0x${pid.toString(16).toUpperCase().padStart(3, '0')} (${pid})`;
     }
+  }
+}
+
+function onPartyEvolutionChange() {
+  const member = CURRENT_SAVE?.party ? CURRENT_SAVE.party[ACTIVE_MEMBER_INDEX] : null;
+  if (!member || member.slot === 0) return;
+
+  const select = document.getElementById("partyEvolutionSelect");
+  const tier = parseInt(select.value) || 1;
+
+  const EVOS = {
+    1: { 1: 0x00CA, 2: 0x00D4, 3: 0x00F2 }, // Ryuji
+    2: { 1: 0x00CB, 2: 0x00D5, 3: 0x00F3 }, // Morgana
+    3: { 1: 0x00CC, 2: 0x00E9, 3: 0x00F4 }, // Ann
+    4: { 1: 0x00CD, 2: 0x00EA, 3: 0x00F5 }, // Yusuke
+    5: { 1: 0x00CE, 2: 0x00EB, 3: 0x00F6 }, // Makoto
+    6: { 1: 0x00CF, 2: 0x00EC, 3: 0x00F7 }, // Haru
+    7: { 1: 0x00D0, 2: 0x00ED, 3: 0x00F8 }, // Futaba
+    8: { 1: 0x00D1, 2: 0x00D2, 3: 0x00F9 }, // Akechi
+    9: { 1: 0x00F0, 2: 0x00F1, 3: 0x00FA }, // Kasumi
+  };
+
+  const newPid = (EVOS[member.slot] && EVOS[member.slot][tier]) ? EVOS[member.slot][tier] : 0;
+  if (newPid > 0) {
+    if (!member.persona) member.persona = {};
+    member.persona.persona_id = newPid;
+
+    // Re-render UI
+    const personaSelect = document.getElementById("personaSelect");
+    if (personaSelect) personaSelect.value = newPid;
+
+    const evoBadge = document.getElementById("partyEvolutionTierBadge");
+    if (evoBadge) {
+      evoBadge.textContent = tier === 1 ? "TIER 1 (BASE)" : (tier === 2 ? "TIER 2 (AWAKENED)" : "TIER 3 (ROYAL)");
+      evoBadge.style.background = tier === 1 ? "#00E5FF" : (tier === 2 ? "#FFD54F" : "#E040FB");
+    }
+
+    const portraitEl = document.getElementById("velvetPersonaPortrait");
+    if (portraitEl) portraitEl.src = `/assets/personas/${newPid}.png?v=20260816`;
+
+    const idBadge = document.getElementById("velvetPersonaIdBadge");
+    if (idBadge) idBadge.textContent = `ID: 0x${newPid.toString(16).toUpperCase().padStart(3, '0')} (${newPid})`;
+
+    renderElementalAffinities(newPid, member.persona.skills || [0,0,0,0,0,0,0,0]);
+    setStatus(`★ ${member.name}'s persona evolved to Tier ${tier} (0x${newPid.toString(16).toUpperCase()}) — armed for save.`);
   }
 }
 
@@ -1437,6 +1505,15 @@ function renderActiveConfidantSpotlight(arcana) {
       <button class="p5-btn-action" style="padding:8px 18px; font-size:16px;" onclick="stepConfidantRank('${arcana}', 10 - ${info.rank})">
         <span>★ MAX (RANK 10)</span>
       </button>
+
+      ${isRomanceable && info.rank >= 9 ? `
+        <div style="display:flex; align-items:center; gap:8px; margin-left:auto; background:rgba(255,42,109,0.15); padding:6px 12px; border:1px solid #FF2A6D; border-radius:4px;">
+          <span style="font-size:12px; font-weight:900; color:#FF80AB;">RELATIONSHIP:</span>
+          <button class="filter-pill ${info.romance ? 'active' : ''}" style="border-radius:4px; font-size:11px; padding:3px 8px; ${info.romance ? 'background:#FF2A6D; border-color:#FF2A6D;' : ''}" onclick="toggleConfidantRomance('${arcana}')">
+            ${info.romance ? '💖 LOVER' : '🤝 FRIEND'}
+          </button>
+        </div>
+      ` : ''}
     </div>
 
     ${warningHtml}
@@ -1487,6 +1564,14 @@ function renderActiveConfidantSpotlight(arcana) {
       </div>
     </div>
   `;
+}
+
+function toggleConfidantRomance(arcana) {
+  if (!CURRENT_SAVE?.confidants?.[arcana]) return;
+  const cur = Boolean(CURRENT_SAVE.confidants[arcana].romance);
+  CURRENT_SAVE.confidants[arcana].romance = !cur;
+  renderConfidants();
+  setStatus(`★ ${arcana} relationship set to ${!cur ? '💖 LOVER' : '🤝 FRIEND'} — armed for save.`);
 }
 
 function stepConfidantRank(arcana, delta) {
@@ -3170,23 +3255,6 @@ async function executeSavePayload(skipReview) {
   } catch (err) {
     console.error("Save error:", err);
     setStatus("Failed to save changes.");
-  }
-}
-
-// 3rd Semester Rescue
-async function triggerRescueThirdSemester() {
-  if (!confirm("Unlock 3rd Semester? Sets Maruki Rank 9, Kasumi Rank 5, Akechi Rank 8.")) return;
-  try {
-    const res = await fetch("/api/emergency-rescue", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "third_semester" })
-    });
-    const data = await res.json();
-    alert(data.message || "3rd semester ranks set!");
-    loadSaveFile();
-  } catch (err) {
-    alert("Failed to trigger rescue: " + err);
   }
 }
 

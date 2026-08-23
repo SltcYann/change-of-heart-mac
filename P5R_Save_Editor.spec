@@ -13,9 +13,6 @@ data_files = [
     ('web-app/static', 'web-app/static'),
 ]
 
-if (SPEC_DIR / 'p5r-game-client').exists():
-    data_files.append(('p5r-game-client', 'p5r-game-client'))
-
 import site
 import sys
 

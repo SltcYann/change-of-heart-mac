@@ -62,16 +62,17 @@ class TestUnsupportedOnPC(unittest.TestCase):
         r = e.repair_romance_flags()
         self.assertEqual(r["status"], "unsupported")
 
-    def test_confidant_romance_param_unsupported_on_pc(self):
+    def test_confidant_romance_param_supported_on_pc(self):
         e = make_pc_editor()
         add_confidant_entry(e, "Death", 14)
         r = e.set_confidant_rank(13, 5, romance=True)
-        self.assertEqual(r["status"], "unsupported")
+        self.assertEqual(r["status"], "success")
+        self.assertTrue(r["romance"])
 
-    def test_all_confidants_romance_all_unsupported_on_pc(self):
+    def test_all_confidants_romance_all_supported_on_pc(self):
         e = make_pc_editor()
         r = e.set_all_confidants_rank(10, romance_all=True)
-        self.assertEqual(r["status"], "unsupported")
+        self.assertEqual(r["status"], "success")
 
     def test_rebalance_unsupported_on_pc(self):
         e = make_pc_editor()

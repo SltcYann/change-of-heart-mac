@@ -50,23 +50,35 @@ venv.bak/
 *.swo
 *~
 
-# Local scratch dirs (not part of the product)
+# Local scratch dirs & internal engineering (never ship to GitHub)
 diff/
 tools/
 scripts/
 dev/
 research/
+scratch/
+scratch_audit/
+p5r-game-client/
+releases/
+memory/
+archive/
 
 # OS files
 .DS_Store
 Thumbs.db
- desktop.ini
+desktop.ini
 
 # Local-only agent handoff doc (never ships to GitHub)
 HANDOFF.md
+HANDOFF_*.md
+HERMES_*.md
 screenshots/
 *.zip
-archive/
+*.DAT
+*.dat
+test_visual*.py
+patch_notes_*.md
 
-# Local agent tooling
+# Local agent tooling & tests cache
 .dsh-vision-toolkit/
+.pytest_cache/

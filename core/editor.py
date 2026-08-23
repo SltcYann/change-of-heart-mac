@@ -561,10 +561,10 @@ class SaveEditor:
         2: (82, 33, 2, 0xCB),    # Morgana
         3: (109, 62, 5, 0xCC),   # Ann
         4: (192, 86, 15, 0xCD),  # Yusuke
-        5: (243, 142, 21, 0xCE), # Makoto
-        6: (316, 182, 36, 0xCF), # Futaba
-        7: (213, 155, 30, 0xD0), # Haru
-        8: (386, 215, 45, 0xD1), # Akechi
+        5: (243, 142, 21, 0xCE), # Makoto (206)
+        6: (316, 182, 36, 0xCF), # Haru (207, Milady 0x00CF)
+        7: (213, 155, 30, 0xD0), # Futaba (208, Necronomicon 0x00D0)
+        8: (386, 215, 45, 0xD1), # Akechi (209)
         # Kasumi's slot is PRE-WRITTEN by the game at save creation with
         # her base state (358/159/43/0xF0) — verified against the untouched
         # Aug-06 backup, Aug-13 copy, Aug-14 copy, and live June saves,
@@ -1814,12 +1814,13 @@ class SaveEditor:
                         continue
                     rank = struct.unpack_from("<H", d, off + self.PC31_CONFIDANT_RANK_OFF)[0]
                     pts = struct.unpack_from("<H", d, off + self.PC31_CONFIDANT_PTS_OFF)[0]
+                    flags = struct.unpack_from("<H", d, off + 0)[0]
                     result[name] = {
                         "arcana_id": arcana_id,
                         "rank": rank,
                         "points": pts,
                         "unlocked": rank > 0,
-                        "romance": False,
+                        "romance": bool(flags & 0x02),
                     }
                 return result
 
@@ -1842,14 +1843,7 @@ class SaveEditor:
     def set_confidant_rank(self, arcana_id: int, rank: int, points: Optional[int] = None,
                            romance: Optional[bool] = None,
                            auto_unlock: bool = False) -> Dict[str, Any]:
-        """Set one confidant's rank (0-10) in the VERIFIED PC block.
-
-        Writes both the rank u16 and points u16 so the game never clamps
-        the displayed rank. When points is None, the per-arcana threshold
-        for the requested rank is used when known — the game's point-based
-        rank validation then agrees. When no threshold is known, the
-        points field is left untouched.
-        """
+        """Set one confidant's rank (0-10) in the VERIFIED PC block."""
         rank = max(0, min(rank, 10))
         write_points: Optional[int] = points
         if write_points is None:
@@ -1859,9 +1853,6 @@ class SaveEditor:
             if rank in th:
                 write_points = th[rank]
         if self.is_real_save():
-            if romance is not None:
-                return {"status": "unsupported",
-                        "message": "Romance flags are not mapped on PC saves (0x31)."}
             d = bytearray(self.parser.data_payload)
             off = self._confidant_entry(d, arcana_id)
             if off < 0:
@@ -1886,14 +1877,23 @@ class SaveEditor:
                 # Revert slot to completely unallocated (all 16 bytes zero) so in-game menu hides them
                 for b_i in range(self.PC31_CONFIDANT_STRIDE):
                     d[off + b_i] = 0
+                romance_state = False
             else:
                 struct.pack_into("<H", d, off + self.PC31_CONFIDANT_RANK_OFF, rank)
                 if write_points is not None:
                     struct.pack_into("<H", d, off + self.PC31_CONFIDANT_PTS_OFF,
                                      max(0, min(write_points, 0xFFFF)))
+                cur_flags = struct.unpack_from("<H", d, off + 0)[0]
+                cur_flags |= 0x01
+                if romance is True:
+                    cur_flags |= 0x02
+                elif romance is False:
+                    cur_flags &= ~0x02
+                struct.pack_into("<H", d, off + 0, cur_flags)
+                romance_state = bool(cur_flags & 0x02)
             self.parser.data_payload = bytes(d)
             return {"status": "success", "arcana_id": arcana_id, "rank": rank,
-                    "points": write_points if rank > 0 else 0, "romance": False}
+                    "points": write_points if rank > 0 else 0, "romance": romance_state}
 
         if 0x10010 in self.parser.blocks_raw:
             raw = bytearray(self.parser.blocks_raw[0x10010])
@@ -1915,9 +1915,6 @@ class SaveEditor:
 
     def set_all_confidants_rank(self, rank: int = 10, romance_all: bool = False) -> Dict[str, Any]:
         """Set every confidant to a rank (default 10)."""
-        if self.is_real_save() and romance_all:
-            return {"status": "unsupported",
-                    "message": "Romance flags are not mapped on PC saves (0x31)."}
         count = 0
         for arcana_id in CONFIDANT_ARCANA_MAP.values():
             romance = romance_all if arcana_id in ROMANCEABLE_CONFIDANTS else None
@@ -1930,19 +1927,45 @@ class SaveEditor:
     # Party Stats API
     # -------------------------------------------------------------------------
 
-    def get_party_stats(self) -> List[Dict[str, Any]]:
-        """Read party stats from the VERIFIED PC block @0x2C, stride 0x2B0.
+    PARTY_PERSONA_EVOLUTIONS = {
+        1: {"name": "Ryuji",   1: (0x00CA, "Captain Kidd"), 2: (0x00D4, "Seiten Taisei"), 3: (0x00F2, "William")},
+        2: {"name": "Morgana", 1: (0x00CB, "Zorro"),        2: (0x00D5, "Mercurius"),     3: (0x00F3, "Diego")},
+        3: {"name": "Ann",     1: (0x00CC, "Carmen"),       2: (0x00E9, "Hecate"),        3: (0x00F4, "Celestine")},
+        4: {"name": "Yusuke",  1: (0x00CD, "Goemon"),       2: (0x00EA, "Kamu Susano-o"), 3: (0x00F5, "Gorokichi")},
+        5: {"name": "Makoto",  1: (0x00CE, "Johanna"),      2: (0x00EB, "Anat"),          3: (0x00F6, "Agnes")},
+        6: {"name": "Haru",    1: (0x00CF, "Milady"),       2: (0x00EC, "Astarte"),       3: (0x00F7, "Lucy")},
+        7: {"name": "Futaba",  1: (0x00D0, "Necronomicon"), 2: (0x00ED, "Prometheus"),    3: (0x00F8, "Al Azif")},
+        8: {"name": "Akechi",  1: (0x00D1, "Robin Hood"),   2: (0x00D2, "Loki"),          3: (0x00F9, "Hereward")},
+        9: {"name": "Kasumi",  1: (0x00F0, "Cendrillon"),   2: (0x00F1, "Vanadis"),       3: (0x00FA, "Ella")},
+    }
 
-        HP u16 @+0, SP u16 @+4. Leader (slot 0) has LV @+0xC; teammates
-        LV @+0x3C (u8/u16). Slots 0-4 verified in-game 2026-08-09 via the
-        Stats-screen screenshot (Joker 22/256/136, Ryuji 20/246/99,
-        Morgana 21/208/131, Ann 21/221/140, Yusuke 21/234/108).
-        Slots 5-9 labeled by join order (Makoto/Futaba/Haru/Akechi/Kasumi)
-        — predicted, to be verified as members join.
-        """
+    def set_party_persona_evolution(self, slot: int, tier: int) -> Dict[str, Any]:
+        """Equip the corresponding evolutionary Tier (1=Base, 2=Awakened, 3=Royal) persona for a teammate."""
+        if slot not in self.PARTY_PERSONA_EVOLUTIONS:
+            return {"status": "invalid", "message": f"Slot {slot} is not a valid teammate evolution slot."}
+        if tier not in (1, 2, 3):
+            return {"status": "invalid", "message": "Evolution tier must be 1 (Base), 2 (Awakened), or 3 (Royal)."}
+        if not self.is_member_joined(slot):
+            return {"status": "invalid", "message": f"Member slot {slot} has not joined the party yet."}
+
+        p_id, p_name = self.PARTY_PERSONA_EVOLUTIONS[slot][tier]
+        if self.is_real_save():
+            d = bytearray(self.parser.data_payload)
+            offset = self.PC31_OFFSET_PARTY_BASE + slot * self.PC31_PARTY_STRIDE
+            if offset + 0x3E > len(d):
+                return {"status": "noop", "message": "Slot out of range"}
+            # Persona ID @ +0x3A (u16)
+            struct.pack_into("<H", d, offset + 0x3A, p_id)
+            self.parser.data_payload = bytes(d)
+            return {"status": "success", "slot": slot, "tier": tier, "persona_id": p_id, "persona_name": p_name}
+
+        return {"status": "noop", "message": "Persona evolution only supported on PC saves."}
+
+    def get_party_stats(self) -> List[Dict[str, Any]]:
+        """Read party stats from the VERIFIED PC block @0x2C, stride 0x2B0."""
         PARTY_SLOT_NAMES = {
             0: "Joker", 1: "Ryuji", 2: "Morgana", 3: "Ann", 4: "Yusuke",
-            5: "Makoto", 6: "Futaba", 7: "Haru", 8: "Akechi", 9: "Kasumi",
+            5: "Makoto", 6: "Haru", 7: "Futaba", 8: "Akechi", 9: "Kasumi",
         }
         result = []
         if self.is_real_save():
@@ -2013,15 +2036,22 @@ class SaveEditor:
                         "applied": False, "level": lvl, "hp": cur_hp, "sp": cur_sp}
             struct.pack_into("<H", d, offset + self.PC31_PARTY_HP_OFF, max(0, min(cur_hp, 999)))
             struct.pack_into("<H", d, offset + self.PC31_PARTY_SP_OFF, max(0, min(cur_sp, 999)))
+            from core.exp_curve import get_p5r_min_exp_for_level
+            target_exp = get_p5r_min_exp_for_level(lvl)
             if slot == 0:
                 struct.pack_into("<H", d, offset + lv_off, max(1, min(lvl, 99)))
+                # Joker EXP @ +0x10 (u32)
+                struct.pack_into("<I", d, offset + 0x10, target_exp)
             else:
                 # u8 write only — a u16 write here clobbers +0x3D (the
                 # persona struct's unk byte). Verified 2026-08-16.
                 d[offset + lv_off] = max(1, min(lvl, 99))
+                # Teammate EXP @ +0x18 (u32)
+                if offset + 0x1C <= len(d):
+                    struct.pack_into("<I", d, offset + 0x18, target_exp)
             self.parser.data_payload = bytes(d)
             return {"status": "success", "slot": slot, "level": lvl, "hp": cur_hp, "sp": cur_sp,
-                    "max_hp": None, "max_sp": None}
+                    "exp": target_exp, "max_hp": None, "max_sp": None}
 
         if 0x10002 not in self.parser.blocks_raw:
             return {"status": "noop", "message": "Party block 0x10002 not found."}
@@ -2043,27 +2073,6 @@ class SaveEditor:
         struct.pack_into("<HHHHH", raw, offset, lvl, hp_, sp_, max_hp, max_sp)
         self.parser.blocks_raw[0x10002] = bytes(raw)
         return {"status": "success", "slot": slot, "level": lvl, "hp": hp_, "sp": sp_, "max_hp": max_hp, "max_sp": max_sp}
-
-    def unlock_third_semester(self) -> Dict[str, Any]:
-        """Emergency Unlocker for 3rd Semester.
-
-        Best-effort: writes the required confidant ranks ONLY. The game
-        may also gate the semester on event-flag bits in 0x2F200 which are
-        not mapped — if the semester does not open after this, the save's
-        story flags did not permit it. Always test on a backed-up copy.
-        """
-        self.set_confidant_rank(22, 9, None, auto_unlock=True) # Maruki
-        self.set_confidant_rank(21, 5, None, auto_unlock=True) # Kasumi
-        self.set_confidant_rank(8, 8, None, auto_unlock=True)  # Akechi
-        return {
-            "maruki_rank_updated": True,
-            "kasumi_rank_updated": True,
-            "akechi_rank_updated": True,
-            "warning": "Rank writes only — event-flag pairing is not mapped. "
-                       "3rd semester may not open if story flags do not permit it. "
-                       "Test on a backup copy.",
-            "message": "3rd Semester successfully unlocked! Maruki Rank 9, Kasumi Rank 5, Akechi Rank 8.",
-        }
 
     def repair_romance_flags(self, target_arcana_id: Optional[int] = None, romance_state: bool = False) -> Dict[str, Any]:
         """Clean romance flags.

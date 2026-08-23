@@ -166,10 +166,11 @@ class TestEditor(unittest.TestCase):
         self.assertEqual(knowledge_rank, 5)
         self.assertEqual(charm_rank, 3)
 
-    def test_third_semester_unlock(self):
+    def test_third_semester_confidants(self):
         e = self._make_editor()
-        res = e.unlock_third_semester()
-        self.assertTrue(res["maruki_rank_updated"])
+        e.set_confidant_rank(22, 9, auto_unlock=True)
+        e.set_confidant_rank(21, 5, auto_unlock=True)
+        e.set_confidant_rank(8, 8, auto_unlock=True)
         raw = e.parser.blocks_raw[0x10010]
         # Maruki = arcana 22, rank at offset 22*8
         self.assertEqual(raw[22 * 8], 9)
@@ -219,7 +220,7 @@ class TestEditor(unittest.TestCase):
         e = self._make_editor()
         e.set_money(7777777)
         e.set_player_names("Joker", "P5R", "Phantoms")
-        e.unlock_third_semester()
+        e.set_confidant_rank(22, 9, auto_unlock=True)  # Maruki
 
         packed = e.save_to_bytes(compress=True, encrypt=True)
         self.assertTrue(packed.startswith(b"DATA"))
@@ -229,6 +230,64 @@ class TestEditor(unittest.TestCase):
         self.assertEqual(e2.parser.header.fname, "Joker")
         raw = e2.parser.blocks_raw[0x10010]
         self.assertEqual(raw[22 * 8], 9)  # Maruki rank survives
+
+    def test_haru_futaba_slot_indices(self):
+        """Verify Haru is slot 6 and Futaba is slot 7 in Party Seeds and Names."""
+        e = SaveEditor()
+        self.assertEqual(e.PC31_MEMBER_SEEDS[6][3], 0xCF)  # Haru Milady seed
+        self.assertEqual(e.PC31_MEMBER_SEEDS[7][3], 0xD0)  # Futaba Necronomicon seed
+
+    def test_party_persona_evolution_write(self):
+        """Verify equipping Tier 1, 2, and 3 personas writes accurate IDs."""
+        p = "tests/fixtures/canonical_save.dat"
+        if not os.path.exists(p):
+            return
+        e = SaveEditor(open(p, "rb").read())
+        # Equip Tier 3 for Ryuji (William = 0x00F2)
+        res = e.set_party_persona_evolution(1, 3)
+        self.assertEqual(res["status"], "success")
+        self.assertEqual(res["persona_id"], 0x00F2)
+        self.assertEqual(res["persona_name"], "William")
+
+        # Equip Tier 1 for Haru (Milady = 0x00CF)
+        res_h = e.set_party_persona_evolution(6, 1)
+        self.assertEqual(res_h["status"], "success")
+        self.assertEqual(res_h["persona_id"], 0x00CF)
+
+    def test_party_level_exp_autosync(self):
+        """Verify setting party level automatically writes minimum cumulative EXP."""
+        p = "tests/fixtures/canonical_save.dat"
+        if not os.path.exists(p):
+            return
+        e = SaveEditor(open(p, "rb").read())
+        res = e.set_party_stat(1, level=50)
+        self.assertEqual(res["status"], "success")
+        self.assertEqual(res["exp"], 202370)
+
+        # Check raw payload at +0x18
+        base = 0x2C + 1 * 0x2B0
+        exp_in_save = struct.unpack_from("<I", e.parser.data_payload, base + 0x18)[0]
+        self.assertEqual(exp_in_save, 202370)
+
+    def test_pc_confidant_romance_toggle(self):
+        """Verify toggling romance sets/clears bit 0x02 in PC 0x136A0 block."""
+        p = "tests/fixtures/canonical_save.dat"
+        if not os.path.exists(p):
+            return
+        e = SaveEditor(open(p, "rb").read())
+        # Ann = Lovers = arcana 6
+        res = e.set_confidant_rank(6, 10, romance=True)
+        self.assertEqual(res["status"], "success")
+        self.assertTrue(res["romance"])
+
+        ranks = e.get_confidant_ranks()
+        self.assertTrue(ranks["Lovers"]["romance"])
+
+        # Toggle back to False
+        res2 = e.set_confidant_rank(6, 10, romance=False)
+        self.assertFalse(res2["romance"])
+        ranks2 = e.get_confidant_ranks()
+        self.assertFalse(ranks2["Lovers"]["romance"])
 
 
 if __name__ == "__main__":

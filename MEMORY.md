@@ -22,6 +22,8 @@
 | D006 | 2026-08-19 | Inventory taxonomy: 4 storage paradigms (owned-flag, count-array, key-item bitfield, outfit owned-flag) | Oracle-verified (DeepSeek + Gemini agree) |
 | D007 | 2026-08-19 | Inventory rebuild spec: `docs/INVENTORY_SPEC.md` is canonical | Oracle-verified, supersedes all prior inventory prose |
 | D008 | 2026-08-19 | Outfit `0xA000+` frozen until live diff proves offset | Risk of corruption if wired from inference |
+| D009 | 2026-08-21 | 3rd Semester Emergency Rescue button RETIRED | Requires 43,008-bit Event Flag Matrix manipulation |
+| D010 | 2026-08-23 | Haru (Slot 6) / Futaba (Slot 7) aligned, Party Evolution Tiers (1-3) exposed, EXP autosync curve activated, PC Romance flags enabled | Solves save migration and post-battle EXP stalling reported by community (`u/Gruphius`) |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
