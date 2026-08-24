@@ -6,12 +6,21 @@
   "mode": "single-agent",
   "pinned_shas": {},
   "last_session": "memory/2026-08-24-audit-fixes.md",
-  "updated_at": "2026-08-24T00:00:00Z",
+  "updated_at": "2026-08-24T19:00:00Z",
   "version": "v1.1.1-dev",
-  "test_command": ["python", "-m", "unittest", "discover", "-s", "tests"],
-  "test_count": 168,
+  "test_command": [
+    "python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests"
+  ],
+  "test_count": 170,
   "blockers": [],
   "next_action": "Push updated changes to GitHub and publish hotfix release v1.1.1 (or refresh v1.1.0 asset)",
   "active_owners": [],
-  "frozen_offsets": ["0xA000+ Outfits save wiring (D008 — read-only in UI)"]
+  "frozen_offsets": [
+    "0xA000+ Outfits save wiring (D008 \u2014 read-only in UI)"
+  ]
 }

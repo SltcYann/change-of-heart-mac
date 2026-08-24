@@ -257,7 +257,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadDatabase();
   await refreshDiscovery();
   initInventoryKeyboard(); // R5: keyboard navigation for the item roster
+  startUiHeartbeat(); // prove the WebView UI is alive (main.py watchdog)
 });
+
+// UI liveness ping — if these never arrive at the server, the native window's
+// JS is dead (broken WebView2 Runtime) and main.py auto-falls-back to the
+// system browser instead of leaving the user with a silent dead window.
+function startUiHeartbeat() {
+  const beat = () => fetch("/api/ui-heartbeat").catch(() => {});
+  beat();
+  setInterval(beat, 15000);
+}
 
 // Load Database
 async function loadDatabase() {

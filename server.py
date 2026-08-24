@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import json
+import time
 import base64
 from pathlib import Path
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -359,6 +360,12 @@ def _build_loaded_save_payload(editor: SaveEditor, file_path: str) -> dict:
         )
     return resp
 
+# UI liveness tracking (watchdog for broken-WebView2 silent failures).
+# The frontend pings /api/ui-heartbeat after the UI boots and every 15s after
+# any successful API call. If the native window's JS never checks in, main.py
+# auto-falls-back to the system browser instead of leaving a dead window.
+LAST_UI_HEARTBEAT = 0.0  # unix ts of last heartbeat; 0 = never seen
+
 class P5RWebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_APP_DIR / "static"), **kwargs)
@@ -442,6 +449,18 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 with open(game_file, "rb") as f:
                     self.wfile.write(f.read())
                 return
+        elif parsed.path == "/api/ui-heartbeat":
+            global LAST_UI_HEARTBEAT
+            LAST_UI_HEARTBEAT = time.time()
+            self.send_json(200, {"status": "alive"})
+            return
+        elif parsed.path == "/api/heartbeat-status":
+            age = (time.time() - LAST_UI_HEARTBEAT) if LAST_UI_HEARTBEAT else None
+            self.send_json(200, {
+                "ever_seen": LAST_UI_HEARTBEAT > 0,
+                "last_heartbeat_age_s": round(age, 1) if age is not None else None,
+            })
+            return
         elif parsed.path == "/api/build":
             self.send_json(200, {"build": BUILD_ID})
             return

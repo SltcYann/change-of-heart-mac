@@ -85,7 +85,29 @@ def main() -> None:
 
     # 3. If webview is available, create native desktop window (Edge WebView2)
     if webview is not None:
+        browser_fallback_used = []
+
+        def ui_watchdog(timeout_s: float = 30.0) -> None:
+            """If the native window's JS never pings /api/ui-heartbeat, the
+            WebView2 UI booted dead (broken runtime — silent no-buttons, dead
+            file picker). Auto-open the system browser instead of leaving the
+            user with a window that does nothing."""
+            deadline = time.time() + timeout_s
+            while time.time() < deadline:
+                if web_server.LAST_UI_HEARTBEAT > 0:
+                    return  # UI is alive; native window is healthy
+                time.sleep(1.0)
+            print(
+                f"[Change of Heart] Native UI showed no signs of life after "
+                f"{int(timeout_s)}s — likely a broken WebView2 Runtime on this "
+                f"machine. Opening the editor in your default browser instead.",
+                flush=True,
+            )
+            browser_fallback_used.append(True)
+            webbrowser.open(url)
+
         try:
+            threading.Thread(target=ui_watchdog, daemon=True).start()
             window = webview.create_window(
                 title="PERSONA 5 ROYAL — Change of Heart Save Editor",
                 url=url,
@@ -96,10 +118,18 @@ def main() -> None:
                 text_select=True,
             )
             webview.start(gui="edgechromium", debug=False)
-            return
+            if not browser_fallback_used:
+                # Normal exit: user closed a healthy native window.
+                instances.clear()
+                stop_background_server()
+                return
+            # Watchdog fell back to the browser: keep serving until the user
+            # closes the browser tab themselves (Ctrl+C in console also works).
+            print("[Change of Heart] Serving browser session — close this console or press Ctrl+C when done.", flush=True)
+            while True:
+                time.sleep(1)
         except Exception as e:
             print(f"[Change of Heart] WebView2 init notice ({e}), launching in browser: {url}")
-        finally:
             instances.clear()
             stop_background_server()
 
