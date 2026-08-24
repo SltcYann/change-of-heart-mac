@@ -27,25 +27,25 @@
     <!-- Slanted Nav Buttons -->
     <nav class="p5-nav-list">
       <button class="p5-nav-item active" onclick="switchStage('daily_life', this)">
-        <span>📅 DAILY LIFE & STATS</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><rect x="1" y="2" width="14" height="13" fill="currentColor"/><rect x="1" y="2" width="14" height="4" fill="#000" opacity="0.35"/><rect x="4" y="0" width="2" height="4" fill="currentColor"/><rect x="10" y="0" width="2" height="4" fill="currentColor"/></svg> DAILY LIFE &amp; STATS</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('velvet_room', this)">
-        <span>⚔️ VELVET ROOM & PARTY</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M1 2 Q5 1 7 4 L7 13 Q4 10 1 11 Z" fill="currentColor"/><path d="M15 2 Q11 1 9 4 L9 13 Q12 10 15 11 Z" fill="currentColor"/></svg> VELVET ROOM &amp; PARTY</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('confidants', this)">
-        <span>💖 CONFIDANTS & ROMANCE</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M8 14 L2 8 Q0 5 2 3 Q4 1 6.5 3.5 L8 5 L9.5 3.5 Q12 1 14 3 Q16 5 14 8 Z" fill="currentColor"/></svg> CONFIDANTS &amp; ROMANCE</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('inventory', this)">
-        <span>🎒 HIDEOUT & INVENTORY</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M3 5 H13 L14 14 H2 Z" fill="currentColor"/><path d="M5 5 V3.5 Q5 1.5 8 1.5 Q11 1.5 11 3.5 V5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg> HIDEOUT &amp; INVENTORY</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('compendium', this)">
-        <span>📖 COMPENDIUM</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M2 2 H7 Q8 2 8 3 V14 Q8 13 7 13 H2 Z" fill="currentColor"/><path d="M14 2 H9 Q8 2 8 3 V14 Q8 13 9 13 H14 Z" fill="currentColor"/></svg> COMPENDIUM</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('god_presets', this)">
-        <span>⚡ GOD-TIER BUILDS</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M9 1 L3 9 H7 L6 15 L13 6 H9 Z" fill="currentColor"/></svg> GOD-TIER BUILDS</span>
       </button>
       <button class="p5-nav-item" onclick="switchStage('rescue_vault', this)">
-        <span>🛡️ BACKUPS & SAFETY</span>
+        <span><svg class="nav-ico" viewBox="0 0 16 16" width="15" height="15"><path d="M8 1 L14 3.5 V8 Q14 12.5 8 15 Q2 12.5 2 8 V3.5 Z" fill="currentColor"/></svg> BACKUPS &amp; SAFETY</span>
       </button>
     </nav>
 
@@ -560,7 +560,7 @@
         </div>
         <div style="margin-top:8px;">
           <div style="background:#111; border:2px solid #222; height:28px; position:relative; overflow:hidden;">
-            <div id="compendiumProgressBar" style="height:100%; background:linear-gradient(90deg, #00E5FF, #E040FB); width:0%; transition:width 0.3s ease;"></div>
+            <div id="compendiumProgressBar" style="height:100%; background:var(--p5-yellow); width:0%; transition:width 0.3s ease; clip-path:polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);"></div>
             <div id="compendiumPercentLabel" style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-p5); font-size:14px; color:#FFF; text-shadow:1px 1px 2px #000;">0%</div>
           </div>
         </div>

@@ -1572,10 +1572,10 @@ function renderActiveConfidantSpotlight(arcana) {
     <!-- In-Game Consequence & Lore Panels -->
     <div class="spotlight-dossier-grid">
       <!-- Live Rank Consequence -->
-      <div class="dossier-panel" style="border-left-color:${info.rank >= 10 ? '#00E676' : (info.rank >= 9 && isRomanceable ? '#FF2A6D' : 'var(--p5-crimson)')};">
+      <div class="dossier-panel" style="border-left-color:${info.rank >= 10 ? '#FFE600' : (info.rank >= 9 && isRomanceable ? '#FF2A6D' : 'var(--p5-crimson)')};">
         <div class="dossier-panel-title">
           <span>⚡ RANK ${info.rank} NARRATIVE IMPACT</span>
-          <span style="color:${info.rank >= 10 ? '#00E676' : 'var(--p5-yellow)'};">${info.rank >= 10 ? '✔ COMPLETED' : 'ACTIVE'}</span>
+          <span style="color:${info.rank >= 10 ? '#FFE600' : 'var(--p5-yellow)'};">${info.rank >= 10 ? '✔ COMPLETED' : 'ACTIVE'}</span>
         </div>
         <div style="font-size:12px; line-height:1.5; color:#E0E0EE;">
           ${info.rank >= 10 ? `
@@ -1849,7 +1849,7 @@ function filterCompendiumGrid() {
     card.style.cssText = `
       background: ${isSpecial ? "#0B0B10" : isReg ? "linear-gradient(135deg, #1C1226, #0E0B16)" : "#09090D"};
       border: 1px solid ${isSpecial ? "#2A2A35" : isReg ? "#E040FB" : "#222"};
-      border-left: 6px solid ${isSpecial ? "#4A4A5A" : isReg ? "#00E676" : "#444"};
+      border-left: 6px solid ${isSpecial ? "#4A4A5A" : isReg ? "#FFE600" : "#444"};
       padding: 10px 12px;
       display: flex;
       justify-content: space-between;
@@ -1912,7 +1912,7 @@ function filterCompendiumGrid() {
         <div style="font-family:var(--font-p5); font-size:15px; letter-spacing:0.5px; color:${isSpecial ? '#888' : isReg ? '#FFF' : '#777'};">
           ${name} ${isDlc ? '<span style="font-size:9px; font-family:var(--font-body); font-weight:900; background:#FF2A6D; color:#FFF; padding:2px 5px; border-radius:2px;">DLC</span>' : ''} ${isTreasure ? '<span style="font-size:9px; font-family:var(--font-body); font-weight:900; background:#FFE600; color:#000; padding:2px 5px; border-radius:2px;">DEMON</span>' : ''}
         </div>
-        <div style="font-size:11px; color:var(--p5-muted); font-family:monospace; margin-top:2px;">ID: ${hexId} <span style="color:#555;">(#${pid})</span></div>
+        <div style="font-size:11px; color:var(--p5-muted); font-family:monospace; margin-top:2px;"><span style="color:#555;">No.${pid}</span>${isDlc ? ' · DLC' : ''}</div>
       </div>
     `;
 
@@ -1922,9 +1922,9 @@ function filterCompendiumGrid() {
       font-weight: 900;
       padding: 3px 8px;
       font-family: var(--font-p5);
-      background: ${isSpecial ? "#3A3A4A" : isReg ? "#00E676" : "#222"};
+      background: ${isSpecial ? "#3A3A4A" : isReg ? "#FFE600" : "#222"};
       color: ${isSpecial ? "#BBB" : isReg ? "#000" : "#666"};
-      border: 1px solid ${isSpecial ? "#3A3A4A" : isReg ? "#00E676" : "#333"};
+      border: 1px solid ${isSpecial ? "#3A3A4A" : isReg ? "#FFE600" : "#333"};
     `;
     statusBadge.textContent = isStory ? "STORY" : isParty ? "PARTY" : (isReg ? "REGISTERED" : "NOT REGISTERED");
 
@@ -2117,7 +2117,7 @@ const P5R_CATEGORY_THEMES = {
   Protector:    { glyph: "ARM",  color: "#2979FF", bg: "#001733", name: "Protector / Armor" },
   Outfit:       { glyph: "CLO",  color: "#D500F9", bg: "#280033", name: "Outfit & Costume" },
   Accessory:    { glyph: "ACC",  color: "#FF4081", bg: "#330018", name: "Accessory / Ring" },
-  Treasure:     { glyph: "GEM",  color: "#00E676", bg: "#003318", name: "Material & Loot" },
+  Treasure:     { glyph: "GEM",  color: "#FFE600", bg: "#003318", name: "Material & Loot" },
   KeyItem:      { glyph: "KEY",  color: "#FFAB00", bg: "#332200", name: "Key & Story Item" }
 };
 
@@ -2382,13 +2382,13 @@ function renderUnifiedItemList() {
     const emptySub = globalMode ? `Nothing in the bag or catalog matches "${GLOBAL_SEARCH_QUERY}".`
       : isCatalog ? `No catalog items match your filters.`
       : `Joker is not carrying any ${CURRENT_UNIFIED_CATEGORY}${INVENTORY_CHARA !== "All" ? ` for ${INVENTORY_CHARA}` : ""} items right now.`;
-    const emptyCTA = (isCatalog || globalMode) ? "" : `<button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px; margin-top:6px;" onclick="setInventoryView('catalog')"><span>📚 BROWSE FULL CATALOG</span></button>`;
+    const emptyCTA = (isCatalog || globalMode) ? "" : `<button class="p5-btn-action" style="background:#FFE600; border-color:#FFE600; color:#000; font-weight:900; padding:8px 18px; margin-top:6px;" onclick="setInventoryView('catalog')"><span>📚 BROWSE FULL CATALOG</span></button>`;
     container.innerHTML = `
       <div style="text-align:center; padding:60px 20px; color:var(--p5-muted);">
         <div style="font-family:var(--font-p5); font-size:24px; color:var(--p5-yellow); margin-bottom:8px;">${emptyTitle}</div>
         <p style="font-size:12px; margin-bottom:16px;">${emptySub}</p>
         ${emptyCTA}
-        ${globalMode ? "" : `<button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:8px 18px; margin-left:6px;" onclick="openAddItemModal()">
+        ${globalMode ? "" : `<button class="p5-btn-action" style="background:#FFE600; border-color:#FFE600; color:#000; font-weight:900; padding:8px 18px; margin-left:6px;" onclick="openAddItemModal()">
           <span>+ ADD ${CURRENT_UNIFIED_CATEGORY.toUpperCase()} ITEM</span>
         </button>`}
       </div>
@@ -2457,13 +2457,13 @@ function renderUnifiedItemList() {
     let controls;
     if (isOutfit) {
       controls = `<div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);">
-           <span style="font-size:11px; color:${item.qty ? '#00E676' : '#888'}; font-weight:800;">${item.qty ? 'OWNED' : 'NOT OWNED'}</span>
+           <span style="font-size:11px; color:${item.qty ? '#FFE600' : '#888'}; font-weight:800;">${item.qty ? 'OWNED' : 'NOT OWNED'}</span>
            <span style="font-size:10px; color:#666;">read-only</span>
          </div>`;
     } else if (isGear) {
       controls = `<div style="display:flex; align-items:center; gap:6px; flex-shrink:0; transform:skew(4deg);" onclick="event.stopPropagation();">
-           <span style="font-size:11px; color:${(item.owned === false || item.qty === 0) ? '#888' : '#00E676'}; font-weight:800;">${(item.owned === false || item.qty === 0) ? 'NOT OWNED' : 'OWNED'}</span>
-           <button class="p5-btn-action" style="padding:2px 10px; font-size:11px; ${(item.owned === false || item.qty === 0) ? 'background:#00E676; border-color:#00E676; color:#000;' : 'background:#330000; border-color:#FF3333; color:#FF8888;'}" onclick="setUnifiedItemQty(${item.id}, ${(item.owned === false || item.qty === 0) ? 1 : 0})">
+           <span style="font-size:11px; color:${(item.owned === false || item.qty === 0) ? '#888' : '#FFE600'}; font-weight:800;">${(item.owned === false || item.qty === 0) ? 'NOT OWNED' : 'OWNED'}</span>
+           <button class="p5-btn-action" style="padding:2px 10px; font-size:11px; ${(item.owned === false || item.qty === 0) ? 'background:#FFE600; border-color:#FFE600; color:#000;' : 'background:#330000; border-color:#FF3333; color:#FF8888;'}" onclick="setUnifiedItemQty(${item.id}, ${(item.owned === false || item.qty === 0) ? 1 : 0})">
              <span>${(item.owned === false || item.qty === 0) ? 'OWN' : 'UNEQUIP'}</span>
            </button>
            ${revertBtn}
@@ -2483,7 +2483,7 @@ function renderUnifiedItemList() {
              <span style="display:inline-block; transform:skew(6deg);">✕ ${item.qty}</span>
            </div>
            <button class="rank-stepper-btn" style="width:24px; height:24px; font-size:13px;" onclick="stepUnifiedItemQty(${item.id}, 1)">+</button>
-           <button class="p5-btn-action" style="padding:2px 6px; font-size:10px; ${item.qty === 99 ? 'background:#00E676; border-color:#00E676; color:#000;' : ''}" onclick="setUnifiedItemQty(${item.id}, ${item.qty === 99 ? 1 : 99})">
+           <button class="p5-btn-action" style="padding:2px 6px; font-size:10px; ${item.qty === 99 ? 'background:#FFE600; border-color:#FFE600; color:#000;' : ''}" onclick="setUnifiedItemQty(${item.id}, ${item.qty === 99 ? 1 : 99})">
              <span>${item.qty === 99 ? 'MAX' : '99x'}</span>
            </button>
            <button style="background:#330000; border:1px solid #FF3333; color:#FF8888; cursor:pointer; width:24px; height:24px; border-radius:3px; font-size:11px; display:flex; align-items:center; justify-content:center;" onclick="setUnifiedItemQty(${item.id}, 0)" title="Remove item from bag">✕</button>
@@ -2680,8 +2680,8 @@ function showPendingChangesModal(lines, onConfirm) {
   const listEl = document.getElementById("pendingChangesList");
   if (listEl) {
     listEl.innerHTML = lines.map(l => `
-      <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-left:3px solid ${l.kind === "remove" ? "#FF5252" : "#00E676"}; background:#11151E; margin-bottom:4px;">
-        <span style="font-size:10px; font-weight:900; color:${l.kind === "remove" ? "#FF5252" : "#00E676"};">${l.kind === "remove" ? "REMOVE" : "SET"}</span>
+      <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-left:3px solid ${l.kind === "remove" ? "#FF5252" : "#FFE600"}; background:#11151E; margin-bottom:4px;">
+        <span style="font-size:10px; font-weight:900; color:${l.kind === "remove" ? "#FF5252" : "#FFE600"};">${l.kind === "remove" ? "REMOVE" : "SET"}</span>
         <span style="font-size:13px; color:#FFF;">${l.text}</span>
       </div>`).join("");
   }
@@ -2708,7 +2708,7 @@ function renderItemDossierSpotlight() {
       <div style="text-align:center; padding:80px 10px; color:var(--p5-muted);">
         <div style="font-family:var(--font-p5); font-size:26px; color:var(--p5-yellow); margin-bottom:8px;">★ POCKET EMPTY ★</div>
         <p style="font-size:12px; max-width:320px; margin:0 auto 16px auto;">You don't have any ${CURRENT_UNIFIED_CATEGORY} items in your bag.</p>
-        <button class="p5-btn-action" style="background:#00E676; border-color:#00E676; color:#000; font-weight:900; padding:10px 20px;" onclick="openAddItemModal()">
+        <button class="p5-btn-action" style="background:#FFE600; border-color:#FFE600; color:#000; font-weight:900; padding:10px 20px;" onclick="openAddItemModal()">
           <span>+ BROWSE & ADD ITEMS</span>
         </button>
       </div>
@@ -2752,8 +2752,8 @@ function renderItemDossierSpotlight() {
           const owned = qty > 0;
           return `<div style="background:#14141F; border:2px solid #000; padding:16px; margin-bottom:20px; box-shadow:4px 4px 0 #000; text-align:center;">
             <div style="font-size:11px; font-weight:800; color:var(--p5-muted); margin-bottom:8px; text-transform:uppercase;">OWNED STATUS</div>
-            <div style="font-family:var(--font-p5); font-size:22px; color:${owned ? '#00E676' : '#888'}; margin-bottom:10px;">${owned ? '◆ OWNED' : '◇ NOT OWNED'}</div>
-            <button class="p5-btn-action" style="padding:8px 18px; ${owned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#00E676; border-color:#00E676; color:#000;'}" onclick="setUnifiedItemQty(${item.id}, ${owned ? 0 : 1})">
+            <div style="font-family:var(--font-p5); font-size:22px; color:${owned ? '#FFE600' : '#888'}; margin-bottom:10px;">${owned ? '◆ OWNED' : '◇ NOT OWNED'}</div>
+            <button class="p5-btn-action" style="padding:8px 18px; ${owned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#FFE600; border-color:#FFE600; color:#000;'}" onclick="setUnifiedItemQty(${item.id}, ${owned ? 0 : 1})">
               <span>${owned ? 'UNEQUIP / REMOVE' : 'OWN THIS GEAR'}</span>
             </button>
           </div>`;
@@ -2975,7 +2975,7 @@ function renderModalCatalog() {
     } else if (isUnwired) {
       actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#333; border-color:#555; color:#888; cursor:not-allowed;" disabled title="Outfit writability frozen per decision D008 pending final live-diff sign-off"><span>🔒 FROZEN</span></button>`;
     } else if (isGear) {
-      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; ${isOwned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#00E676; border-color:#00E676; color:#000;'}" onclick="addItemFromModal(${item.id}, 1)"><span>${isOwned ? 'OWNED ◆' : 'OWN'}</span></button>`;
+      actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px; ${isOwned ? 'background:#330000; border-color:#FF3333; color:#FF8888;' : 'background:#FFE600; border-color:#FFE600; color:#000;'}" onclick="addItemFromModal(${item.id}, 1)"><span>${isOwned ? 'OWNED ◆' : 'OWN'}</span></button>`;
     } else {
       actionBtns = `<button class="p5-btn-action" style="padding:4px 10px; font-size:11px;" onclick="addItemFromModal(${item.id}, 1)"><span>+ 1x</span></button>
          <button class="p5-btn-action" style="padding:4px 10px; font-size:11px; background:#FF9F1C; border-color:#FF9F1C; color:#000;" onclick="addItemFromModal(${item.id}, 99)"><span>+ 99x</span></button>`;
@@ -2984,7 +2984,7 @@ function renderModalCatalog() {
     const row = document.createElement("div");
     row.style.cssText = `
       background: ${isOwned ? '#142018' : '#14141E'};
-      border: 1px solid ${isOwned ? '#00E676' : '#26334D'};
+      border: 1px solid ${isOwned ? '#FFE600' : '#26334D'};
       border-left: 4px solid ${theme.color};
       padding: 8px 12px;
       display: flex;
@@ -3002,7 +3002,7 @@ function renderModalCatalog() {
           <span style="font-family:var(--font-p5); font-size:15px; color:#FFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             ${item.name}
           </span>
-          ${isOwned ? `<span style="font-size:10px; color:#00E676; font-weight:800; background:#003311; padding:0 5px; border-radius:3px;">${isGear ? 'OWNED ◆' : `IN BAG (✕${curQty})`}</span>` : ''}
+          ${isOwned ? `<span style="font-size:10px; color:#FFE600; font-weight:800; background:#003311; padding:0 5px; border-radius:3px;">${isGear ? 'OWNED ◆' : `IN BAG (✕${curQty})`}</span>` : ''}
           ${isGear && !isOwned ? `<span style="font-size:10px; color:#888; font-weight:800; background:#222; padding:0 5px; border-radius:3px;">NOT OWNED ◇</span>` : ''}
           ${isUnwired ? `<span title="Outfit writability frozen per decision D008 pending final live-diff sign-off" style="font-size:9px; color:#888; font-weight:800; background:#222; padding:0 5px; border-radius:3px;">🔒 READ-ONLY · FROZEN</span>` : ''}
         </div>
