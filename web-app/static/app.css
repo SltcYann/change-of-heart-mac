@@ -5,7 +5,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,400;0,700;0,900;1,900&family=Oswald:wght@700;900&family=Permanent+Marker&family=Rubik+Mono+One&display=swap');
 
 :root {
-  --p5-crimson: #E60012;
+  --p5-crimson: #E31500; /* sampled from official title-screen Joker silhouette */
+  --p5-cyan: #00C4FE;    /* sampled: P5R selection state (main-menu active banner) */
+  --p5-blue: #005AFE;    /* sampled: deep-blue offset shadow behind cyan banners */
   --p5-blood: #8A000A;
   --p5-dark-red: #3A0003;
   --p5-black: #060608;
@@ -203,11 +205,11 @@ body {
 }
 
 .p5-nav-item.active {
-  background: var(--p5-crimson);
-  color: var(--p5-white);
+  background: var(--p5-cyan);
+  color: #000;
   border-color: #000;
   transform: skew(-12deg) translateX(10px);
-  box-shadow: 7px 7px 0px #000;
+  box-shadow: 5px 5px 0 var(--p5-blue), 8px 8px 0px #000;
 }
 
 .p5-nav-item.active::after {
