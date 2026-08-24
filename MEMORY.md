@@ -88,6 +88,9 @@
 - **Point-based fields (confidant bond pts, social stat pts) store PROGRESS, not just rank** — never write bare rank thresholds on same-rank rewrites; preserve surplus (D016, fixed 2026-08-24, guarded by `test_bond_points_preservation.py`)
 - Confidant block stores SAVE_ID (Death=14), but `set_confidant_rank()` takes ARCANA_ID (Death=13) — mixing them up silently no-ops
 
+## Long-Term Vision
+- **UI North Star:** `docs/UI_NORTH_STAR.md` — executable 1:1 P5R fidelity spec. Ground truth = 146 official screenshots (pixel-sampled palette: red #FD1700, cyan selection #00C4FE, per-context accents lime/blue/gold; black canvas, white text, parallelograms, no gradients/emoji/rounded pills). Reference corpus local at `design/reference/` (79MB, gitignored), contact sheets tracked. Phase roadmap P2-P6 inside; every UI change must cite a reference screenshot + spec rule.
+
 ## Session History
 - 2026-08-14: Project scaffold, v1.0.7 Item Studio Rework, 120/120 tests
 - 2026-08-15: v1.0.7 EXE build, safety hardening

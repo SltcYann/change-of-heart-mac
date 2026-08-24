@@ -82,3 +82,8 @@ patch_notes_*.md
 # Local agent tooling & tests cache
 .dsh-vision-toolkit/
 .pytest_cache/
+
+# UI reference: raw 79MB screenshot corpus stays local; contact sheets + spec are tracked
+design/reference/*.jpg
+design/reference/urls.txt
+design/reference/gud_index.md
