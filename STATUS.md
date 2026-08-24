@@ -25,12 +25,13 @@
 - Equipment ownership all 4 categories verified
 
 ## Next Action
-- Push updated changes to GitHub and publish hotfix release `v1.1.1` (or refresh `v1.1.0` asset).
+- Await confirmation from Reddit users on v1.1.1 resilience.
 
 ## Blockers
 - None.
 
 ## Recent Session
+- 2026-08-24: UI-liveness watchdog + v1.1.1 release
 - 2026-08-21: inventory UX pass R1-R9 (memory/2026-08-21-inventory-ux-pass.md)
 - 2026-08-21: compendium 96% fix + in-game verification ×2 slots + v1.0.10 release
 
@@ -38,6 +39,6 @@
 - None (no upstream dependencies)
 
 ## Build
-- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — audit fixes + CSRF Origin guard; sha256 prefix 4f5afcecd1eb6521; D011 process smoke test PASSED)
+- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — watchdog + audit fixes + CSRF Origin guard; D011 process smoke test PASSED)
 - PyInstaller 6.22.0 / Python 3.14.6
-- GitHub: v1.0.10 released; local main is 3 commits ahead (save-discovery fix, audit fixes, rebuilt EXE) — publish hotfix release `v1.1.1` next
+- GitHub: v1.1.1 Released
