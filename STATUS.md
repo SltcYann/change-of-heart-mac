@@ -35,6 +35,6 @@
 - None (no upstream dependencies)
 
 ## Build
-- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-23 21:51 ET — save discovery + manual browse)
+- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — audit fixes + CSRF Origin guard; sha256 prefix 4f5afcecd1eb6521; D011 process smoke test PASSED)
 - PyInstaller 6.22.0 / Python 3.14.6
 - GitHub: v1.0.10 released; local main is 1 commit ahead (save-discovery fix) — publish hotfix release `v1.1.1` next
