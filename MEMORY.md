@@ -28,6 +28,7 @@
 | D012 | 2026-08-23 | Multi-location save discovery across Steam Userdata/LocalAppdata + manual file picker (`📂 BROWSE...`) | Prevents silent empty save lists for non-standard install paths, multi-account setups, or GamePass saves |
 | D013 | 2026-08-24 | Local API enforces loopback-only Origin check; no `Access-Control-Allow-Origin: *` | CSRF hardening — a browser page must never drive the local save API |
 | D014 | 2026-08-24 | UI-liveness watchdog: native window must heartbeat `/api/ui-heartbeat` within 30s of launch, else main.py auto-falls-back to the system browser | Broken WebView2 Runtimes cause silent dead UIs (r/Persona5Royale u/Gruphius case); app must self-heal with zero user homework |
+| D015 | 2026-08-24 | Browser `--app` mode REJECTED as fallback tier — tested in a prior build, rejected in practice: Edge profile bleed (imported-extension config prompts), session-restore nagging, clunky window behavior | Plain default-browser tab is the final fallback tier; do not re-propose app-mode |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
