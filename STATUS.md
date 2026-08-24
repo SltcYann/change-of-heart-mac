@@ -43,6 +43,6 @@
 - None (no upstream dependencies)
 
 ## Build
-- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — watchdog + audit fixes + CSRF Origin guard; D011 process smoke test PASSED)
+- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — watchdog + UI fidelity pass + bond-points fix D016; sha256 prefix 3d34cc50ddf3ff1b; v1.1.1 release assets refreshed with this build)
 - PyInstaller 6.22.0 / Python 3.14.6
 - GitHub: v1.1.1 Released
