@@ -67,6 +67,13 @@ Route A = native MCP tool (Hermes). Route B = terminal command (every harness):
 Verified working from a neutral cwd on this machine (2026-08-21): mcporter
 (mcp-hound + exa), gh, curl, and rdt via the absolute path above.
 
+> ⚠️ **Platform quirks (live-tested 2026-08-24): see `C:\Users\kufis\.agent-reach\NOTES.md`**
+> before using these lanes. Key points: rdt needs `PYTHONUTF8=1` (cp1252 crash);
+> twitter needs per-shell env injection of TWITTER_AUTH_TOKEN/TWITTER_CT0 from
+> `~/.agent-reach/config.yaml` (sed, never echo); `twitter search` is 404-broken
+> upstream — use stable reads (`user`/`user-posts`/`tweet`) after discovering
+> handles elsewhere; Exa cannot index x.com content.
+
 - When you hit an unknown format, CPK layout, or community claim: STOP and look it up
   before acting. Do not shim or guess. P5R ground-truth offsets come from 2-save diff
   (`tools/diff_mapper.py`), but *research about* formats, Wand trainer behavior, or
