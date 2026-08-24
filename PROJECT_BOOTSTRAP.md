@@ -9,7 +9,7 @@
 | Capability | Status | Notes |
 |---|---|---|
 | `python -m PyInstaller` (build frozen exe) | ✅ Works | Use the **module form** — `python -m PyInstaller P5R_Save_Editor.spec --noconfirm --clean --distpath dist`. The lowercase `pyinstaller` CLI is NOT on PATH; the module resolves. |
-| `python -m unittest` | ✅ Works | `python -m unittest discover -s tests` → currently **148/148 OK**. |
+| `python -m unittest` | ✅ Works | `python -m unittest discover -s tests` → currently **168/168 OK** (oracle-corpus tests auto-skip without live saves). |
 | `node --check` (JS syntax) | ✅ Works | `node --check web-app/static/app.js`. |
 | `npm run lint:context` | ✅ Works | Shim lives at `tools/lint_context.js` (no upstream package.json script was present originally). Passes all checks. |
 | Launch the GUI / click the modal | ❌ No display session | This sandbox has no GUI/WebView runtime. The agent can **build** `dist/P5R_Save_Editor.exe` but cannot **run** it and read rendered text (e.g. the `CHEAT SHOP` title). That smoke test is an **end-user** step. |

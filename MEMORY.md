@@ -1,7 +1,7 @@
 # MEMORY.md — P5R Save Editor (Change of Heart)
 
 > Canonical memory. Read this before any work. Update at end of every session.
-> Updated: 2026-08-20
+> Updated: 2026-08-24
 
 ## Project Identity
 - **Title:** Change of Heart — P5R Save Editor
@@ -26,6 +26,7 @@
 | D010 | 2026-08-23 | Haru (Slot 6) / Futaba (Slot 7) aligned, Party Evolution Tiers (1-3) exposed, EXP autosync curve activated, PC Romance flags enabled | Solves save migration and post-battle EXP stalling reported by community (`u/Gruphius`) |
 | D011 | 2026-08-23 | PyInstaller compilation strictly bound to Python 3.14.6; process smoke test mandatory before release upload | Prevents ambient venv package omission (missing `pywebview` -> browser fallback regression) |
 | D012 | 2026-08-23 | Multi-location save discovery across Steam Userdata/LocalAppdata + manual file picker (`📂 BROWSE...`) | Prevents silent empty save lists for non-standard install paths, multi-account setups, or GamePass saves |
+| D013 | 2026-08-24 | Local API enforces loopback-only Origin check; no `Access-Control-Allow-Origin: *` | CSRF hardening — a browser page must never drive the local save API |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
@@ -92,3 +93,5 @@
 - 2026-08-19 PM: Compendium phantom pid-211 fixed (123→153 tests), oracle taxonomy consult, inventory web-app rebuild spec (`docs/INVENTORY_SPEC.md`), Cheat Shop Phase A-D implemented (153 tests), rebuild plan speedrunner review, v1.0.9-dev EXE built
 - 2026-08-20: Metroid Prime conventions audit, oracle SOP consult, P5R hygiene upgrade (this session)
 - 2026-08-21: Compendium 96% in-game bug — root cause UI Unlock ALL filtering + server per-pid clear; rewired to backend `unlock_compendium_100()`; user save DATA02 surgically patched to 100% parity; 157 tests; EXE rebuilt
+- 2026-08-23: Party evolution tiers, Haru/Futaba slot fix, EXP auto-sync, romance toggle, key-item catalog unlock, save auto-discovery + manual browse (165→168 tests); hotfix v1.1.0 EXE rebuilt + GitHub asset updated
+- 2026-08-24: External audit fixes — tracked roundtrip harness + lint shim (fresh-clone breakage), CSRF Origin guard, personal paths scrubbed from tests, deps pruned, HANDOFF.md archived, state/docs resync

@@ -382,8 +382,28 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
         except Exception:
             pass
 
+    def _origin_allowed(self):
+        """CSRF guard: any browser-sent Origin must be a loopback origin.
+
+        Browsers attach an Origin header to cross-site requests; a malicious
+        page must not be able to drive this local API. Requests with no
+        Origin (curl, webview navigation, same-origin GET) are allowed.
+        """
+        origin = self.headers.get("Origin")
+        if not origin:
+            return True
+        try:
+            from urllib.parse import urlsplit
+            host = (urlsplit(origin).hostname or "").lower()
+        except Exception:
+            return False
+        return host in ("127.0.0.1", "localhost", "::1")
+
     def do_GET(self):
         global CURRENT_EDITOR, CURRENT_FILE_PATH
+        if not self._origin_allowed():
+            self.send_json(403, {"error": "Cross-origin requests are not allowed."})
+            return
         parsed = urlparse(self.path)
         if parsed.path == "/" or parsed.path == "/index.html":
             self.send_response(200)
@@ -456,6 +476,9 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         global CURRENT_EDITOR, CURRENT_FILE_PATH
+        if not self._origin_allowed():
+            self.send_json(403, {"error": "Cross-origin requests are not allowed."})
+            return
         parsed = urlparse(self.path)
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
@@ -741,7 +764,11 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
     def send_json(self, code, payload):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # Reflect only loopback Origins (see _origin_allowed) — never "*".
+        origin = self.headers.get("Origin")
+        if origin and self._origin_allowed():
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.end_headers()
         self.wfile.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
 

@@ -4,6 +4,7 @@ Verified layout: 232-bit LSB-first mask @ 0x09973 (mirror 0x21E83),
 bit i = persona ID (i+1). Structural + ladder evidence from 7 saves.
 """
 
+import glob
 import os
 import sys
 import unittest
@@ -12,12 +13,27 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.editor import SaveEditor
 
+
+def _find_steam_save(slot_dir):
+    """Locate a real Steam save via glob (no hardcoded SteamID)."""
+    appdata = os.environ.get("APPDATA", "")
+    if not appdata:
+        return None
+    hits = glob.glob(
+        os.path.join(appdata, "SEGA", "P5R", "Steam", "*", "savedata", slot_dir, "DATA.DAT")
+    )
+    return hits[0] if hits else None
+
+
 # Real corpus saves (dev machine): fresh = user June 14 save (33 bits,
 # DATA02 — untouched compendium; DATA01 is the live playthrough save and
 # note: user's DATA01 still holds the earlier 224-bit unlock; fresh is now DATA02.)
-ORACLE = r"C:\Users\kufis\p5r_buff_save\DATA11\DATA.DAT"
-FRESH = r"C:\Users\kufis\AppData\Roaming\SEGA\P5R\Steam\76561197984149929\savedata\DATA02\DATA.DAT"
-ORACLE_AVAILABLE = os.path.isfile(ORACLE) and os.path.isfile(FRESH)
+ORACLE = os.path.join(
+    os.environ.get("P5R_ORACLE_DIR") or os.path.expanduser("~"),
+    "p5r_buff_save", "DATA11", "DATA.DAT",
+)
+FRESH = _find_steam_save("DATA02") or ""
+ORACLE_AVAILABLE = os.path.isfile(ORACLE) and bool(FRESH) and os.path.isfile(FRESH)
 
 
 def make_pc_editor() -> SaveEditor:

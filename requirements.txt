@@ -1,5 +1,5 @@
 cryptography>=41.0.0
 pywebview>=5.0.0
-bottle>=0.12.25
+psutil>=5.9
 clr_loader>=0.2.6
 pythonnet>=3.0.3

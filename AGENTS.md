@@ -27,7 +27,7 @@ Path costs ~5 tokens; document behind it costs 2000 only when opened.
 4. Read latest 1-2 session logs in `memory/`.
 5. `git status` + `git log -5`.
 6. Run `python scripts/check-invariants.py` (full check) or `python scripts/check-invariants.py --quick` (skip git diff).
-7. `python -m unittest discover -s tests` (filtered 134; full 146 needs Temp perms).
+7. `python -m unittest discover -s tests` (168 tests; oracle-corpus tests auto-skip when live saves are absent).
 
 ## Exit Contract (do this every session)
 

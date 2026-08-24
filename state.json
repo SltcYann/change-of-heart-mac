@@ -5,13 +5,13 @@
   "gate": "ready",
   "mode": "single-agent",
   "pinned_shas": {},
-  "last_session": "memory/2026-08-21-retire-3rd-sem-rescue.md",
-  "updated_at": "2026-08-21T17:15:00Z",
-  "version": "v1.0.10",
+  "last_session": "memory/2026-08-24-audit-fixes.md",
+  "updated_at": "2026-08-24T00:00:00Z",
+  "version": "v1.1.1-dev",
   "test_command": ["python", "-m", "unittest", "discover", "-s", "tests"],
   "test_count": 168,
   "blockers": [],
   "next_action": "Push updated changes to GitHub and publish hotfix release v1.1.1 (or refresh v1.1.0 asset)",
   "active_owners": [],
-  "frozen_offsets": ["0xA000+ Outfits", "KeyItem mapping", "SkillCard/Tool/Treasure count bases"]
+  "frozen_offsets": ["0xA000+ Outfits save wiring (D008 — read-only in UI)"]
 }

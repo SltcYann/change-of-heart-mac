@@ -1,12 +1,15 @@
 # STATUS.md — P5R Save Editor (Change of Heart)
 
 > Human-readable current state. Synced from state.json on every exit.
-> Updated: 2026-08-21 05:30 EDT
+> Updated: 2026-08-24 00:00 EDT
 
 ## Current State
 - **Phase:** implementation
 - **Gate:** ready
 - **Mode:** single-agent
+
+## Last Completed
+- 2026-08-24: External audit fixes — fresh-clone test-suite breakage fixed (`scripts/roundtrip_harness.py` + `tools/lint_context.js` now tracked); CSRF Origin guard added to local API (loopback-only, no more `Access-Control-Allow-Origin: *`); username/SteamID scrubbed from tracked tests + harness (glob/env-based paths); dead `bottle` dep pruned, `psutil` added; root `HANDOFF.md` removed (byte-identical archived copy remains); state.json/STATUS/docs staleness synced. 168/168 tests.
 
 ## Last Completed
 - 2026-08-23: Save Discovery & Manual Save Browse Fix — Implemented multi-location auto-discovery scanning Steam Userdata (`1687950/remote`), LocalAppData, and standard Roaming folders; added manual `📂 BROWSE...` button for custom/GamePass save files; verified via live process smoke test and comprehensive unit tests (168/168 passing).
@@ -32,6 +35,6 @@
 - None (no upstream dependencies)
 
 ## Build
-- Latest: `dist/P5R_Save_Editor.exe` (61.5 MB, rebuilt 2026-08-21 05:50 ET — includes inventory UX pass R1-R9)
+- Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-23 21:51 ET — save discovery + manual browse)
 - PyInstaller 6.22.0 / Python 3.14.6
-- NOT pushed to GitHub (v1.0.8 on GitHub predates all compendium + equipment fixes)
+- GitHub: v1.0.10 released; local main is 1 commit ahead (save-discovery fix) — publish hotfix release `v1.1.1` next

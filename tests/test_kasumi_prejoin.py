@@ -1,3 +1,4 @@
+import glob
 import os
 import struct
 import sys
@@ -38,8 +39,13 @@ class TestKasumiPreJoin(unittest.TestCase):
 
     def test_joined_roster_june_save(self):
         """Live June save must show exactly the 5 joined members."""
-        pth = r"C:\Users\kufis\AppData\Roaming\SEGA\P5R\Steam\76561197984149929\savedata\DATA01\backups"
-        zips = sorted(os.listdir(pth)) if os.path.isdir(pth) else []
+        appdata = os.environ.get("APPDATA", "")
+        pth = (
+            sorted(glob.glob(os.path.join(appdata, "SEGA", "P5R", "Steam", "*",
+                                          "savedata", "DATA01", "backups")))[0]
+            if appdata else None
+        )
+        zips = sorted(os.listdir(pth)) if pth and os.path.isdir(pth) else []
         if not zips:
             self.skipTest("no backups on disk")
         with zipfile.ZipFile(os.path.join(pth, zips[0])) as z:
