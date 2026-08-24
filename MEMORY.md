@@ -27,6 +27,7 @@
 | D011 | 2026-08-23 | PyInstaller compilation strictly bound to Python 3.14.6; process smoke test mandatory before release upload | Prevents ambient venv package omission (missing `pywebview` -> browser fallback regression) |
 | D012 | 2026-08-23 | Multi-location save discovery across Steam Userdata/LocalAppdata + manual file picker (`📂 BROWSE...`) | Prevents silent empty save lists for non-standard install paths, multi-account setups, or GamePass saves |
 | D013 | 2026-08-24 | Local API enforces loopback-only Origin check; no `Access-Control-Allow-Origin: *` | CSRF hardening — a browser page must never drive the local save API |
+| D014 | 2026-08-24 | UI-liveness watchdog: native window must heartbeat `/api/ui-heartbeat` within 30s of launch, else main.py auto-falls-back to the system browser | Broken WebView2 Runtimes cause silent dead UIs (r/Persona5Royale u/Gruphius case); app must self-heal with zero user homework |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
@@ -95,3 +96,4 @@
 - 2026-08-21: Compendium 96% in-game bug — root cause UI Unlock ALL filtering + server per-pid clear; rewired to backend `unlock_compendium_100()`; user save DATA02 surgically patched to 100% parity; 157 tests; EXE rebuilt
 - 2026-08-23: Party evolution tiers, Haru/Futaba slot fix, EXP auto-sync, romance toggle, key-item catalog unlock, save auto-discovery + manual browse (165→168 tests); hotfix v1.1.0 EXE rebuilt + GitHub asset updated
 - 2026-08-24: External audit fixes — tracked roundtrip harness + lint shim (fresh-clone breakage), CSRF Origin guard, personal paths scrubbed from tests, deps pruned, HANDOFF.md archived, state/docs resync
+- 2026-08-24 (later): UI-liveness watchdog shipped after r/Persona5Royale field report (u/Gruphius: all versions silently dead on his machine = broken WebView2 runtime) — heartbeat + auto browser fallback; 170 tests; EXE rebuilt (520a1c5a)

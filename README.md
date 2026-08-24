@@ -195,6 +195,11 @@ python main.py
 python -m unittest discover -s tests -v
 ```
 
+### 🩺 Troubleshooting: app window opens but nothing works
+If the editor launches but buttons are dead / saves aren't detected, your **Microsoft Edge WebView2 Runtime** is likely broken (it auto-updates independently of the app and can silently fail after an update):
+1. The app now detects this automatically — after ~30 seconds it reopens itself in your default web browser.
+2. To fix the native window: Windows Settings → Apps → **Microsoft Edge WebView2 Runtime** → **Modify → Repair**, then relaunch the editor.
+
 ---
 
 ## 🔬 Memory Map & Technical Breakthroughs
