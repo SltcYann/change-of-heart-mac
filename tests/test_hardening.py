@@ -649,6 +649,31 @@ class TestInventoryUXSuite(unittest.TestCase):
         self.assertIn('"COH1."', self.src)
 
 
+class TestDiscoveryAndManualUpload(unittest.TestCase):
+    """Verifies comprehensive save discovery across Steam/GamePass locations
+    and manual save file browse / upload flow."""
+
+    def test_discover_steam_save_dirs_returns_list_of_paths(self):
+        from core.environment import discover_steam_save_dirs
+        dirs = discover_steam_save_dirs()
+        self.assertIsInstance(dirs, list)
+
+    def test_list_save_files_tolerates_nonexistent_and_returns_list(self):
+        from core.environment import list_save_files
+        from pathlib import Path
+        saves = list_save_files(Path("C:/nonexistent_fake_dir/123"))
+        self.assertEqual(saves, [])
+
+    def test_build_loaded_save_payload_handles_editor_instance(self):
+        from server import _build_loaded_save_payload
+        e = make_pc_editor()
+        payload = _build_loaded_save_payload(e, "test_path/DATA.DAT")
+        self.assertEqual(payload["file_path"], "test_path/DATA.DAT")
+        self.assertIn("header", payload)
+        self.assertIn("party", payload)
+        self.assertIn("confidants", payload)
+
+
 if __name__ == "__main__":
     unittest.main()
 

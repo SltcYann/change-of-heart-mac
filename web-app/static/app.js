@@ -300,7 +300,8 @@ async function refreshDiscovery() {
       });
       await loadSaveFile();
     } else {
-      dropdown.innerHTML = `<option value="">-- No Steam saves found in default folder --</option>`;
+      dropdown.innerHTML = `<option value="">-- No Steam saves found (Use BROWSE button) --</option>`;
+      setStatus("No saves auto-detected in standard folder — click 📂 BROWSE to select your save file.");
     }
   } catch (err) {
     console.error("Discovery error:", err);
@@ -325,58 +326,98 @@ async function loadSaveFile() {
       setStatus("Failed to load: " + data.error);
       return;
     }
-
-    CURRENT_SAVE = data;
-    CURRENT_FILE_PATH = path;
-    if (data.notice) renderSameSaveNotice(data.notice);
-    INITIAL_CONFIDANT_RANKS = {};
-    Object.entries(data.confidants || {}).forEach(([arc, c]) => {
-      INITIAL_CONFIDANT_RANKS[arc] = c.rank || 0;
-    });
-
-    // Populate Active Inventory from Save — prefer normalized payload (S1)
-    INVENTORY_NORMALIZED = data.inventory_normalized || null;
-    INVENTORY_ITEM_COUNTS = {};
-    if (INVENTORY_NORMALIZED && (INVENTORY_NORMALIZED.stacks || INVENTORY_NORMALIZED.owned_gear)) {
-      Object.entries(INVENTORY_NORMALIZED.stacks || {}).forEach(([k, qty]) => {
-        const id = parseInt(k);
-        if (id > 0 && qty > 0) INVENTORY_ITEM_COUNTS[id] = Math.min(99, parseInt(qty));
-      });
-      Object.entries(INVENTORY_NORMALIZED.owned_gear || {}).forEach(([k, owned]) => {
-        const id = parseInt(k);
-        if (id > 0 && owned) INVENTORY_ITEM_COUNTS[id] = 1;
-      });
-      KEY_ITEM_UNLOCKED = false;
-      if (INVENTORY_NORMALIZED.conflicts && INVENTORY_NORMALIZED.conflicts.length > 0) {
-        console.warn("Inventory conflicts (count_region wins):", INVENTORY_NORMALIZED.conflicts);
-        setStatus(`⚠ ${INVENTORY_NORMALIZED.conflicts.length} conflict(s) — count_region canonical.`);
-      }
-      if (INVENTORY_NORMALIZED.mirror_mismatches && INVENTORY_NORMALIZED.mirror_mismatches.length > 0) {
-        console.warn("Mirror mismatches:", INVENTORY_NORMALIZED.mirror_mismatches);
-        // surface via footer description bar too
-        const descEl = document.getElementById("activeItemDescText");
-        if (descEl) descEl.textContent = `⚠ Mirror mismatch detected — will be healed on save (primary wins).`;
-      }
-    } else {
-      (data.inventory || []).forEach(entry => {
-        if (entry.item_id > 0 && entry.quantity > 0) {
-          INVENTORY_ITEM_COUNTS[entry.item_id] = entry.quantity;
-        }
-      });
-    }
-
-    STAGED_DIRTY.clear();
-    // snapshot for discard
-    window.__INVENTORY_BASELINE = JSON.stringify(INVENTORY_ITEM_COUNTS);
-    refreshStagedBadge();
-    renderSaveData();
-    refreshBackups();
-    updateIntegrityBadge(data.integrity);
-    setStatus(`✔ Save loaded: ${path.split("\\").pop()} (${data.header.day}) | Ready.`);
+    _applyLoadedSaveData(data, path);
   } catch (err) {
     console.error("Load save error:", err);
     setStatus("Error communicating with server.");
   }
+}
+
+// Manual Save File Picker (for custom paths / GamePass saves)
+function onManualFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  setStatus(`Reading ${file.name}...`);
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const b64 = e.target.result.split(",")[1];
+      setStatus("Decrypting uploaded save file...");
+      const res = await fetch("/api/load-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: b64, filename: file.name })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Load Error: " + data.error);
+        setStatus("Failed to load: " + data.error);
+        return;
+      }
+      // Add custom entry to dropdown
+      const dropdown = document.getElementById("saveFileDropdown");
+      const opt = document.createElement("option");
+      opt.value = file.name;
+      opt.textContent = `📂 ${file.name} (Uploaded)`;
+      dropdown.prepend(opt);
+      dropdown.value = file.name;
+
+      _applyLoadedSaveData(data, file.name);
+    } catch (err) {
+      console.error("Manual load error:", err);
+      setStatus("Failed to load file: " + err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function _applyLoadedSaveData(data, displayPath) {
+  CURRENT_SAVE = data;
+  CURRENT_FILE_PATH = data.file_path || displayPath;
+  if (data.notice) renderSameSaveNotice(data.notice);
+  INITIAL_CONFIDANT_RANKS = {};
+  Object.entries(data.confidants || {}).forEach(([arc, c]) => {
+    INITIAL_CONFIDANT_RANKS[arc] = c.rank || 0;
+  });
+
+  // Populate Active Inventory from Save — prefer normalized payload (S1)
+  INVENTORY_NORMALIZED = data.inventory_normalized || null;
+  INVENTORY_ITEM_COUNTS = {};
+  if (INVENTORY_NORMALIZED && (INVENTORY_NORMALIZED.stacks || INVENTORY_NORMALIZED.owned_gear)) {
+    Object.entries(INVENTORY_NORMALIZED.stacks || {}).forEach(([k, qty]) => {
+      const id = parseInt(k);
+      if (id > 0 && qty > 0) INVENTORY_ITEM_COUNTS[id] = Math.min(99, parseInt(qty));
+    });
+    Object.entries(INVENTORY_NORMALIZED.owned_gear || {}).forEach(([k, owned]) => {
+      const id = parseInt(k);
+      if (id > 0 && owned) INVENTORY_ITEM_COUNTS[id] = 1;
+    });
+    KEY_ITEM_UNLOCKED = false;
+    if (INVENTORY_NORMALIZED.conflicts && INVENTORY_NORMALIZED.conflicts.length > 0) {
+      console.warn("Inventory conflicts (count_region wins):", INVENTORY_NORMALIZED.conflicts);
+      setStatus(`⚠ ${INVENTORY_NORMALIZED.conflicts.length} conflict(s) — count_region canonical.`);
+    }
+    if (INVENTORY_NORMALIZED.mirror_mismatches && INVENTORY_NORMALIZED.mirror_mismatches.length > 0) {
+      console.warn("Mirror mismatches:", INVENTORY_NORMALIZED.mirror_mismatches);
+      const descEl = document.getElementById("activeItemDescText");
+      if (descEl) descEl.textContent = `⚠ Mirror mismatch detected — will be healed on save (primary wins).`;
+    }
+  } else {
+    (data.inventory || []).forEach(entry => {
+      if (entry.item_id > 0 && entry.quantity > 0) {
+        INVENTORY_ITEM_COUNTS[entry.item_id] = entry.quantity;
+      }
+    });
+  }
+
+  STAGED_DIRTY.clear();
+  window.__INVENTORY_BASELINE = JSON.stringify(INVENTORY_ITEM_COUNTS);
+  refreshStagedBadge();
+  renderSaveData();
+  refreshBackups();
+  updateIntegrityBadge(data.integrity);
+  setStatus(`✔ Save loaded: ${displayPath.split("\\").pop()} (${data.header.day}) | Ready.`);
 }
 
 // Same-save soft notice (2026-08-16): one-line banner, auto-dismissed.
@@ -3250,8 +3291,21 @@ async function executeSavePayload(skipReview) {
     window.__INVENTORY_BASELINE = JSON.stringify(INVENTORY_ITEM_COUNTS);
     // mirror/conflict will refresh on next load
     if (result.notice) renderSameSaveNotice(result.notice);
-    setStatus(`✔ Changes re-signed & saved! Auto-backup created: ${result.backup}`);
-    alert("★ Save successful! CRCs & AES integrity verified and re-signed.");
+    if (result.download_data) {
+      // Trigger instant browser download for uploaded files
+      const blob = new Blob([Uint8Array.from(atob(result.download_data), c => c.charCodeAt(0))], { type: "application/octet-stream" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = CURRENT_FILE_PATH.replace(/^Uploaded \((.*)\)$/, "$1") || "DATA.DAT";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setStatus(`✔ Changes re-signed & downloaded as ${a.download}!`);
+      alert(`★ Save successful! Downloaded updated save file (${a.download}) with verified AES & CRCs.`);
+    } else {
+      setStatus(`✔ Changes re-signed & saved! Auto-backup created: ${result.backup}`);
+      alert("★ Save successful! CRCs & AES integrity verified and re-signed.");
+    }
   } catch (err) {
     console.error("Save error:", err);
     setStatus("Failed to save changes.");

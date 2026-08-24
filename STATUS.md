@@ -9,8 +9,9 @@
 - **Mode:** single-agent
 
 ## Last Completed
+- 2026-08-23: Save Discovery & Manual Save Browse Fix — Implemented multi-location auto-discovery scanning Steam Userdata (`1687950/remote`), LocalAppData, and standard Roaming folders; added manual `📂 BROWSE...` button for custom/GamePass save files; verified via live process smoke test and comprehensive unit tests (168/168 passing).
 - 2026-08-23: Hotfix v1.1.0 Release Binary — Diagnosed and resolved WebView2 bundling issue caused by Python environment toolchain mismatch; re-compiled standalone executable with Python 3.14.6 + PyInstaller 6.22.0 embedding full `pywebview` / `msedgewebview2` runtime; verified via live process smoke test; updated GitHub Release `v1.1.0` asset.
-- 2026-08-23: Implemented Reddit community requests (`u/Gruphius`): Fixed Haru (Slot 6) / Futaba (Slot 7) party swap, added Party Persona Evolution Tier (1-3) selector, activated Level <-> EXP cubic curve auto-sync, enabled Romance route toggle (`0x02`) on PC `0x31` saves, unlocked Key Items in Cheat Shop; 165/165 unit tests pass.
+- 2026-08-23: Implemented Reddit community requests (`u/Gruphius`): Fixed Haru (Slot 6) / Futaba (Slot 7) party swap, added Party Persona Evolution Tier (1-3) selector, activated Level <-> EXP cubic curve auto-sync, enabled Romance route toggle (`0x02`) on PC `0x31` saves, unlocked Key Items in Cheat Shop; 168/168 unit tests pass.
 - 2026-08-21: Retired 3rd Semester Emergency Rescue false-promise feature; refactored Stage 5 to dedicated Reversible Backups & Safety Vault; removed dead `/api/emergency-rescue` endpoint and in-memory reload bug; updated Safety rule 8; 161/161 tests pass.
 - 2026-08-21: Inventory UX pass — receipt review before save, per-item revert, global search, tab clusters, context menu + keyboard, main-list batching, UNWIRED drift resolved (Cards/Loot/Tools now writable; Outfit honestly labeled FROZEN), COH1 share codes. 161/161 tests. Captures re-baselined + 4 UX shots.
 - 2026-08-21: v1.0.10 RELEASED — compendium fix verified in-game ×2 slots; GitHub Release with asset.
@@ -18,7 +19,7 @@
 - Equipment ownership all 4 categories verified
 
 ## Next Action
-- Await user confirmation from `u/Gruphius` on Reddit regarding v1.1.0 standalone window operation and save migration.
+- Push updated changes to GitHub and publish hotfix release `v1.1.1` (or refresh `v1.1.0` asset).
 
 ## Blockers
 - None.

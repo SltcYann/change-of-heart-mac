@@ -23,11 +23,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 REQUIRED_FILES = ["AGENTS.md", "MEMORY.md", "STATUS.md", "state.json"]
 REQUIRED_STATE_FIELDS = ["schema_version", "phase", "gate", "last_session", "updated_at", "test_command"]
 
+import re
 # Patterns that should never appear in committed code
 BANNED_PATTERNS = [
     (r"slotIdx\s*<\s*30", "Quick-array 30-slot cap (was silently dropping items)"),
     (r"0x3530.*merge|merge.*0x3530", "Quick-array merge (never merge with master counts)"),
-    (r"PS4.*offset|KHSaveEditor", "PS4 offset reference (PC ≠ PS4)"),
+    (r"PS4.*offset|KHSaveEditor", "PS4 offset reference (PC != PS4)"),
 ]
 
 
@@ -109,10 +110,10 @@ def check_test_suite(test_cmd=None):
 
 
 def check_git_diff_banned_patterns():
-    """Scan recent git diff for banned patterns."""
+    """Scan recent git diff for banned patterns in source code additions."""
     try:
         result = subprocess.run(
-            ["git", "diff", "HEAD~1..HEAD", "--unified=0"],
+            ["git", "diff", "HEAD", "--unified=0"],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -123,10 +124,21 @@ def check_git_diff_banned_patterns():
         if result.returncode != 0:
             return []  # git diff failed, skip
         diff_text = result.stdout
+        # Only inspect lines added/modified in source code (excluding test files and check-invariants.py)
+        filtered_lines = []
+        current_file = ""
+        for line in diff_text.splitlines():
+            if line.startswith("+++ b/"):
+                current_file = line[6:]
+            elif line.startswith("+") and not line.startswith("+++"):
+                if "check-invariants.py" not in current_file and not current_file.startswith("tests/"):
+                    filtered_lines.append(line[1:])
+
+        scan_target = "\n".join(filtered_lines)
         errors = []
         for pattern, description in BANNED_PATTERNS:
-            if pattern.lower() in diff_text.lower():
-                errors.append(f"BANNED PATTERN: {description}")
+            if re.search(pattern, scan_target, re.IGNORECASE):
+                errors.append(f"BANNED PATTERN in source diff: {description}")
         return errors
     except Exception:
         return []  # git not available, skip

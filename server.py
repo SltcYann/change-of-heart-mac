@@ -293,6 +293,72 @@ BUILD_ID = "audit-2026-08-16"
 CURRENT_EDITOR = None
 CURRENT_FILE_PATH = None
 
+def _build_loaded_save_payload(editor: SaveEditor, file_path: str) -> dict:
+    hdr = editor.parser.header
+    names = editor.parser.player_names
+    quick_info = editor.get_quick_info()
+    integrity = editor.integrity_report()
+    confidants = editor.get_confidant_ranks()
+    social = editor.get_social_stats()
+    party = editor.get_party_stats()
+
+    # Only show members who have actually joined the story.
+    party = [p for p in party if p.get("joined", False)]
+
+    # Get equipped persona info for each party member
+    party_personas = []
+    for entry in party:
+        slot = entry["slot"]
+        p_info = editor.get_equipped_persona(slot)
+        party_personas.append({
+            "slot": slot,
+            "name": entry.get("name", f"Member {slot}"),
+            "level": entry.get("level", 1),
+            "hp": entry.get("hp", 100),
+            "sp": entry.get("sp", 50),
+            "persona": p_info
+        })
+
+    # Parse accurate playtime from authoritative quick_info seconds
+    playtime_sec = quick_info.get("playtime") or hdr.playtime or 0
+    if playtime_sec > 500000:
+        playtime_sec = quick_info.get("playtime", 0)
+
+    joker_stock = editor.get_persona_stock(0)
+    inventory = editor.get_inventory()
+    try:
+        inventory_norm = editor.get_normalized_inventory()
+    except Exception:
+        inventory_norm = {}
+    compendium = editor.get_compendium()
+
+    resp = {
+        "file_path": file_path,
+        "header": {
+            "fname": hdr.fname,
+            "lname": hdr.lname,
+            "group_name": names.group_name_utf8,
+            "money": editor.get_money(),
+            "day": quick_info.get("day", str(hdr.day)),
+            "level": quick_info.get("level", "22"),
+            "playtime": f"{playtime_sec // 3600}h {(playtime_sec % 3600) // 60}m"
+        },
+        "social_stats": social,
+        "confidants": confidants,
+        "party": party_personas,
+        "joker_stock": joker_stock,
+        "inventory": inventory,
+        "inventory_normalized": inventory_norm,
+        "compendium": compendium,
+        "integrity": integrity
+    }
+    _conflicts = instances.find_conflicts(file_path)
+    if _conflicts:
+        resp["notice"] = (
+            "This save is also open in another window — last save wins."
+        )
+    return resp
+
 class P5RWebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_APP_DIR / "static"), **kwargs)
@@ -371,9 +437,11 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
         elif parsed.path == "/api/discovery":
             dirs = discover_steam_save_dirs()
             saves = []
-            if dirs:
-                for s in list_save_files(dirs[0]):
-                    saves.append(str(s))
+            for d in dirs:
+                for s in list_save_files(d):
+                    s_str = str(s)
+                    if s_str not in saves:
+                        saves.append(s_str)
             self.send_json(200, {"discovered_dirs": [str(d) for d in dirs], "saves": saves})
             return
         elif parsed.path == "/api/backups":
@@ -413,78 +481,26 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 CURRENT_EDITOR = SaveEditor(raw)
                 CURRENT_FILE_PATH = str(p)
                 instances.update_save(CURRENT_FILE_PATH)
-
-                # Assemble clean full payload
-                hdr = CURRENT_EDITOR.parser.header
-                names = CURRENT_EDITOR.parser.player_names
-                quick_info = CURRENT_EDITOR.get_quick_info()
-                integrity = CURRENT_EDITOR.integrity_report()
-                confidants = CURRENT_EDITOR.get_confidant_ranks()
-                social = CURRENT_EDITOR.get_social_stats()
-                party = CURRENT_EDITOR.get_party_stats()
-
-                # Only show members who have actually joined the story.
-                # Un-joined slots (Makoto/Futaba/Haru/Akechi/Kasumi before
-                # their join dates) are seeded placeholders — hiding them
-                # prevents both story spoilers and unsafe edits.
-                party = [p for p in party if p.get("joined", False)]
-
-                # Get equipped persona info for each party member
-                party_personas = []
-                for entry in party:
-                    slot = entry["slot"]
-                    p_info = CURRENT_EDITOR.get_equipped_persona(slot)
-                    party_personas.append({
-                        "slot": slot,
-                        "name": entry.get("name", f"Member {slot}"),
-                        "level": entry.get("level", 1),
-                        "hp": entry.get("hp", 100),
-                        "sp": entry.get("sp", 50),
-                        "persona": p_info
-                    })
-
-                # Parse accurate playtime from authoritative quick_info seconds
-                playtime_sec = quick_info.get("playtime") or hdr.playtime or 0
-                if playtime_sec > 500000: # if raw unscaled counter, normalize from quick_info
-                    playtime_sec = quick_info.get("playtime", 0)
-
-                # Get Joker's full 12-slot stock persona inventory
-                joker_stock = CURRENT_EDITOR.get_persona_stock(0)
-                inventory = CURRENT_EDITOR.get_inventory()
-                try:
-                    inventory_norm = CURRENT_EDITOR.get_normalized_inventory()
-                except Exception:
-                    inventory_norm = {}
-                compendium = CURRENT_EDITOR.get_compendium()
-
-                resp = {
-                    "file_path": CURRENT_FILE_PATH,
-                    "header": {
-                        "fname": hdr.fname,
-                        "lname": hdr.lname,
-                        "group_name": names.group_name_utf8,
-                        "money": CURRENT_EDITOR.get_money(),
-                        "day": quick_info.get("day", str(hdr.day)),
-                        "level": quick_info.get("level", "22"),
-                        "playtime": f"{playtime_sec // 3600}h {(playtime_sec % 3600) // 60}m"
-                    },
-                    "social_stats": social,
-                    "confidants": confidants,
-                    "party": party_personas,
-                    "joker_stock": joker_stock,
-                    "inventory": inventory,
-                    "inventory_normalized": inventory_norm,
-                    "compendium": compendium,
-                    "integrity": integrity
-                }
-                _conflicts = instances.find_conflicts(CURRENT_FILE_PATH)
-                if _conflicts:
-                    resp["notice"] = (
-                        "This save is also open in another window — last save wins."
-                    )
+                resp = _build_loaded_save_payload(CURRENT_EDITOR, CURRENT_FILE_PATH)
                 self.send_json(200, resp)
             except Exception as e:
                 self.send_json(500, {"error": f"Failed to load save: {str(e)}"})
+
+        elif parsed.path == "/api/load-upload":
+            raw_b64 = data.get("data", "")
+            filename = data.get("filename", "DATA.DAT")
+            if not raw_b64:
+                self.send_json(400, {"error": "No file content uploaded."})
+                return
+            try:
+                raw_bytes = base64.b64decode(raw_b64)
+                CURRENT_EDITOR = SaveEditor(raw_bytes)
+                CURRENT_FILE_PATH = f"Uploaded ({filename})"
+                instances.update_save(CURRENT_FILE_PATH)
+                resp = _build_loaded_save_payload(CURRENT_EDITOR, CURRENT_FILE_PATH)
+                self.send_json(200, resp)
+            except Exception as e:
+                self.send_json(500, {"error": f"Failed to load uploaded save: {str(e)}"})
 
         elif parsed.path == "/api/save":
             if not CURRENT_EDITOR or not CURRENT_FILE_PATH:
@@ -497,9 +513,14 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
                 return
 
             try:
-                # 1. Automatic Timestamped Backup
-                p = Path(CURRENT_FILE_PATH)
-                backup_path = create_timestamped_backup(p)
+                is_uploaded = CURRENT_FILE_PATH.startswith("Uploaded (")
+                p = None
+                backup_path_name = "N/A (Uploaded save)"
+                if not is_uploaded:
+                    # 1. Automatic Timestamped Backup
+                    p = Path(CURRENT_FILE_PATH)
+                    backup_path = create_timestamped_backup(p)
+                    backup_path_name = backup_path.name
 
                 # 2. Apply Header Edits
                 hdr_in = data.get("header", {})
@@ -677,16 +698,18 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
 
                 # 6. Repack & Sign
                 out_bytes = CURRENT_EDITOR.save_to_bytes()
-                p.write_bytes(out_bytes)
-
-                # Reload for fresh integrity validation
-                CURRENT_EDITOR = SaveEditor(p.read_bytes())
+                if p:
+                    p.write_bytes(out_bytes)
+                    CURRENT_EDITOR = SaveEditor(p.read_bytes())
+                else:
+                    CURRENT_EDITOR = SaveEditor(out_bytes)
                 integrity = CURRENT_EDITOR.integrity_report()
 
                 resp = {
                     "status": "success",
-                    "backup": backup_path.name,
+                    "backup": backup_path_name,
                     "integrity": integrity,
+                    "download_data": base64.b64encode(out_bytes).decode("ascii") if is_uploaded else None,
                     "message": "Save file successfully re-signed and saved!"
                 }
                 _conflicts = instances.find_conflicts(CURRENT_FILE_PATH)

@@ -83,7 +83,9 @@
           <option value="">-- Scanning Steam Save Directory... --</option>
         </select>
         <button class="p5-btn-action" onclick="loadSaveFile()"><span>LOAD SAVE</span></button>
-        <button class="p5-btn-action secondary" onclick="refreshDiscovery()"><span>REFRESH</span></button>
+        <button class="p5-btn-action secondary" onclick="refreshDiscovery()" title="Rescan standard Steam directory"><span>REFRESH</span></button>
+        <button class="p5-btn-action secondary" onclick="document.getElementById('manualFileInput').click()" title="Browse custom or GamePass save file (DATA.DAT / DATA.BIN)"><span>📂 BROWSE...</span></button>
+        <input type="file" id="manualFileInput" style="display:none;" accept=".DAT,.BIN,.dat,.bin" onchange="onManualFileSelected(event)">
       </div>
 
       <!-- Quick Calendar Info -->

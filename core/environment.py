@@ -20,21 +20,61 @@ def get_appdata_dir() -> Path:
 
 
 def discover_steam_save_dirs() -> List[Path]:
-    """Auto-discover Steam P5R save directories."""
-    base_dir = get_appdata_dir() / "SEGA" / "P5R" / "Steam"
-    if not base_dir.exists():
-        return []
+    """Auto-discover Steam and PC P5R save directories across all known locations."""
+    found_dirs = []
 
-    steam_dirs = []
-    for item in base_dir.iterdir():
-        if item.is_dir() and item.name.isdigit():
-            savedata = item / "savedata"
-            if savedata.exists() and savedata.is_dir():
-                steam_dirs.append(savedata)
-            else:
-                steam_dirs.append(item)
+    # 1. Standard Steam AppData/Roaming SEGA/P5R/Steam/<id>/savedata
+    roaming_base = get_appdata_dir() / "SEGA" / "P5R" / "Steam"
+    if roaming_base.exists():
+        for item in roaming_base.iterdir():
+            if item.is_dir():
+                savedata = item / "savedata"
+                if savedata.exists() and savedata.is_dir():
+                    found_dirs.append(savedata)
+                else:
+                    found_dirs.append(item)
 
-    return steam_dirs
+    # 2. LocalAppData / SEGA / P5R / Steam
+    local_appdata = os.getenv("LOCALAPPDATA")
+    if local_appdata:
+        local_base = Path(local_appdata) / "SEGA" / "P5R" / "Steam"
+        if local_base.exists():
+            for item in local_base.iterdir():
+                if item.is_dir():
+                    savedata = item / "savedata"
+                    if savedata.exists() and savedata.is_dir():
+                        found_dirs.append(savedata)
+                    else:
+                        found_dirs.append(item)
+
+    # 3. Steam userdata directories (AppID 1687950)
+    for steam_base in [
+        Path("C:/Program Files (x86)/Steam/userdata"),
+        Path("C:/Program Files/Steam/userdata"),
+        Path("D:/Steam/userdata"),
+        Path("E:/Steam/userdata"),
+    ]:
+        if steam_base.exists() and steam_base.is_dir():
+            for user_id in steam_base.iterdir():
+                if user_id.is_dir():
+                    p5r_remote = user_id / "1687950" / "remote"
+                    if p5r_remote.exists() and p5r_remote.is_dir():
+                        sd = p5r_remote / "savedata"
+                        found_dirs.append(sd if sd.exists() else p5r_remote)
+
+    # Deduplicate while preserving order
+    unique_dirs = []
+    seen = set()
+    for d in found_dirs:
+        try:
+            res = str(d.resolve())
+            if res not in seen and d.exists():
+                seen.add(res)
+                unique_dirs.append(d)
+        except Exception:
+            pass
+
+    return unique_dirs
 
 
 def list_save_files(steam_dir: Path) -> List[Path]:
