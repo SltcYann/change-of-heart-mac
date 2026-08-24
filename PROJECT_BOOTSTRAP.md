@@ -12,7 +12,7 @@
 | `python -m unittest` | ✅ Works | `python -m unittest discover -s tests` → currently **168/168 OK** (oracle-corpus tests auto-skip without live saves). |
 | `node --check` (JS syntax) | ✅ Works | `node --check web-app/static/app.js`. |
 | `npm run lint:context` | ✅ Works | Shim lives at `tools/lint_context.js` (no upstream package.json script was present originally). Passes all checks. |
-| Launch the GUI / click the modal | ❌ No display session | This sandbox has no GUI/WebView runtime. The agent can **build** `dist/P5R_Save_Editor.exe` but cannot **run** it and read rendered text (e.g. the `CHEAT SHOP` title). That smoke test is an **end-user** step. |
+| Launch the GUI / click the modal | ⚠️ Partial | No interactive display session, but the frozen EXE **can be smoke-tested headlessly**: launch `dist/P5R_Save_Editor.exe`, confirm the process spawns, find its loopback port via `netstat -ano`, probe `/api/build` for 200, then kill it. Full visual/WebView checks remain an end-user step. |
 | Read `J:\SteamLibrary\...\P5R\CPK\BASE.CPK` directly | ❌ Outside workspace sandbox | Ground-truth table/offset data must be diff-verified by the end-user via `tools/diff_mapper.py` and pasted back as deltas. The agent only consumes offsets already recorded in `handoff.md` / `research/RESEARCH.md`. |
 
 ## Commands the agent can run right now (verified)
@@ -44,7 +44,7 @@ python -m unittest discover -s tests
 - "GUI is reachable at `http://127.0.0.1:3000`" → **false** (that's the DSH harness, not a dev server; see AGENTS.md Command §4). There is no `python main.py` server running for inspection.
 - "No build toolchain present" → **false**; re-check with `python -m PyInstaller --version` before declaring anything impossible.
 
-> Last env-verified: 2026-08-19 21:10 ET (PyInstaller 6.22.0, Python 3.14.6). Revalidate on session entry if anything looks different.
+> Last env-verified: 2026-08-24 (PyInstaller 6.22.0, Python 3.14.6 — EXE rebuilt + process smoke test PASSED). Revalidate on session entry if anything looks different.
 
 ---
 

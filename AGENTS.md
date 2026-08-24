@@ -44,7 +44,7 @@ Path costs ~5 tokens; document behind it costs 2000 only when opened.
 
 - **Shipping Core (Tracked on GitHub):**
   - App Engine: `main.py`, `server.py`, `core/`, `data/`, `web-app/` (clean templates, styles, assets, persona portraits).
-  - Test Suite: `tests/` (161+ unit tests).
+  - Test Suite: `tests/` (168 unit tests).
   - Public Docs: `README.md` (user-facing only), `SAFETY.md`, `STATUS.md`, `state.json`, `LICENSE`, `P5R_Save_Editor.spec`.
 - **Internal / Gitignored (Never Ship to GitHub):**
   - Agent state: `HANDOFF.md`, `archive/`.
@@ -57,7 +57,7 @@ Path costs ~5 tokens; document behind it costs 2000 only when opened.
 1. **Save integrity:** Write primary + mirror (+0x18510), read warns on mismatch. Test: `test_mirror_sync.py`
 2. **No quick-array merges:** `0x3530` temp buffer never merged with master counts. Test: `check-invariants.py` banned pattern scan.
 3. **Ground truth from game data:** Offsets verified via 2-save diff (`tools/diff_mapper.py`), not web research. Test: manual verification gate.
-4. **Build/test gate passes:** 161+ tests pass before exit. Test: `check-invariants.py`.
+4. **Build/test gate passes:** all tests pass before exit (currently 168). Test: `check-invariants.py`.
 5. **Frozen offsets respected:** `0xA000+` Outfits not wired until diff proves. Test: manual check in code review.
 6. **Tool Output Hygiene:** Never run un-bounded terminal dump commands. Always pipe or truncate verbose outputs (`git status -s`, `pytest -q`, `head -n 50`, `tail -n 30`) to protect the context window from token bloat.
 
@@ -103,4 +103,4 @@ S1 normalized read (backend, FIRST) → S4 key guard → S2+S5 paradigm writes +
 `[ ] stakeholders [ ] MRM is now [ ] ≥2 alternatives [ ] ITEM.TBL seg/stride cited [ ] ADR file created`
 
 **Done before stamp:**
-`[ ] 134/134 + mirror read-check warns [ ] no phantom merge [ ] STATUS.md stamped [ ] state.json updated [ ] lint:context pasted`
+`[ ] 168/168 + mirror read-check warns [ ] no phantom merge [ ] STATUS.md stamped [ ] state.json updated [ ] lint:context pasted`

@@ -8,7 +8,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Steam%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Tests](https://img.shields.io/badge/Tests-157%2F157%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
+[![Tests](https://img.shields.io/badge/Tests-168%2F168%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20j0nny%20DiGITAL-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
 
@@ -103,6 +103,23 @@ No Python or terminal required! Just grab the latest standalone release:
 ---
 
 ## 📋 Changelog
+
+### v1.1.1 (upcoming) — Security Audit & Robustness Fixes
+> External full-project audit: every finding fixed.
+
+- **🔒 CSRF Hardening:** The local API now validates browser `Origin` headers (loopback only); foreign origins get `403`. Replaced wildcard `Access-Control-Allow-Origin: *` with validated reflection — malicious web pages can no longer drive the local save API while the editor runs.
+- **🧰 Fresh-Clone Reproducibility:** `scripts/roundtrip_harness.py` and the `lint:context` shim (`tools/lint_context.js`) are now tracked — the test suite and lint gate no longer break on a fresh clone.
+- **🕵️ Privacy:** Username/Steam-ID paths removed from tracked tests (glob-based Steam save discovery + `P5R_ORACLE_DIR` env override).
+- **📦 Dependencies:** Dropped unused `bottle`; added `psutil`. Root legacy `HANDOFF.md` archived.
+
+### v1.1.0 — Party Evolutions, Romance Toggle & Save Discovery Hotfix
+- **⚡ Persona Evolution Tiers (1–3)** selector for all party members (Base/Awakened/Royal forms).
+- **💖 Romance / Friendship route toggle** for Rank 9+ confidants on PC saves (`0x136A0` bit `0x02`).
+- **🔄 Level ↔ EXP auto-sync** using the authentic Atlus cubic curve — prevents post-battle EXP stalls after level edits.
+- **🔧 Fixed Haru (Slot 6) / Futaba (Slot 7) party swap.**
+- **📂 Multi-location save auto-discovery** (Steam Userdata / LocalAppData / GamePass paths) + manual `📂 BROWSE...` file picker.
+- **🔑 Key Items unlockable** via the Cheat Shop catalog (confirm-gated).
+- **🖥️ WebView2 bundling hotfix:** EXE rebuilt on Python 3.14.6 + PyInstaller 6.22.0 embedding the full `pywebview` runtime — fixes browser-fallback regression.
 
 ### v1.0.10 — Compendium 100% Unlock Fix (Genuine-Save Parity)
 > *"Why does it say 96%?"* — fixed, and proven in-game.
