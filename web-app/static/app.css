@@ -64,7 +64,7 @@ body {
   border: 2px solid #000;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
 }
 
 /* =========================================================================
@@ -149,7 +149,7 @@ body {
 .brand-text p {
   font-size: 10px;
   font-weight: 900;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   background: #000;
@@ -193,7 +193,7 @@ body {
 }
 
 .p5-nav-item:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   border-color: #000;
   transform: skew(-12deg) translateX(14px) scale(1.03);
@@ -216,7 +216,7 @@ body {
   content: '★';
   position: absolute;
   right: 14px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   font-size: 18px;
   transform: skew(12deg);
   text-shadow: 1px 1px 0 #000;
@@ -295,8 +295,8 @@ body {
 }
 
 .p5-select:focus, .p5-input:focus {
-  border-color: var(--p5-yellow);
-  border-left-color: var(--p5-yellow);
+  border-color: var(--p5-white);
+  border-left-color: var(--p5-white);
   background: #1C1C2C;
   box-shadow: 5px 5px 0 var(--p5-crimson), 0 0 15px rgba(255, 230, 0, 0.2);
   transform: translateY(-2px);
@@ -342,7 +342,7 @@ body {
 }
 
 .p5-btn-action:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   border-color: #000;
   transform: skew(-10deg) scale(1.05) translateY(-3px);
@@ -396,7 +396,7 @@ body {
   font-family: var(--font-p5);
   font-size: 44px;
   letter-spacing: 3.5px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   text-transform: uppercase;
   text-shadow: 4px 4px 0 #000, 6px 6px 0 var(--p5-crimson);
   display: inline-block;
@@ -442,7 +442,7 @@ body {
   font-family: var(--font-p5);
   font-size: 24px;
   letter-spacing: 2px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 8px;
   margin-bottom: 18px;
@@ -486,7 +486,7 @@ body {
 }
 
 .filter-pill:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   box-shadow: 4px 4px 0 var(--p5-crimson);
 }
@@ -542,14 +542,14 @@ body {
 
 .p5-tarot-card.active {
   background: var(--p5-crimson);
-  border-left-color: var(--p5-yellow);
+  border-left-color: var(--p5-white);
   transform: skew(-8deg) translateX(16px) scale(1.04);
   box-shadow: 8px 8px 0 #000;
 }
 
 .tarot-rank-badge {
   background: #000;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   font-family: var(--font-p5);
   font-size: 17px;
   padding: 3px 8px;
@@ -561,7 +561,7 @@ body {
 }
 
 .p5-tarot-card.active .tarot-rank-badge {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
 }
 
@@ -586,7 +586,7 @@ body {
   font-family: var(--font-p5);
   font-size: 13px;
   letter-spacing: 1px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
 }
 
 .p5-tarot-card.active .tarot-arcana-tag {
@@ -649,7 +649,7 @@ body {
 
 .spotlight-portrait-frame:hover {
   transform: rotate(0deg) scale(1.04);
-  border-color: var(--p5-yellow);
+  border-color: var(--p5-white);
   box-shadow: 8px 8px 0px var(--p5-crimson);
 }
 
@@ -667,7 +667,7 @@ body {
   left: 0;
   width: 100%;
   background: rgba(0, 0, 0, 0.8);
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   font-size: 9px;
   font-weight: 900;
   text-align: center;
@@ -684,7 +684,7 @@ body {
   font-size: 16px;
   letter-spacing: 2px;
   color: #000;
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   padding: 3px 10px;
   display: inline-block;
   font-weight: 900;
@@ -697,7 +697,7 @@ body {
   font-size: 11px;
   font-weight: 900;
   background: #000;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   padding: 4px 10px;
   border: 2px solid #000;
   box-shadow: 2px 2px 0 #000;
@@ -780,7 +780,7 @@ body {
 }
 
 .rank-stepper-btn:hover:not(:disabled) {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   transform: scale(1.1);
 }
@@ -803,7 +803,7 @@ body {
 .rank-number-text {
   font-family: var(--font-p5);
   font-size: 32px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   text-shadow: 2px 2px 0 var(--p5-crimson);
 }
 
@@ -838,7 +838,7 @@ body {
   font-family: var(--font-p5);
   font-size: 16px;
   letter-spacing: 1.5px;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 4px;
   margin-bottom: 8px;
@@ -861,7 +861,7 @@ body {
 
 .spoiler-mask.revealed {
   background: rgba(230, 0, 18, 0.25);
-  color: var(--p5-yellow);
+  color: var(--p5-white);
   text-shadow: none;
   border-color: var(--p5-crimson);
 }
@@ -903,7 +903,7 @@ body {
 
 .elem-badge:hover {
   background: #242436;
-  border-color: var(--p5-yellow);
+  border-color: var(--p5-white);
   transform: translateY(-3px);
   box-shadow: 4px 4px 0 var(--p5-crimson);
 }
@@ -967,7 +967,7 @@ body {
 }
 
 .star-node.active {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   border-color: #000;
   box-shadow: 3px 3px 0 #000;
@@ -1024,11 +1024,11 @@ body {
 .thief-placard-slot {
   font-size: 10px;
   font-weight: 900;
-  color: var(--p5-yellow);
+  color: var(--p5-white);
 }
 
 .thief-placard:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   border-color: #000;
   transform: skew(-10deg) translateY(-2px);
@@ -1051,7 +1051,7 @@ body {
   color: #FFF;
 }
 .thief-placard.active .thief-placard-slot {
-  color: var(--p5-yellow);
+  color: var(--p5-white);
 }
 
 .velvet-stage-grid {
@@ -1149,7 +1149,7 @@ body {
 }
 
 .save-deck-btn:hover {
-  background: var(--p5-yellow);
+  background: var(--p5-white);
   color: #000;
   transform: skew(-12deg) scale(1.05);
   box-shadow: 8px 8px 0 var(--p5-crimson);
