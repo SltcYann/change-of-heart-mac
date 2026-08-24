@@ -796,6 +796,12 @@ class SaveEditor:
         P5R stores each stat as u16 LE points at 0x139E0 in order
         [Knowledge, Charm, Proficiency, Guts, Kindness]. To force rank N we
         write the threshold points needed to reach that rank (rank 5 = max).
+
+        Surplus preservation (2026-08-24, zamasu2020 bug report): raising one
+        stat must never LOWER the others. Points are written as
+        max(current, threshold) when raising or keeping a rank, so accrued
+        progress within a rank survives; only an explicit lowering writes
+        the bare threshold.
         """
         vals = {"Knowledge": knowledge, "Charm": charm, "Proficiency": proficiency,
                 "Guts": guts, "Kindness": kindness}
@@ -805,7 +811,16 @@ class SaveEditor:
             if len(d) >= base + 10:
                 for i, name in enumerate(self.PC31_SOCIAL_ORDER):
                     v = max(1, min(int(vals.get(name, 5)), 5))
-                    pts = self.PC31_SOCIAL_THRESHOLDS[name][v - 1]
+                    th = self.PC31_SOCIAL_THRESHOLDS[name]
+                    cur_pts = struct.unpack_from("<H", d, base + i * 2)[0]
+                    cur_rank = 1
+                    for r in range(1, 5):
+                        if cur_pts >= th[r]:
+                            cur_rank = r + 1
+                    if v >= cur_rank:
+                        pts = max(cur_pts, th[v - 1])  # never destroy surplus
+                    else:
+                        pts = th[v - 1]                # explicit lowering
                     struct.pack_into("<H", d, base + i * 2, pts)
                 self.parser.data_payload = bytes(d)
                 return {"status": "ok", "mode": "points_u16"}
@@ -1843,13 +1858,32 @@ class SaveEditor:
     def set_confidant_rank(self, arcana_id: int, rank: int, points: Optional[int] = None,
                            romance: Optional[bool] = None,
                            auto_unlock: bool = False) -> Dict[str, Any]:
-        """Set one confidant's rank (0-10) in the VERIFIED PC block."""
+        """Set one confidant's rank (0-10) in the VERIFIED PC block.
+
+        Bond-point preservation (2026-08-24, zamasu2020 bug report):
+        when points is None and the requested rank equals the current rank,
+        points are NOT touched — rewriting rank-threshold points was wiping
+        players' accumulated bond surplus ("ready to rank up next visit"
+        became "not a deep enough bond"). When raising rank, surplus is
+        preserved via max(current, threshold) — matching in-game carryover.
+        """
         rank = max(0, min(rank, 10))
+        name = list(CONFIDANT_ARCANA_MAP.keys())[list(CONFIDANT_ARCANA_MAP.values()).index(arcana_id)]
+        th = self.CONFIDANT_POINT_THRESHOLDS.get(name, {})
         write_points: Optional[int] = points
+        if write_points is None and self.is_real_save():
+            # Read current state; preserve surplus bond points whenever possible.
+            cur = self.get_confidant_ranks().get(name)
+            if cur and cur.get("unlocked"):
+                cur_rank = int(cur.get("rank", 0))
+                cur_pts = int(cur.get("points", 0))
+                if rank == cur_rank:
+                    write_points = cur_pts  # unchanged rank -> keep exact points
+                elif rank > cur_rank:
+                    write_points = max(cur_pts, th.get(rank, cur_pts))
+                # rank < cur_rank (explicit lowering) falls through to threshold
         if write_points is None:
             # use game-accurate threshold for this arcana/rank if known
-            name = list(CONFIDANT_ARCANA_MAP.keys())[list(CONFIDANT_ARCANA_MAP.values()).index(arcana_id)]
-            th = self.CONFIDANT_POINT_THRESHOLDS.get(name, {})
             if rank in th:
                 write_points = th[rank]
         if self.is_real_save():
