@@ -29,6 +29,7 @@
 | D013 | 2026-08-24 | Local API enforces loopback-only Origin check; no `Access-Control-Allow-Origin: *` | CSRF hardening — a browser page must never drive the local save API |
 | D014 | 2026-08-24 | UI-liveness watchdog: native window must heartbeat `/api/ui-heartbeat` within 30s of launch, else main.py auto-falls-back to the system browser | Broken WebView2 Runtimes cause silent dead UIs (r/Persona5Royale u/Gruphius case); app must self-heal with zero user homework |
 | D015 | 2026-08-24 | Browser `--app` mode REJECTED as fallback tier — tested in a prior build, rejected in practice: Edge profile bleed (imported-extension config prompts), session-restore nagging, clunky window behavior | Plain default-browser tab is the final fallback tier; do not re-propose app-mode |
+| D016 | 2026-08-24 | Point-based fields (confidant bond, social stats) must NEVER be written to bare thresholds on same-rank rewrites — preserve-surplus semantics: max(current, threshold) on raise, untouched on keep, threshold only on explicit lowering | Threshold-exact rewrites wiped players' accrued progress (zamasu2020 bug: one social-stat edit reset every confidant's bond surplus) |
 
 ## Core Domain Rules
 - Save is 4 paradigms + mirror `+0x18510`: Gear owned-flag, Stacks count-array, Key Items owned-flag/bitfield, Outfits owned-flag
@@ -84,6 +85,8 @@
 - PyInstaller sandbox blocks Temp perms — use `python -m unittest discover -s tests` (filtered 134/153)
 - UI staged-list saves: server per-pid compendium loop CLEARS any pid missing from the payload list — batch unlocks must arm the backend flag (`unlock_compendium`), never stage a filtered list (fixed 2026-08-21, guarded by `TestCompendiumUnlockAllWiring`)
 - JSON template keys are strings — `pid in json.loads(...)` is always False for int pids; use the editor's `_load_compendium_templates()`
+- **Point-based fields (confidant bond pts, social stat pts) store PROGRESS, not just rank** — never write bare rank thresholds on same-rank rewrites; preserve surplus (D016, fixed 2026-08-24, guarded by `test_bond_points_preservation.py`)
+- Confidant block stores SAVE_ID (Death=14), but `set_confidant_rank()` takes ARCANA_ID (Death=13) — mixing them up silently no-ops
 
 ## Session History
 - 2026-08-14: Project scaffold, v1.0.7 Item Studio Rework, 120/120 tests
@@ -98,3 +101,5 @@
 - 2026-08-23: Party evolution tiers, Haru/Futaba slot fix, EXP auto-sync, romance toggle, key-item catalog unlock, save auto-discovery + manual browse (165→168 tests); hotfix v1.1.0 EXE rebuilt + GitHub asset updated
 - 2026-08-24: External audit fixes — tracked roundtrip harness + lint shim (fresh-clone breakage), CSRF Origin guard, personal paths scrubbed from tests, deps pruned, HANDOFF.md archived, state/docs resync
 - 2026-08-24 (later): UI-liveness watchdog shipped after r/Persona5Royale field report (u/Gruphius: all versions silently dead on his machine = broken WebView2 runtime) — heartbeat + auto browser fallback; 170 tests; EXE rebuilt (520a1c5a)
+- 2026-08-24 (evening): UI Atlus-fidelity pass R1+R1.9 — screenshot audit vs official game screenshots (gameuidatabase.com, pixel-sampled): rainbow gradient → flat white bar, green/yellow slabs → authentic red/white/black/cyan palette (D016-adjacent), hex IDs removed from persona cards, star ladder → horizontal meters, sidebar emoji → flat SVGs, type hierarchy demoted; v1.1.1 released with watchdog build
+- 2026-08-24 (night): Bond-points wipe bug FIXED (zamasu2020) — social-stat edits reset all confidants' surplus via full-confidant re-save loop; preserve-surplus semantics in set_confidant_rank + set_social_stats (D016); 4 regression tests (174/174); EXE rebuilt
