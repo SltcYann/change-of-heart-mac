@@ -94,8 +94,11 @@ Done: sampled palette, cyan selection nav, white chips/progress, SVG nav icons, 
 
 ## 6. Blocked / Future RE
 
-- **DDS obfuscation:** art_full files = [0x800 prefix][CRILAYLA @0x800][trailing header]. Stream underruns with standard cri_layla — extra transform layer (likely documented on Amicitia / in Persona Merger source). Do NOT brute-force; research first.
-- Fonts: P5R uses licensed fonts; ship lookalikes or extracted bitmap fonts.
+**DDS decryption — RESEARCHED 2026-08-24, WALL CONFIRMED (see research/RESEARCH.md §6):**
+- Files = [0x800 prefix][CRILAYLA @0x800][trailing raw header]; `header_off` is file-coordinate; compressed stream itself is encrypted (first 1024 bytes from 0x20 — matches our `p5r_xor` footprint, but application detail differs; CRI's own CpkMaker.dll AccessViolates too).
+- **No public solution exists** (ZenHax t=17557 archived unsolved; modding community uses loose-file loaders and never needed it).
+- Remaining path = novel RE of p5r.exe read path (out of autonomous scope) OR texture-dump the running game (RenderDoc/SpecialK — user homework, zero decryption needed).
+- Until then: icons/textures = hand-built SVGs in sampled style; fonts = free lookalikes (already wired).
 
 ## 7. Workflow Law (why this doc exists)
 
