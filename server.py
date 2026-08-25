@@ -365,6 +365,7 @@ def _build_loaded_save_payload(editor: SaveEditor, file_path: str) -> dict:
 # any successful API call. If the native window's JS never checks in, main.py
 # auto-falls-back to the system browser instead of leaving a dead window.
 LAST_UI_HEARTBEAT = 0.0  # unix ts of last heartbeat; 0 = never seen
+LAST_REQUEST_TS = 0.0    # unix ts of last HTTP request (idle-shutdown tracking)
 
 class P5RWebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -407,7 +408,8 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
         return host in ("127.0.0.1", "localhost", "::1")
 
     def do_GET(self):
-        global CURRENT_EDITOR, CURRENT_FILE_PATH
+        global CURRENT_EDITOR, CURRENT_FILE_PATH, LAST_REQUEST_TS
+        LAST_REQUEST_TS = time.time()
         if not self._origin_allowed():
             self.send_json(403, {"error": "Cross-origin requests are not allowed."})
             return
@@ -494,7 +496,8 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
-        global CURRENT_EDITOR, CURRENT_FILE_PATH
+        global CURRENT_EDITOR, CURRENT_FILE_PATH, LAST_REQUEST_TS
+        LAST_REQUEST_TS = time.time()
         if not self._origin_allowed():
             self.send_json(403, {"error": "Cross-origin requests are not allowed."})
             return

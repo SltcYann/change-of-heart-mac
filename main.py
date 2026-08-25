@@ -86,12 +86,19 @@ def main() -> None:
     # 3. If webview is available, create native desktop window (Edge WebView2)
     if webview is not None:
         browser_fallback_used = []
+        window = None
 
-        def ui_watchdog(timeout_s: float = 30.0) -> None:
+        def ui_watchdog(timeout_s: float = 45.0) -> None:
             """If the native window's JS never pings /api/ui-heartbeat, the
             WebView2 UI booted dead (broken runtime — silent no-buttons, dead
-            file picker). Auto-open the system browser instead of leaving the
-            user with a window that does nothing."""
+            file picker). Close the dead window and auto-open the system
+            browser instead of leaving the user with a window that does
+            nothing.
+
+            45s (not 30s): slow machines can take >30s just to reach DOM
+            ready, and discovery runs after that — a healthy-but-slow window
+            must not be misidentified as dead (Gruphius case, 2026-08-25).
+            """
             deadline = time.time() + timeout_s
             while time.time() < deadline:
                 if web_server.LAST_UI_HEARTBEAT > 0:
@@ -100,10 +107,16 @@ def main() -> None:
             print(
                 f"[Change of Heart] Native UI showed no signs of life after "
                 f"{int(timeout_s)}s — likely a broken WebView2 Runtime on this "
-                f"machine. Opening the editor in your default browser instead.",
+                f"machine. Opening the editor in your default browser instead "
+                f"and closing the dead window.",
                 flush=True,
             )
             browser_fallback_used.append(True)
+            try:
+                for w in list(webview.windows):
+                    w.destroy()  # kill the dead native window — browser replaces it
+            except Exception:
+                pass
             webbrowser.open(url)
 
         try:
@@ -124,10 +137,20 @@ def main() -> None:
                 stop_background_server()
                 return
             # Watchdog fell back to the browser: keep serving until the user
-            # closes the browser tab themselves (Ctrl+C in console also works).
-            print("[Change of Heart] Serving browser session — close this console or press Ctrl+C when done.", flush=True)
+            # is done. Idle shutdown prevents orphaned server processes from
+            # accumulating across launches (Gruphius report, 2026-08-25):
+            # exit after 3h with zero requests.
+            print("[Change of Heart] Serving browser session — it will stay available while this window is open.", flush=True)
+            last_activity = time.time()
             while True:
-                time.sleep(1)
+                time.sleep(60)
+                if web_server.LAST_REQUEST_TS > 0:
+                    last_activity = max(last_activity, web_server.LAST_REQUEST_TS)
+                if time.time() - last_activity > 3 * 3600:
+                    print("[Change of Heart] No activity for 3h — shutting down browser-session server.", flush=True)
+                    instances.clear()
+                    stop_background_server()
+                    return
         except Exception as e:
             print(f"[Change of Heart] WebView2 init notice ({e}), launching in browser: {url}")
             instances.clear()

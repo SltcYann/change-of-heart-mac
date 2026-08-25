@@ -254,10 +254,12 @@ const PASSIVE_AFFINITY_SKILLS = {
 
 // Lifecycle
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadDatabase();
-  await refreshDiscovery();
+  startUiHeartbeat(); // FIRST — prove the WebView UI is alive (main.py watchdog).
+  // Must fire before any slow init: on slow machines loadDatabase/refreshDiscovery
+  // can take >30s, and a late heartbeat would misfire the watchdog fallback.
+  loadDatabase();
+  refreshDiscovery();
   initInventoryKeyboard(); // R5: keyboard navigation for the item roster
-  startUiHeartbeat(); // prove the WebView UI is alive (main.py watchdog)
 });
 
 // UI liveness ping — if these never arrive at the server, the native window's
