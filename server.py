@@ -290,6 +290,12 @@ def build_reference_db():
     return db
 
 REFERENCE_DB = build_reference_db()
+# Pre-serialized + gzipped once at boot: /api/database serves the same bytes
+# every time, so paying json.dumps + gzip per request is pure waste on slow
+# CPUs (Gruphius slow-machine report, 2026-08-25).
+import gzip as _gzip
+_REFERENCE_DB_JSON = json.dumps(REFERENCE_DB).encode("utf-8")
+_REFERENCE_DB_GZ = _gzip.compress(_REFERENCE_DB_JSON, mtime=0)
 BUILD_ID = "audit-2026-08-16"
 CURRENT_EDITOR = None
 CURRENT_FILE_PATH = None
@@ -473,7 +479,15 @@ class P5RWebHandler(SimpleHTTPRequestHandler):
             })
             return
         elif parsed.path == "/api/database":
-            self.send_json(200, REFERENCE_DB)
+            accepts_gzip = "gzip" in (self.headers.get("Accept-Encoding") or "")
+            body = _REFERENCE_DB_GZ if accepts_gzip else _REFERENCE_DB_JSON
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            if accepts_gzip:
+                self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
             return
         elif parsed.path == "/api/discovery":
             dirs = discover_steam_save_dirs()
