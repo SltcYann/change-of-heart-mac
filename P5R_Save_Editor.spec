@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
+import sys
 from pathlib import Path
 
 block_cipher = None
@@ -13,39 +14,37 @@ data_files = [
     ('web-app/static', 'web-app/static'),
 ]
 
-import site
-import sys
-
-user_site = site.getusersitepackages()
+# PyInstaller already adds the active environment. Adding site-packages to
+# pathex explicitly can mix interpreters and is rejected by PyInstaller 7.
 search_paths = [str(SPEC_DIR)]
-if os.path.exists(user_site):
-    search_paths.append(user_site)
-for p in sys.path:
-    if p and os.path.exists(p) and p not in search_paths:
-        search_paths.append(p)
+
+hidden_imports = [
+    'webview',
+    'server',
+    'core',
+    'core.crypto',
+    'core.parser',
+    'core.editor',
+    'core.environment',
+    'core.instances',
+    'http.server',
+    'urllib.parse',
+    'json',
+    'base64',
+    'socket',
+    'threading',
+]
+if sys.platform == 'darwin':
+    hidden_imports.append('webview.platforms.cocoa')
+elif sys.platform == 'win32':
+    hidden_imports.append('webview.platforms.edgechromium')
 
 a = Analysis(
     ['main.py'],
     pathex=search_paths,
     binaries=[],
     datas=data_files,
-    hiddenimports=[
-        'webview',
-        'webview.platforms.edgechromium',
-        'server',
-        'core',
-        'core.crypto',
-        'core.parser',
-        'core.editor',
-        'core.environment',
-        'core.instances',
-        'http.server',
-        'urllib.parse',
-        'json',
-        'base64',
-        'socket',
-        'threading',
-    ],
+    hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -59,24 +58,65 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name='P5R_Save_Editor',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-)
+if sys.platform == 'darwin':
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name='Change of Heart',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=False,
+        name='Change of Heart',
+    )
+    app = BUNDLE(
+        coll,
+        name='Change of Heart.app',
+        icon=None,
+        bundle_identifier='com.j0nnydigital.changeofheart',
+        info_plist={
+            'CFBundleDisplayName': 'Change of Heart',
+            'CFBundleName': 'Change of Heart',
+            'CFBundleShortVersionString': '1.1.1',
+            'CFBundleVersion': '1',
+            'LSMinimumSystemVersion': '12.0',
+            'NSHighResolutionCapable': True,
+        },
+    )
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        [],
+        name='P5R_Save_Editor',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )

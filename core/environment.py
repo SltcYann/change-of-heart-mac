@@ -5,6 +5,7 @@ Environment, Safety, and Steam Auto-Discovery Manager for P5R Save Editor
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -19,48 +20,78 @@ def get_appdata_dir() -> Path:
     return Path.home() / "AppData" / "Roaming"
 
 
-def discover_steam_save_dirs() -> List[Path]:
-    """Auto-discover Steam and PC P5R save directories across all known locations."""
+def _append_sega_account_dirs(base: Path, found_dirs: List[Path]) -> None:
+    """Append account save folders found below a SEGA/P5R/Steam directory."""
+    if not base.exists() or not base.is_dir():
+        return
+    for item in base.iterdir():
+        if item.is_dir():
+            savedata = item / "savedata"
+            found_dirs.append(savedata if savedata.is_dir() else item)
+
+
+def _append_steam_userdata(base: Path, found_dirs: List[Path]) -> None:
+    """Append P5R Steam Cloud folders below one userdata directory."""
+    if not base.exists() or not base.is_dir():
+        return
+    for user_id in base.iterdir():
+        if not user_id.is_dir():
+            continue
+        p5r_remote = user_id / "1687950" / "remote"
+        if p5r_remote.is_dir():
+            savedata = p5r_remote / "savedata"
+            found_dirs.append(savedata if savedata.is_dir() else p5r_remote)
+
+
+def discover_steam_save_dirs(
+    home: Optional[Path] = None,
+    platform: Optional[str] = None,
+) -> List[Path]:
+    """Auto-discover P5R saves on Windows and macOS compatibility layers."""
     found_dirs = []
+    home = Path(home) if home is not None else Path.home()
+    platform = platform or sys.platform
 
-    # 1. Standard Steam AppData/Roaming SEGA/P5R/Steam/<id>/savedata
-    roaming_base = get_appdata_dir() / "SEGA" / "P5R" / "Steam"
-    if roaming_base.exists():
-        for item in roaming_base.iterdir():
-            if item.is_dir():
-                savedata = item / "savedata"
-                if savedata.exists() and savedata.is_dir():
-                    found_dirs.append(savedata)
-                else:
-                    found_dirs.append(item)
+    if platform == "darwin":
+        # Native Steam Cloud location, useful when saves are synchronized or
+        # copied to the Mac even though the game itself runs through Wine.
+        _append_steam_userdata(
+            home / "Library" / "Application Support" / "Steam" / "userdata",
+            found_dirs,
+        )
 
-    # 2. LocalAppData / SEGA / P5R / Steam
-    local_appdata = os.getenv("LOCALAPPDATA")
-    if local_appdata:
-        local_base = Path(local_appdata) / "SEGA" / "P5R" / "Steam"
-        if local_base.exists():
-            for item in local_base.iterdir():
-                if item.is_dir():
-                    savedata = item / "savedata"
-                    if savedata.exists() and savedata.is_dir():
-                        found_dirs.append(savedata)
-                    else:
-                        found_dirs.append(item)
+        # CrossOver and Whisky keep the Windows AppData tree inside bottles.
+        bottle_roots = [
+            home / "Library" / "Application Support" / "CrossOver" / "Bottles",
+            home / "Library" / "Containers" / "com.isaacmarovitz.Whisky" / "Bottles",
+        ]
+        for bottle_root in bottle_roots:
+            for sega_base in bottle_root.glob(
+                "*/drive_c/users/*/AppData/Roaming/SEGA/P5R/Steam"
+            ):
+                _append_sega_account_dirs(sega_base, found_dirs)
+            for steam_base in bottle_root.glob(
+                "*/drive_c/Program Files (x86)/Steam/userdata"
+            ):
+                _append_steam_userdata(steam_base, found_dirs)
+    else:
+        # Standard Windows AppData/Roaming and LocalAppData locations.
+        _append_sega_account_dirs(
+            get_appdata_dir() / "SEGA" / "P5R" / "Steam", found_dirs
+        )
+        local_appdata = os.getenv("LOCALAPPDATA")
+        if local_appdata:
+            _append_sega_account_dirs(
+                Path(local_appdata) / "SEGA" / "P5R" / "Steam", found_dirs
+            )
 
-    # 3. Steam userdata directories (AppID 1687950)
-    for steam_base in [
-        Path("C:/Program Files (x86)/Steam/userdata"),
-        Path("C:/Program Files/Steam/userdata"),
-        Path("D:/Steam/userdata"),
-        Path("E:/Steam/userdata"),
-    ]:
-        if steam_base.exists() and steam_base.is_dir():
-            for user_id in steam_base.iterdir():
-                if user_id.is_dir():
-                    p5r_remote = user_id / "1687950" / "remote"
-                    if p5r_remote.exists() and p5r_remote.is_dir():
-                        sd = p5r_remote / "savedata"
-                        found_dirs.append(sd if sd.exists() else p5r_remote)
+        for steam_base in [
+            Path("C:/Program Files (x86)/Steam/userdata"),
+            Path("C:/Program Files/Steam/userdata"),
+            Path("D:/Steam/userdata"),
+            Path("E:/Steam/userdata"),
+        ]:
+            _append_steam_userdata(steam_base, found_dirs)
 
     # Deduplicate while preserving order
     unique_dirs = []

@@ -5,8 +5,8 @@
   "gate": "ready",
   "mode": "single-agent",
   "pinned_shas": {},
-  "last_session": "memory/2026-08-24-audit-fixes.md",
-  "updated_at": "2026-08-24T23:30:00Z",
+  "last_session": "memory/2026-08-26-native-macos.md",
+  "updated_at": "2026-08-26T16:45:00Z",
   "version": "v1.1.1",
   "test_command": [
     "python",
@@ -16,9 +16,9 @@
     "-s",
     "tests"
   ],
-  "test_count": 174,
+  "test_count": 173,
   "blockers": [],
-  "next_action": "v1.1.1 released with UI-liveness watchdog, multi-location save discovery, and CSRF origin guard",
+  "next_action": "Optionally sign and notarize Change of Heart.app with an Apple Developer ID for public distribution",
   "active_owners": [],
   "frozen_offsets": [
     "0xA000+ Outfits save wiring (D008 \u2014 read-only in UI)"

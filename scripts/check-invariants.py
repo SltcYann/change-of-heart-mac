@@ -88,6 +88,10 @@ def check_test_suite(test_cmd=None):
     """Run the test suite dynamically from state.json and report pass/fail."""
     if not test_cmd:
         test_cmd = [sys.executable, "-m", "unittest", "discover", "-s", "tests"]
+    elif test_cmd[0] in ("python", "python3"):
+        # Use the interpreter running the checker. This keeps state.json
+        # portable across Windows (`python`) and macOS (`python3`/venv).
+        test_cmd = [sys.executable, *test_cmd[1:]]
     try:
         r = subprocess.run(
             test_cmd,

@@ -13,6 +13,7 @@
 | `node --check` (JS syntax) | ✅ Works | `node --check web-app/static/app.js`. |
 | `npm run lint:context` | ✅ Works | Shim lives at `tools/lint_context.js` (no upstream package.json script was present originally). Passes all checks. |
 | Launch the GUI / click the modal | ⚠️ Partial | No interactive display session, but the frozen EXE **can be smoke-tested headlessly**: launch `dist/P5R_Save_Editor.exe`, confirm the process spawns, find its loopback port via `netstat -ano`, probe `/api/build` for 200, then kill it. Full visual/WebView checks remain an end-user step. |
+| Native macOS bundle | ✅ Works | `./Build_macOS.command` creates `dist/Change of Heart.app` with Cocoa/WebKit. The script selects `/Library/Developer/CommandLineTools` so an incompatible selected Xcode beta cannot break `lipo`/signing. |
 | Read `J:\SteamLibrary\...\P5R\CPK\BASE.CPK` directly | ❌ Outside workspace sandbox | Ground-truth table/offset data must be diff-verified by the end-user via `tools/diff_mapper.py` and pasted back as deltas. The agent only consumes offsets already recorded in `handoff.md` / `research/RESEARCH.md`. |
 
 ## Commands the agent can run right now (verified)

@@ -6,7 +6,7 @@
   <img src="change_of_heart_logo.jpg" alt="CHANGE OF HEART Logo" width="320" style="border-radius:8px; box-shadow:0 0 25px rgba(230,0,18,0.5);">
 </p>
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Steam%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![Tests](https://img.shields.io/badge/Tests-168%2F168%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
@@ -194,6 +194,23 @@ python main.py
 # Run the automated test suite
 python -m unittest discover -s tests -v
 ```
+
+### Build macOS natif
+
+Sur un Mac Apple Silicon ou Intel avec Homebrew, double-cliquez sur
+`Build_macOS.command` ou lancez-le depuis Terminal :
+
+```bash
+./Build_macOS.command
+```
+
+Le script crée un environnement Python isolé, exécute les tests et produit
+`dist/Change of Heart.app`. Le bundle utilise la fenêtre Cocoa et le moteur
+WebKit de macOS ; Python et les dépendances sont inclus, donc aucun environnement
+Python n'est requis sur le Mac destinataire. Le build est natif de l'architecture
+du Mac qui le produit (`arm64` sur Apple Silicon, `x86_64` sur Mac Intel).
+Les sauvegardes présentes dans Steam, CrossOver ou Whisky sont détectées
+automatiquement ; le sélecteur manuel reste disponible pour tout autre chemin.
 
 ### 🩺 Troubleshooting: app window opens but nothing works
 If the editor launches but buttons are dead / saves aren't detected, your **Microsoft Edge WebView2 Runtime** is likely broken (it auto-updates independently of the app and can silently fail after an update):

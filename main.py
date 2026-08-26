@@ -1,6 +1,6 @@
-"""
-Persona 5 Royal Save Editor — Standalone Native Desktop Application
-Powered by PyWebView (Native Edge WebView2 Engine)
+"""Persona 5 Royal Save Editor — standalone native desktop application.
+
+PyWebView uses Edge WebView2 on Windows and Cocoa/WebKit on macOS.
 """
 
 import os
@@ -28,6 +28,16 @@ from core import instances
 import webbrowser
 
 _HTTPD = None
+
+
+def native_gui_backend(platform: str | None = None) -> str | None:
+    """Return the OS-native pywebview backend for the current platform."""
+    platform = platform or sys.platform
+    if platform == "darwin":
+        return "cocoa"
+    if platform == "win32":
+        return "edgechromium"
+    return None
 
 
 def start_background_server() -> int:
@@ -83,17 +93,13 @@ def main() -> None:
 
     url = f"http://127.0.0.1:{port}/"
 
-    # 3. If webview is available, create native desktop window (Edge WebView2)
+    # 3. Create an OS-native desktop window (Cocoa/WebKit or Edge WebView2).
     if webview is not None:
         browser_fallback_used = []
         window = None
 
         def ui_watchdog(timeout_s: float = 45.0) -> None:
-            """If the native window's JS never pings /api/ui-heartbeat, the
-            WebView2 UI booted dead (broken runtime — silent no-buttons, dead
-            file picker). Close the dead window and auto-open the system
-            browser instead of leaving the user with a window that does
-            nothing.
+            """Fall back to the browser if the native UI never becomes alive.
 
             45s (not 30s): slow machines can take >30s just to reach DOM
             ready, and discovery runs after that — a healthy-but-slow window
@@ -106,8 +112,8 @@ def main() -> None:
                 time.sleep(1.0)
             print(
                 f"[Change of Heart] Native UI showed no signs of life after "
-                f"{int(timeout_s)}s — likely a broken WebView2 Runtime on this "
-                f"machine. Opening the editor in your default browser instead "
+                f"{int(timeout_s)}s — the native web engine may be unavailable. "
+                f"Opening the editor in your default browser instead "
                 f"and closing the dead window.",
                 flush=True,
             )
@@ -130,7 +136,11 @@ def main() -> None:
                 background_color="#0A0A0F",
                 text_select=True,
             )
-            webview.start(gui="edgechromium", debug=False)
+            gui = native_gui_backend()
+            if gui is None:
+                webview.start(debug=False)
+            else:
+                webview.start(gui=gui, debug=False)
             if not browser_fallback_used:
                 # Normal exit: user closed a healthy native window.
                 instances.clear()
@@ -152,7 +162,7 @@ def main() -> None:
                     stop_background_server()
                     return
         except Exception as e:
-            print(f"[Change of Heart] WebView2 init notice ({e}), launching in browser: {url}")
+            print(f"[Change of Heart] Native UI init notice ({e}), launching in browser: {url}")
             instances.clear()
             stop_background_server()
 
