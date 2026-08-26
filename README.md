@@ -1,252 +1,260 @@
-# 🎭 CHANGE OF HEART — Persona 5 Royal Save Studio
-*A modern binary save editor & 100% compendium utility for Persona 5 Royal (PC / Steam)*  
-*Engineered by **j0nny DiGITAL***
+# Change of Heart — Persona 5 Royal Save Editor for macOS
+
+Un éditeur de sauvegardes Persona 5 Royal conçu pour fonctionner comme une
+application macOS autonome sur les Mac Apple Silicon.
 
 <p align="center">
-  <img src="change_of_heart_logo.jpg" alt="CHANGE OF HEART Logo" width="320" style="border-radius:8px; box-shadow:0 0 25px rgba(230,0,18,0.5);">
+  <img src="change_of_heart_logo.jpg" alt="Change of Heart" width="360">
 </p>
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Steam%20Deck-red?style=for-the-badge&logo=steam)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Built With](https://img.shields.io/badge/Built%20With-100%25%20Vibecoded%20⚡-ff007f?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![Tests](https://img.shields.io/badge/Tests-168%2F168%20Passing%20(100%25)-brightgreen?style=for-the-badge)](https://github.com/j0nnyDiGITAL/change-of-heart)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20j0nny%20DiGITAL-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
+<p align="center">
+  <a href="https://github.com/SltcYann/change-of-heart-mac"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20arm64-black?style=for-the-badge&logo=apple" alt="macOS Apple Silicon"></a>
+  <a href="https://github.com/SltcYann/change-of-heart-mac"><img src="https://img.shields.io/badge/Tests-173%20passing-brightgreen?style=for-the-badge" alt="173 tests passing"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"></a>
+</p>
 
-**CHANGE OF HEART** is a modern, standalone save editor and binary reverse-engineering studio for **Persona 5 Royal (PC / Steam)**. Built with a full **Phantom Thieves** visual interface, automatic Steam save detection, mathematical bitfield manipulation, and dual-layer CRC32 cryptographic re-signing.
+## Version macOS
 
-> [!NOTE]
-> ⚡ **100% Pure Vibecoded**: This entire application — from the AES-256 binary cryptography and multi-save oracle diffing to the standalone desktop UI and test suite — was built and reverse-engineered collaboratively via AI-driven pair programming sessions between **j0nnyDiGITAL**, **Hermes Agent**, and **Antigravity**.
+Cette version transforme l’éditeur Windows d’origine en véritable bundle
+`Change of Heart.app` pour macOS :
 
----
+- exécutable Mach-O natif `arm64` ;
+- fenêtre macOS Cocoa utilisant WebKit ;
+- moteur Python et dépendances entièrement intégrés dans l’application ;
+- aucun besoin d’installer Python sur le Mac qui exécute le bundle ;
+- détection automatique des sauvegardes Steam, CrossOver et Whisky ;
+- serveur interne limité à `127.0.0.1` avec protection contre les requêtes
+  provenant de sites externes.
 
-## 📜 The Origin Story & Reverse-Engineering Journey
+Le moteur de manipulation des sauvegardes reste celui du projet original. Il
+n’a pas été réécrit en Swift afin de conserver les tests et les protections qui
+empêchent la corruption des fichiers.
 
-For years, the PC Steam version of *Persona 5 Royal* lacked a complete, open-source save editor. While basic cheat tables existed for live memory in Cheat Engine, the encrypted binary `.DAT` save format on PC had several unmapped "black box" regions that caused previous community tools to corrupt saves or fail silently.
+## Compatibilité
 
-This project was built across intensive collaborative AI-assisted reverse-engineering sessions:
+| Environnement | État |
+|---|---|
+| Mac Apple Silicon | **Pris en charge et testé** |
+| Architecture | `arm64` |
+| macOS minimum déclaré | macOS 12 Monterey |
+| Fenêtre native | Cocoa + WebKit |
+| Mac Intel | Non testé, aucun bundle `x86_64` fourni actuellement |
+| CrossOver | Détection automatique prise en charge |
+| Whisky | Détection automatique prise en charge |
+| Steam macOS | Recherche dans le dossier `userdata` prise en charge |
 
-### Phase 1: Cryptographic Pipeline & Core Memory Mapping (Hermes Agent)
-- **Container Decryption & CRC Integrity:** Reverse-engineered Atlus's custom container wrapping, implementing textbook AES-256-CBC decryption alongside dual-layer CRC32 checksum calculation for both the header (`0x00000000`) and data payload (`0x00000020`).
-- **Confidant & Social Structs:** Mapped the 16-byte fixed stride at `0x136A0` (`[6 pad][u16 ID][u16 Rank][u16 Points][4 pad]`), uncovering the story-gating point thresholds and romance bitfields.
-- **The Dual-Pane Inventory Engine:** Decoded the 298-item master inventory table at `0x13000` spanning all 8 item categories (Melee, Guns, Armor, Accessories, Consumables, Tools, Skill Cards, and Treasure).
+Les Mac Apple Silicon regroupent les machines équipées d’une puce Apple de la
+famille M. Le bundle actuellement produit n’est pas universel : il ne contient
+pas de tranche Intel `x86_64`.
 
-### Phase 2: The Compendium Breakthrough (Hermes & Antigravity)
-- **The "Unsolvable" Compendium Blob:** Previous modding guides assumed the compendium was stored at `0x20000` (legacy PS4 format) or that it tracked owned stock.
-- **Multi-Save Oracle Diffing:** Hermes Agent established a mathematical lattice across 7 independent save files spanning different dates (Early June → December → NG++ February). 
-- **The 232-Bit LSB Discovery:** Just before an API connection dropout, Hermes isolated candidate bits at `0x09973`. Antigravity resumed the session, writing `compendium_verify.py` and proving the 5 mathematical proofs:
-  1. *Strict Monotonic Growth:* Registrations strictly increased with gameplay ($33 \to 201 \to 217 \to 224$ set bits).
-  2. *Party Persona Exclusion:* Party members (*Goemon, Johanna, Milady, etc.*) were naturally absent from the mask because they cannot be registered at the Velvet Room.
-  3. *Held $\neq$ Registered:* Stock personas held in inventory but never registered at the Velvet Room did not have their bits set.
-  4. *The Synchronized Mirror:* Discovered that the game maintains an authoritative primary mask at `0x09973` and a mirror copy at `0x21E83` (`+0x18510` offset) that must both be synced.
+## Construire l’application
 
-### Phase 3: Desktop Standalone & UI Polish
-- Wrapped the entire application in a high-performance, single-executable desktop window (native PyWebView / Edge WebView2 engine hosting a stdlib HTTP backend).
-- Integrated official 232-Persona high-res character artwork, instant search filters, and 1-click rescue guardrails.
+### Prérequis
 
----
-
-## ✨ Features
-
-### 📖 1. Granular Persona Compendium & 1-Click 100% Unlock
-* **Reverse-Engineered Compendium Bitfield:** Full decoding of the 232-persona registration bitmask at `0x09973` and its synchronized mirror at `0x21E83`.
-* **Granular Matrix Control:** Search and toggle individual Personas (registered vs locked) with live character portraits.
-* **1-Click Smart Batch Unlocks:** 
-  * `⚡ Unlock All (100%)`
-  * `🎭 Unlock DLC Only` (*Orpheus, Izanagi, Kaguya, Raoul, etc.*)
-  * `💎 Unlock Treasure Demons Only` (*Regent, Orlov, Crystal Skull, etc.*)
-
-### 🛡️ 2. "3rd Semester Rescue" & Story Guardrails
-* **1-Click 3rd Semester Unlock:** Missed the November 17 deadline? One click safely sets Maruki (Rank 9), Kasumi (Rank 5), and Akechi (Rank 8) to qualify for the Royal 3rd Semester without breaking story logic.
-* **Sequence-Breaking Protection:** Built-in validation prevents setting Kasumi past Rank 5 before January or Maruki after his departure deadline.
-
-### 🃏 3. All 23 Confidant Arcanas
-* Edit Confidant ranks (`0–10`) and underlying affinity points at `0x136A0`.
-* Human-first character dossiers with official Atlus character art and perk milestones.
-
-### ⚔️ 4. Velvet Room & 12-Slot Persona Deck
-* Customize Joker's full 12-slot Persona stock: Level (1–99), Core Stats (St, Ma, En, Ag, Lu), Special Traits, and 8 Custom Skill slots.
-* **1-Click God-Tier Builds:** Pre-configured tournament-legal movesets for *Yoshitsune (Hassou Tobi)*, *Izanagi-no-Okami Picaro (Myriad Truths)*, *Raoul (Phantom Show)*, *Alice (Die for Me!)*, and *Satanael*.
-* Real-time **Elemental Affinity Engine** calculating Phys, Gun, Fire, Ice, Elec, Wind, Psy, Nuke, Bless, Curse resistances based on equipped passive skills.
-
-### 🎒 5. Persona 5 Royal Item Studio
-* **In-Game Inventory View:** The left pane shows **only the items you actually carry** in your current save — matching P5R's own bag screen 1:1, sorted in authentic in-game effect priority (HP recovery → SP recovery → Status → Battle items).
-* **+ ADD ITEM Catalog Modal:** A dedicated searchable drawer browses the full 2,204-item master catalog (Consumables, Infiltration Tools, Skill Cards, Melee, Guns, Armor, Accessories, Treasure, Key Items) with `+1x` and `+99x` add buttons and real-time `IN BAG` ownership badges.
-* **9-Category Tab Bar** with live pocket counts: `🧪 Items`, `🔑 Tools`, `🎴 Cards`, `🗡️ Melee`, `🔫 Guns`, `🛡️ Armor`, `💍 Accs`, `💎 Loot`, `📜 Key`.
-* **Inline Quantity Steppers:** `[-]`, `[+]`, `[99x]`, and red `[✕]` discard on every row.
-* **Live Item Dossier (Right Pane):** In-game effect text, hex ID, bag quantity counter (`[-10] [-1] [+1] [+10]`), `SET TO 99x (MAX)`, and `DISCARD (REMOVE)`.
-* **1-Click Batch Presets:** Max Current Tab, 99x Leblanc Curry & Coffee, Infiltration Kit, Clinic Meds, Reset Bag.
-
-### 🔒 6. Bulletproof Safety & Cryptography
-* **100% Native AES-256-CBC Decryption & Encryption** matching Atlus PC standards.
-* **Dual-Layer CRC32 Checksum Calculator:** Recalculates both header (`0x00000000`) and data payload (`0x00000020`) checksums on every save.
-* **Automated Immutable Backups:** Creates timestamped ZIP snapshots in `savedata/backups/` before writing any changes.
-* **Process Conflict Watcher:** Detects if `P5R.exe` is running to prevent Steam Cloud overwrite collisions.
-
----
-
-## 🚀 Quick Start (Standalone App)
-
-1. Download the latest **`P5R_Save_Editor.exe`** from the [**Releases**](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest) tab.
-2. Double-click to run — it opens a self-contained native window (PyWebView / Edge WebView2 engine) hosting the local studio. Fully self-contained: no Python install required. The bundled backend serves on `127.0.0.1:3000`.
-3. Select your Steam save slot from the dropdown and click **LOAD SAVE**.
-4. Make your edits and click **★ RE-SIGN & SAVE TO DISK**.
-
-## 📥 Download Standalone Executable
-
-No Python or terminal required! Just grab the latest standalone release:  
-👉 **[Download CHANGE_OF_HEART_v1.1.0.zip (Latest Release)](https://github.com/j0nnyDiGITAL/change-of-heart/releases/latest)**
-
-1. Download and extract `CHANGE_OF_HEART_v1.1.0.zip`.
-2. Double-click `P5R_Save_Editor.exe`.
-3. The editor will automatically detect your Steam saves and open the studio window.
-
----
-
-## 📋 Changelog
-
-### v1.1.1 (upcoming) — Security Audit & Robustness Fixes
-> External full-project audit: every finding fixed.
-
-- **🔒 CSRF Hardening:** The local API now validates browser `Origin` headers (loopback only); foreign origins get `403`. Replaced wildcard `Access-Control-Allow-Origin: *` with validated reflection — malicious web pages can no longer drive the local save API while the editor runs.
-- **🧰 Fresh-Clone Reproducibility:** `scripts/roundtrip_harness.py` and the `lint:context` shim (`tools/lint_context.js`) are now tracked — the test suite and lint gate no longer break on a fresh clone.
-- **🕵️ Privacy:** Username/Steam-ID paths removed from tracked tests (glob-based Steam save discovery + `P5R_ORACLE_DIR` env override).
-- **📦 Dependencies:** Dropped unused `bottle`; added `psutil`. Root legacy `HANDOFF.md` archived.
-
-### v1.1.0 — Party Evolutions, Romance Toggle & Save Discovery Hotfix
-- **⚡ Persona Evolution Tiers (1–3)** selector for all party members (Base/Awakened/Royal forms).
-- **💖 Romance / Friendship route toggle** for Rank 9+ confidants on PC saves (`0x136A0` bit `0x02`).
-- **🔄 Level ↔ EXP auto-sync** using the authentic Atlus cubic curve — prevents post-battle EXP stalls after level edits.
-- **🔧 Fixed Haru (Slot 6) / Futaba (Slot 7) party swap.**
-- **📂 Multi-location save auto-discovery** (Steam Userdata / LocalAppData / GamePass paths) + manual `📂 BROWSE...` file picker.
-- **🔑 Key Items unlockable** via the Cheat Shop catalog (confirm-gated).
-- **🖥️ WebView2 bundling hotfix:** EXE rebuilt on Python 3.14.6 + PyInstaller 6.22.0 embedding the full `pywebview` runtime — fixes browser-fallback regression.
-
-### v1.0.10 — Compendium 100% Unlock Fix (Genuine-Save Parity)
-> *"Why does it say 96%?"* — fixed, and proven in-game.
-
-- **🐛 The 96% Compendium Bug — Root-Caused & Fixed:** Unlock ALL previously staged a *filtered* persona list; on save, unlisted personas (party Personas, Satanael variants, etc.) had their registration bits **actively cleared** and their Velvet Room records never written. The game's `Completed %` counts Velvet Room **records** (~232 denominator), not the mask — so partial records = 96%.
-- **✅ Genuine-Save Parity:** Unlock ALL now triggers the verified backend full unlock: all **224 live registration bits** (party & Satanael bits included — genuine 100% saves set them too) plus all **232 Velvet Room records**, byte-equivalent to a real 100% NG+ save.
-- **🧪 157/157 Unit Tests** including 4 new wiring regression tests (`TestCompendiumUnlockAllWiring`).
-- **🎮 Verified In-Game** on two independent saves (one surgically repaired, one via the new Unlock ALL flow): both show **Completed 100%**, no greyed Satanael ghost.
-
-### v1.0.9 — In-Game Parity, Master Inventory Overhaul & Full Compendium
-- **🗃️ 10-Category Master Inventory:** unique equipment tracked by ownership flags (Melee `0x1B30`, Ranged `0x3430` — all 106 guns mapped, Outfits `0x3230` — all 286 costumes), stackables by count arrays (Armor/Accessories/Consumables/Skill Cards/Tools/Treasure), zero phantom items, engine mirror sync.
-- **🖋️ Full-Spectrum Name Editor:** dual UTF-8 + Atlus font-glyph encoding across 8 primary/mirror blocks — names stick in dialogue, status screens, and calling cards.
-- **🃏 Clean 100% Compendium:** Satanael ghost bug fixed (`0xD3` mask-only); authentic 232-record structure.
-- **🛡️ Guarded Key Items** + dynamic asset packaging. See `docs/RELEASE_NOTES_v1.0.9.md`.
-
-### v1.0.8 — In-Game Parity Fixes: Names, Master Items & Compendium
-- **🔤 Names** serialize into the in-game dialogue payload (`0x13840` family + mirrors), not just the header preview.
-- **🎒 Item quantities** write to the authoritative master count array (`0x2410..0x2800` sub-bases) — no more 30-slot cap silently dropping items.
-- **📖 Compendium math** corrected to the true 224-registerable denominator. See `patch_notes_v1.0.8.md`.
-
-### v1.0.7 — Item Studio Rework: In-Game Inventory Behavior
-> *"How would a real human want to use this?"*
-
-- **🎒 In-Game Inventory View (Breaking Change):** The item list now shows **only items you actually carry**, matching P5R's real bag screen behavior. No more cluttered `✕ 0` entries for every unowned item in the database.
-- **➕ Add Item Modal:** Click the new `+ ADD ITEM` button to open a searchable catalog of all 2,204 game items filtered to the active category, with `+1x` and `+99x` add buttons and live `IN BAG (✕N)` ownership badges.
-- **🗑️ Discard Button:** A red `[✕]` discard button on every row and a `DISCARD (REMOVE)` button in the dossier instantly removes items from the bag (sets quantity to 0 and removes the slot).
-- **🎯 Empty Pocket UX:** When a category pocket is empty, the list shows a contextual `+ ADD [CATEGORY] ITEM` shortcut button pointing directly to the catalog modal.
-- **🔧 Sort Fix:** Restored missing `P5R_ITEM_SORT_PRIORITY` and `getItemSortRank()` functions that had been accidentally deleted, causing a `ReferenceError` that rendered all item pockets blank.
-
-### v1.0.6 — Standalone Launcher & Audit Hardening
-- **🖥️ Audit Hardening & Build Presets:** Compendium safe-unlock, teammate story-locks, and god-tier build ID fixes. The app runs as a native PyWebView (Edge WebView2) window over a bundled stdlib HTTP backend on `127.0.0.1:3000`.
-- **⚡ God-Tier Build Presets Fixed:** All persona/skill/trait IDs re-verified against the real `data/` tables (Yoshitsune 365→87, Raoul 333→363, Izanagi-no-Okami Picaro 305→366).
-- **📖 Compendium Safe Unlock (224/232):** Unlock-all now registers only the 224 bits the game can legitimately set. 8 dead IDs excluded (Metatron, Anat, Prometheus + 5 P5-legacy duplicates).
-- **🛡️ Dummy Skill Rejection:** BLANK/placeholder skill IDs (0x0000–0x0009 + named placeholders) filtered from web dropdowns and rejected in persona writes.
-- **🚫 Legacy Persona Filter:** Cut-content entries removed from the persona picker.
-- **🔒 Teammate Persona Story-Lock:** Backend + UI refuse changing a teammate's persona identity.
-- **⚙️ Teammate LV u8 Fix:** Level written/read as a single byte at +0x3C.
-- **🧪 94/94 Unit Tests Passing.**
-
-### v1.0.5 — Joker Level / EXP Collision Fix
-- **⚡ Joker MC Level / EXP Collision Fix:** Eliminated the legacy `0x3C` money-mirror write. Yen is now written strictly to `0x35C0`.
-- **🧪 80/80 Unit Tests Passing.**
-
-### v1.0.4 — Confidant Slot Zeroing
-- **🧹 Active Confidant Slot Zeroing:** Setting a Confidant to Rank 0 now completely zeroes all 16 bytes of the slot.
-
-### v1.0.3 — Spoiler Prevention
-- **🔒 Spoiler Prevention / Un-Met Confidants:** Un-met confidants remaining at Rank 0 are no longer allocated save slots.
-- **⚡ Save Re-signing Stability:** Hardened payload deserialization across all party members, skills, and stock slots.
-
-### v1.0.2
-- **💾 Persona Flags Argument Fix:** Fixed an argument mismatch in `set_equipped_persona()` during `/api/save` re-signing.
-
-### v1.0.1
-- **⚡ Socket Readiness Polling:** Added active socket polling in `main.py` to eliminate `127.0.0.1` connection refused race conditions.
-
----
-
-## 🛠️ Running from Source / Development
+- un Mac Apple Silicon ;
+- [Homebrew](https://brew.sh/) ;
+- Python 3.14 installé avec Homebrew.
 
 ```bash
-# Clone the repository
-git clone https://github.com/j0nnyDiGITAL/change-of-heart.git
-cd change-of-heart
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the desktop app
-python main.py
-
-# Run the automated test suite
-python -m unittest discover -s tests -v
+brew install python@3.14
 ```
 
-### Build macOS natif
+### Build automatique
 
-Sur un Mac Apple Silicon ou Intel avec Homebrew, double-cliquez sur
-`Build_macOS.command` ou lancez-le depuis Terminal :
+Clonez le dépôt puis lancez le script de construction :
 
 ```bash
+git clone https://github.com/SltcYann/change-of-heart-mac.git
+cd change-of-heart-mac
 ./Build_macOS.command
 ```
 
-Le script crée un environnement Python isolé, exécute les tests et produit
-`dist/Change of Heart.app`. Le bundle utilise la fenêtre Cocoa et le moteur
-WebKit de macOS ; Python et les dépendances sont inclus, donc aucun environnement
-Python n'est requis sur le Mac destinataire. Le build est natif de l'architecture
-du Mac qui le produit (`arm64` sur Apple Silicon, `x86_64` sur Mac Intel).
-Les sauvegardes présentes dans Steam, CrossOver ou Whisky sont détectées
-automatiquement ; le sélecteur manuel reste disponible pour tout autre chemin.
+Le script :
 
-### 🩺 Troubleshooting: app window opens but nothing works
-If the editor launches but buttons are dead / saves aren't detected, your **Microsoft Edge WebView2 Runtime** is likely broken (it auto-updates independently of the app and can silently fail after an update):
-1. The app now detects this automatically — after ~30 seconds it reopens itself in your default web browser.
-2. To fix the native window: Windows Settings → Apps → **Microsoft Edge WebView2 Runtime** → **Modify → Repair**, then relaunch the editor.
+1. crée un environnement isolé dans `.venv-macos` ;
+2. installe PyWebView, PyObjC, PyInstaller et les dépendances cryptographiques ;
+3. exécute la suite de tests ;
+4. construit et signe localement le bundle macOS.
 
----
+Résultat :
 
-## 🔬 Memory Map & Technical Breakthroughs
+```text
+dist/Change of Heart.app
+```
 
-| Offset | Size | Component | Description |
-|:---|:---|:---|:---|
-| `0x0000` | 32 B | **Save Container Header** | Magic `0x31`, Version, Data CRC32 (`0x00`), Header CRC32 (`0x20`) |
-| `0x35C0` | 4 B | **Yen / Wallet** | Little-endian `uint32` (`¥0 .. ¥9,999,999`); `0x3C` (Joker EXP) must NOT be written (v1.0.5 fix) |
-| `0x09973` | 29 B | **Compendium Mask (Primary)** | 232-bit LSB-first bitfield (`Bit N` → Persona ID `N+1` registered) |
-| `0x21E83` | 29 B | **Compendium Mask (Mirror)** | Synchronized mirror offset (`+0x18510` from primary) |
-| `0x13000` | 1,440 B | **Master Inventory** | 30 slots × 8 item categories (`[u16 ID][u16 Qty]`) |
-| `0x136A0` | 368 B | **Confidant Block** | 23 Arcanas × 16B stride (`[6 pad][u16 ID][u16 Rank][u16 Points]`) |
-| `0x139E0` | 20 B | **Social Stats** | Knowledge, Guts, Proficiency, Kindness, Charm points |
-| `0x2F200` | 5,376 B | **Event Flag Matrix** | 43,008-bit game progression, story cutscenes, and dungeon milestones |
+Vous pouvez ensuite déplacer `Change of Heart.app` dans le dossier
+`Applications`.
 
----
+## Lancer l’application
 
-## ☕ Support the Project
+Double-cliquez sur `Change of Heart.app`.
 
-If this tool rescued your 100-hour playthrough or saved you from restarting for 3rd Semester, consider buying me a coffee:
+La version construite localement reçoit une signature macOS ad hoc. Elle est
+valide pour une utilisation locale, mais elle n’est pas encore signée avec un
+certificat Apple Developer ID ni notarisée par Apple.
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20on%20Ko--fi-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/j0nnydigital)
+Lors du premier lancement d’un bundle téléchargé, macOS peut afficher une
+alerte Gatekeeper. Dans ce cas, utilisez **clic droit → Ouvrir**, puis confirmez
+l’ouverture. Ne désactivez pas globalement les protections de macOS.
 
----
+## Trouver les sauvegardes
 
-## 📜 Important Limitations & Disclaimer
+L’application recherche automatiquement les sauvegardes Persona 5 Royal dans
+les emplacements courants.
 
-### ⚠️ Confidant Ranks & Romance Notes:
-- **Story Cutscenes & Calendar Timeline:** Modifying a Confidant's numerical rank modifies the rank stars and stat benefits in your menu. However, *Persona 5 Royal* tracks dialogue progression and romance choices via a permanent 43,000-bit narrative event matrix tied to specific calendar days.
-- **Rolling Back Ranks:** Lowering a Confidant's rank (e.g. from Rank 9 to Rank 8) will **not** replay already-completed story cutscenes if the in-game calendar has moved past that day. To redo branching dialogue choices (such as romance flags), always restore a save or automatic backup from before that hangout took place.
+### CrossOver
 
-### ⚖️ Trademark Disclaimer:
-*Persona 5 Royal* is a registered trademark of ATLUS / SEGA. This tool is a non-commercial, open-source community project and is not affiliated with or endorsed by ATLUS or SEGA. Always keep backups of your save files.
+```text
+~/Library/Application Support/CrossOver/Bottles/*/drive_c/users/*/
+AppData/Roaming/SEGA/P5R/Steam/*/savedata/
+```
+
+### Whisky
+
+```text
+~/Library/Containers/com.isaacmarovitz.Whisky/Bottles/*/drive_c/users/*/
+AppData/Roaming/SEGA/P5R/Steam/*/savedata/
+```
+
+### Steam
+
+```text
+~/Library/Application Support/Steam/userdata/*/1687950/remote/
+```
+
+Si votre sauvegarde se trouve ailleurs, utilisez le bouton de sélection
+manuelle dans l’interface.
+
+## Fonctionnalités
+
+### Informations générales
+
+- modification du prénom, du nom et du nom des Phantom Thieves ;
+- modification des yens ;
+- lecture des informations de partie, du niveau et du temps de jeu ;
+- prise en charge des sauvegardes PC/Steam Persona 5 Royal.
+
+### Confidents et statistiques sociales
+
+- modification des 23 Confidents ;
+- conservation des points d’affinité déjà accumulés ;
+- modification des cinq statistiques sociales ;
+- gestion protégée des routes romance/amitié ;
+- garde-fous contre les rangs incompatibles avec la progression de l’histoire.
+
+### Personas et équipe
+
+- édition des 12 emplacements de Personas de Joker ;
+- niveaux, statistiques, compétences et traits ;
+- synchronisation automatique niveau/EXP ;
+- choix des évolutions de Personas des membres de l’équipe ;
+- détection des personnages qui n’ont pas encore rejoint le groupe.
+
+### Compendium
+
+- édition individuelle des inscriptions ;
+- déverrouillage complet conforme aux sauvegardes PC vérifiées ;
+- synchronisation du masque principal et de sa copie miroir ;
+- protection contre les entrées mortes ou incompatibles.
+
+### Inventaire
+
+- armes de mêlée et à distance ;
+- protections et accessoires ;
+- consommables et outils d’infiltration ;
+- cartes de compétences ;
+- trésors, matériaux et objets clés ;
+- recherche globale, filtres, quantités et révision des changements avant
+  écriture.
+
+Les costumes restent volontairement en lecture seule tant que leur écriture
+n’est pas suffisamment vérifiée par comparaison de sauvegardes.
+
+## Sécurité des sauvegardes
+
+Change of Heart modifie des données binaires chiffrées. Les protections
+suivantes sont intégrées :
+
+- sauvegarde ZIP automatique avant chaque écriture ;
+- conservation d’une copie initiale immuable ;
+- écriture synchronisée des zones principale et miroir ;
+- recalcul des CRC et réapplication du chiffrement ;
+- refus d’écrire si Persona 5 Royal est détecté en cours d’exécution ;
+- avertissement lorsqu’une même sauvegarde est ouverte dans plusieurs fenêtres ;
+- validation des quantités, niveaux, identifiants et structures connues.
+
+Conservez malgré tout une copie externe de vos sauvegardes importantes et
+désactivez temporairement la synchronisation Steam Cloud pendant une opération
+sensible.
+
+## Architecture
+
+```text
+Change of Heart.app (Mach-O arm64)
+        │
+        ├── Cocoa / WebKit — fenêtre macOS
+        │
+        ├── serveur HTTP local — 127.0.0.1, port éphémère
+        │
+        ├── interface HTML / CSS / JavaScript
+        │
+        └── moteur Python
+              ├── lecture et écriture des structures P5R
+              ├── AES-256-CBC
+              ├── CRC32
+              ├── backups
+              └── contrôles d’intégrité
+```
+
+Le serveur n’écoute jamais sur le réseau local. Les fichiers de sauvegarde ne
+sont envoyés vers aucun service distant.
+
+## Développement
+
+Installation manuelle :
+
+```bash
+/opt/homebrew/bin/python3 -m venv .venv-macos
+.venv-macos/bin/python -m pip install -r requirements-build.txt
+.venv-macos/bin/python main.py
+```
+
+Tests :
+
+```bash
+.venv-macos/bin/python -m unittest discover -s tests
+.venv-macos/bin/python scripts/check-invariants.py
+npm run lint:context
+```
+
+Build PyInstaller direct :
+
+```bash
+DEVELOPER_DIR=/Library/Developer/CommandLineTools \
+  .venv-macos/bin/python -m PyInstaller \
+  P5R_Save_Editor.spec --noconfirm --clean --distpath dist
+```
+
+## Limites actuelles
+
+- le bundle actuellement produit est Apple Silicon uniquement ;
+- Intel `x86_64` et `universal2` ne sont pas encore testés ;
+- la signature publique Developer ID et la notarisation Apple restent à faire ;
+- l’éditeur cible le format de sauvegarde PC/Steam de Persona 5 Royal, pas les
+  sauvegardes PlayStation ;
+- certaines données d’histoire complexes restent volontairement non modifiables
+  lorsqu’aucun mapping suffisamment sûr n’est disponible.
+
+## Projet original et crédits
+
+Le moteur de Change of Heart est issu du projet communautaire créé par
+**j0nny DiGITAL**, avec des travaux de rétro-ingénierie et de validation menés
+avec Hermes Agent et Antigravity. Cette variante ajoute le packaging, le moteur
+de fenêtre et la détection de sauvegardes nécessaires à macOS.
+
+Persona 5 Royal est une marque d’ATLUS et SEGA. Ce projet communautaire n’est ni
+affilié à ATLUS/SEGA, ni approuvé par eux.
+
+## Licence
+
+Le projet est distribué sous licence [MIT](LICENSE).
