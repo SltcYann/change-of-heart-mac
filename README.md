@@ -1,7 +1,7 @@
 # Change of Heart — Persona 5 Royal Save Editor for macOS
 
-Un éditeur de sauvegardes Persona 5 Royal conçu pour fonctionner comme une
-application macOS autonome sur les Mac Apple Silicon.
+A Persona 5 Royal save editor packaged as a standalone macOS application for
+Apple Silicon Macs.
 
 <p align="center">
   <img src="change_of_heart_logo.jpg" alt="Change of Heart" width="360">
@@ -13,55 +13,54 @@ application macOS autonome sur les Mac Apple Silicon.
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-## Version macOS
+## macOS Edition
 
-Cette version transforme l’éditeur Windows d’origine en véritable bundle
-`Change of Heart.app` pour macOS :
+This edition turns the original Windows editor into a proper
+`Change of Heart.app` bundle for macOS:
 
-- exécutable Mach-O natif `arm64` ;
-- fenêtre macOS Cocoa utilisant WebKit ;
-- moteur Python et dépendances entièrement intégrés dans l’application ;
-- aucun besoin d’installer Python sur le Mac qui exécute le bundle ;
-- détection automatique des sauvegardes Steam, CrossOver et Whisky ;
-- serveur interne limité à `127.0.0.1` avec protection contre les requêtes
-  provenant de sites externes.
+- native `arm64` Mach-O executable;
+- Cocoa window powered by the macOS WebKit engine;
+- Python runtime and all dependencies embedded in the application;
+- no Python installation required on the Mac running the finished bundle;
+- automatic Steam, CrossOver, and Whisky save discovery;
+- internal server restricted to `127.0.0.1`, with protection against requests
+  originating from external websites.
 
-Le moteur de manipulation des sauvegardes reste celui du projet original. Il
-n’a pas été réécrit en Swift afin de conserver les tests et les protections qui
-empêchent la corruption des fichiers.
+The original save-editing engine has not been rewritten in Swift. Keeping the
+existing Python engine preserves its test coverage and the safeguards designed
+to prevent save corruption.
 
-## Compatibilité
+## Compatibility
 
-| Environnement | État |
+| Environment | Status |
 |---|---|
-| Mac Apple Silicon | **Pris en charge et testé** |
+| Apple Silicon Mac | **Supported and tested** |
 | Architecture | `arm64` |
-| macOS minimum déclaré | macOS 12 Monterey |
-| Fenêtre native | Cocoa + WebKit |
-| Mac Intel | Non testé, aucun bundle `x86_64` fourni actuellement |
-| CrossOver | Détection automatique prise en charge |
-| Whisky | Détection automatique prise en charge |
-| Steam macOS | Recherche dans le dossier `userdata` prise en charge |
+| Declared minimum macOS version | macOS 12 Monterey |
+| Native window | Cocoa + WebKit |
+| Intel Mac | Untested; no `x86_64` bundle is currently provided |
+| CrossOver | Automatic save discovery supported |
+| Whisky | Automatic save discovery supported |
+| Steam for macOS | Searches the standard `userdata` directory |
 
-Les Mac Apple Silicon regroupent les machines équipées d’une puce Apple de la
-famille M. Le bundle actuellement produit n’est pas universel : il ne contient
-pas de tranche Intel `x86_64`.
+Apple Silicon covers Macs equipped with Apple M-series processors. The current
+bundle is not universal and does not include an Intel `x86_64` slice.
 
-## Construire l’application
+## Building the Application
 
-### Prérequis
+### Requirements
 
-- un Mac Apple Silicon ;
-- [Homebrew](https://brew.sh/) ;
-- Python 3.14 installé avec Homebrew.
+- an Apple Silicon Mac;
+- [Homebrew](https://brew.sh/);
+- Python 3.14 installed through Homebrew.
 
 ```bash
 brew install python@3.14
 ```
 
-### Build automatique
+### Automated build
 
-Clonez le dépôt puis lancez le script de construction :
+Clone the repository and run the build script:
 
 ```bash
 git clone https://github.com/SltcYann/change-of-heart-mac.git
@@ -69,38 +68,37 @@ cd change-of-heart-mac
 ./Build_macOS.command
 ```
 
-Le script :
+The script:
 
-1. crée un environnement isolé dans `.venv-macos` ;
-2. installe PyWebView, PyObjC, PyInstaller et les dépendances cryptographiques ;
-3. exécute la suite de tests ;
-4. construit et signe localement le bundle macOS.
+1. creates an isolated `.venv-macos` Python environment;
+2. installs PyWebView, PyObjC, PyInstaller, and the cryptographic dependencies;
+3. runs the complete test suite;
+4. builds and locally signs the macOS application bundle.
 
-Résultat :
+Output:
 
 ```text
 dist/Change of Heart.app
 ```
 
-Vous pouvez ensuite déplacer `Change of Heart.app` dans le dossier
-`Applications`.
+You can then move `Change of Heart.app` into your `Applications` folder.
 
-## Lancer l’application
+## Running the Application
 
-Double-cliquez sur `Change of Heart.app`.
+Double-click `Change of Heart.app`.
 
-La version construite localement reçoit une signature macOS ad hoc. Elle est
-valide pour une utilisation locale, mais elle n’est pas encore signée avec un
-certificat Apple Developer ID ni notarisée par Apple.
+Locally built versions receive an ad hoc macOS signature. This is valid for
+local use, but the application is not yet signed with an Apple Developer ID or
+notarized by Apple.
 
-Lors du premier lancement d’un bundle téléchargé, macOS peut afficher une
-alerte Gatekeeper. Dans ce cas, utilisez **clic droit → Ouvrir**, puis confirmez
-l’ouverture. Ne désactivez pas globalement les protections de macOS.
+When opening a downloaded build for the first time, macOS may display a
+Gatekeeper warning. If this happens, right-click the application, select
+**Open**, and confirm. Do not disable macOS security protections globally.
 
-## Trouver les sauvegardes
+## Finding Your Saves
 
-L’application recherche automatiquement les sauvegardes Persona 5 Royal dans
-les emplacements courants.
+The application automatically searches the most common Persona 5 Royal save
+locations.
 
 ### CrossOver
 
@@ -122,96 +120,93 @@ AppData/Roaming/SEGA/P5R/Steam/*/savedata/
 ~/Library/Application Support/Steam/userdata/*/1687950/remote/
 ```
 
-Si votre sauvegarde se trouve ailleurs, utilisez le bouton de sélection
-manuelle dans l’interface.
+If your save is stored elsewhere, use the manual file picker in the application.
 
-## Fonctionnalités
+## Features
 
-### Informations générales
+### General save information
 
-- modification du prénom, du nom et du nom des Phantom Thieves ;
-- modification des yens ;
-- lecture des informations de partie, du niveau et du temps de jeu ;
-- prise en charge des sauvegardes PC/Steam Persona 5 Royal.
+- edit the protagonist's first name, last name, and Phantom Thieves name;
+- edit the yen balance;
+- read the current date, player level, difficulty, and play time;
+- support for the Persona 5 Royal PC/Steam save format.
 
-### Confidents et statistiques sociales
+### Confidants and social stats
 
-- modification des 23 Confidents ;
-- conservation des points d’affinité déjà accumulés ;
-- modification des cinq statistiques sociales ;
-- gestion protégée des routes romance/amitié ;
-- garde-fous contre les rangs incompatibles avec la progression de l’histoire.
+- edit all 23 Confidants;
+- preserve already accumulated bond points;
+- edit all five social stats;
+- guarded friendship and romance route handling;
+- protection against ranks that conflict with story progression.
 
-### Personas et équipe
+### Personas and party members
 
-- édition des 12 emplacements de Personas de Joker ;
-- niveaux, statistiques, compétences et traits ;
-- synchronisation automatique niveau/EXP ;
-- choix des évolutions de Personas des membres de l’équipe ;
-- détection des personnages qui n’ont pas encore rejoint le groupe.
+- edit all 12 of Joker's Persona slots;
+- adjust levels, stats, skills, and traits;
+- synchronize levels and EXP automatically;
+- select party-member Persona evolution tiers;
+- detect characters who have not yet joined the party.
 
 ### Compendium
 
-- édition individuelle des inscriptions ;
-- déverrouillage complet conforme aux sauvegardes PC vérifiées ;
-- synchronisation du masque principal et de sa copie miroir ;
-- protection contre les entrées mortes ou incompatibles.
+- edit individual registrations;
+- perform a full unlock matching verified PC saves;
+- synchronize the primary mask and its mirror copy;
+- reject dead or incompatible entries.
 
-### Inventaire
+### Inventory
 
-- armes de mêlée et à distance ;
-- protections et accessoires ;
-- consommables et outils d’infiltration ;
-- cartes de compétences ;
-- trésors, matériaux et objets clés ;
-- recherche globale, filtres, quantités et révision des changements avant
-  écriture.
+- melee and ranged weapons;
+- protectors and accessories;
+- consumables and infiltration tools;
+- skill cards;
+- treasure, materials, and key items;
+- global search, filters, quantities, and a change review before writing.
 
-Les costumes restent volontairement en lecture seule tant que leur écriture
-n’est pas suffisamment vérifiée par comparaison de sauvegardes.
+Outfits remain intentionally read-only until their save-writing behavior has
+been proven safe through controlled save comparisons.
 
-## Sécurité des sauvegardes
+## Save Safety
 
-Change of Heart modifie des données binaires chiffrées. Les protections
-suivantes sont intégrées :
+Change of Heart modifies encrypted binary data. The following safeguards are
+built in:
 
-- sauvegarde ZIP automatique avant chaque écriture ;
-- conservation d’une copie initiale immuable ;
-- écriture synchronisée des zones principale et miroir ;
-- recalcul des CRC et réapplication du chiffrement ;
-- refus d’écrire si Persona 5 Royal est détecté en cours d’exécution ;
-- avertissement lorsqu’une même sauvegarde est ouverte dans plusieurs fenêtres ;
-- validation des quantités, niveaux, identifiants et structures connues.
+- automatic ZIP backup before every write;
+- permanent preservation of the initial untouched copy;
+- synchronized writes to the primary and mirror regions;
+- CRC recalculation and encryption after editing;
+- refusal to write while Persona 5 Royal is detected as running;
+- warning when the same save is open in multiple windows;
+- validation of quantities, levels, identifiers, and known structures.
 
-Conservez malgré tout une copie externe de vos sauvegardes importantes et
-désactivez temporairement la synchronisation Steam Cloud pendant une opération
-sensible.
+You should still keep a separate copy of important saves and temporarily pause
+Steam Cloud synchronization during sensitive operations.
 
 ## Architecture
 
 ```text
 Change of Heart.app (Mach-O arm64)
         │
-        ├── Cocoa / WebKit — fenêtre macOS
+        ├── Cocoa / WebKit — native macOS window
         │
-        ├── serveur HTTP local — 127.0.0.1, port éphémère
+        ├── local HTTP server — 127.0.0.1, ephemeral port
         │
-        ├── interface HTML / CSS / JavaScript
+        ├── HTML / CSS / JavaScript interface
         │
-        └── moteur Python
-              ├── lecture et écriture des structures P5R
+        └── embedded Python engine
+              ├── P5R structure reader and writer
               ├── AES-256-CBC
               ├── CRC32
               ├── backups
-              └── contrôles d’intégrité
+              └── integrity checks
 ```
 
-Le serveur n’écoute jamais sur le réseau local. Les fichiers de sauvegarde ne
-sont envoyés vers aucun service distant.
+The internal server never listens on the local network. Save files are not sent
+to any remote service.
 
-## Développement
+## Development
 
-Installation manuelle :
+Manual setup:
 
 ```bash
 /opt/homebrew/bin/python3 -m venv .venv-macos
@@ -219,7 +214,7 @@ Installation manuelle :
 .venv-macos/bin/python main.py
 ```
 
-Tests :
+Tests:
 
 ```bash
 .venv-macos/bin/python -m unittest discover -s tests
@@ -227,7 +222,7 @@ Tests :
 npm run lint:context
 ```
 
-Build PyInstaller direct :
+Direct PyInstaller build:
 
 ```bash
 DEVELOPER_DIR=/Library/Developer/CommandLineTools \
@@ -235,26 +230,25 @@ DEVELOPER_DIR=/Library/Developer/CommandLineTools \
   P5R_Save_Editor.spec --noconfirm --clean --distpath dist
 ```
 
-## Limites actuelles
+## Current Limitations
 
-- le bundle actuellement produit est Apple Silicon uniquement ;
-- Intel `x86_64` et `universal2` ne sont pas encore testés ;
-- la signature publique Developer ID et la notarisation Apple restent à faire ;
-- l’éditeur cible le format de sauvegarde PC/Steam de Persona 5 Royal, pas les
-  sauvegardes PlayStation ;
-- certaines données d’histoire complexes restent volontairement non modifiables
-  lorsqu’aucun mapping suffisamment sûr n’est disponible.
+- the current bundle is Apple Silicon only;
+- Intel `x86_64` and `universal2` builds have not been tested;
+- public Developer ID signing and Apple notarization are not yet configured;
+- the editor targets Persona 5 Royal PC/Steam saves, not PlayStation saves;
+- complex story data remains intentionally read-only whenever no sufficiently
+  safe mapping is available.
 
-## Projet original et crédits
+## Original Project and Credits
 
-Le moteur de Change of Heart est issu du projet communautaire créé par
-**j0nny DiGITAL**, avec des travaux de rétro-ingénierie et de validation menés
-avec Hermes Agent et Antigravity. Cette variante ajoute le packaging, le moteur
-de fenêtre et la détection de sauvegardes nécessaires à macOS.
+The Change of Heart engine comes from the community project created by
+**j0nny DiGITAL**, with reverse-engineering and validation work performed with
+Hermes Agent and Antigravity. This edition adds the packaging, native window
+backend, and save-discovery support required for macOS.
 
-Persona 5 Royal est une marque d’ATLUS et SEGA. Ce projet communautaire n’est ni
-affilié à ATLUS/SEGA, ni approuvé par eux.
+Persona 5 Royal is a trademark of ATLUS and SEGA. This community project is not
+affiliated with or endorsed by ATLUS or SEGA.
 
-## Licence
+## License
 
-Le projet est distribué sous licence [MIT](LICENSE).
+This project is distributed under the [MIT License](LICENSE).

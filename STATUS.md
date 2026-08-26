@@ -9,7 +9,7 @@
 - **Mode:** single-agent
 
 ## Last Completed
-- 2026-08-26: README rewritten end-to-end for the macOS edition — clearly identifies the verified Apple Silicon `arm64` build, Intel status, Cocoa/WebKit architecture, CrossOver/Whisky discovery, build instructions, Gatekeeper behavior and current limitations.
+- 2026-08-26: English README rewritten end-to-end for the macOS edition — clearly identifies the verified Apple Silicon `arm64` build, Intel status, Cocoa/WebKit architecture, CrossOver/Whisky discovery, build instructions, Gatekeeper behavior and current limitations.
 - 2026-08-26: Native macOS Apple Silicon build — `Change of Heart.app` now uses Cocoa/WebKit, bundles Python 3.14 and all dependencies, detects Steam/CrossOver/Whisky saves, passes 173 tests, validates its ad-hoc signature, and passed a live UI heartbeat + API discovery smoke test.
 - 2026-08-24 (later): FIXED bond-points wipe bug (zamasu2020, r/Persona5Royale) — social-stat edits were resetting ALL confidants' accumulated bond points to rank thresholds via the full-confidant re-save loop; same-rank rewrites now preserve exact points, rank-ups preserve carryover (max logic), social stats same treatment. 4 regression tests (174/174). EXE rebuilt.
 - 2026-08-24 (later): UI Atlus-fidelity pass R1 — rainbow progress → flat yellow angular, 27 green literals → P5 yellow, hex IDs removed from persona cards, star ladder → horizontal yellow meter, sidebar emoji → flat SVG icons, subtitle weight demoted. 10/10 captures re-baselined, 170/170 tests. R2 candidates in memory/2026-08-24-ui-atlas-pass.md.
@@ -37,7 +37,7 @@
 - None.
 
 ## Recent Session
-- 2026-08-26: complete public README rewrite for Apple Silicon macOS
+- 2026-08-26: complete English public README rewrite for Apple Silicon macOS
 - 2026-08-26: native macOS arm64 bundle + CrossOver/Whisky discovery
 - 2026-08-24: UI-liveness watchdog + v1.1.1 release
 - 2026-08-21: inventory UX pass R1-R9 (memory/2026-08-21-inventory-ux-pass.md)
