@@ -1,6 +1,6 @@
-# Change of Heart — Persona 5 Royal Save Editor for macOS
+# Change of Heart — Persona 5 Royal Save Editor
 
-A Persona 5 Royal save editor changed to execute on macOS
+a persona 5 royal save editor changed to execute on macos
 
 <p align="center">
   <img src="change_of_heart_logo.jpg" alt="Change of Heart" width="360">
@@ -12,21 +12,21 @@ A Persona 5 Royal save editor changed to execute on macOS
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-## Building the Application
+## building the app
 
-### Requirements
+### requirements
 
-- an Apple Silicon Mac
-- [Homebrew](https://brew.sh/)
-- Python 3.14 installed through Homebrew
+- an apple silicon mac
+- [homebrew](https://brew.sh/)
+- python 3.14 installed through homebrew
 
 ```bash
 brew install python@3.14
 ```
 
-### Automated build
+### automated build
 
-Clone the repository and run the build script:
+clone the repository and run the build script :
 
 ```bash
 git clone https://github.com/SltcYann/change-of-heart-mac.git
@@ -34,36 +34,20 @@ cd change-of-heart-mac
 ./Build_macOS.command
 ```
 
-## Finding Your Saves
+## finding your saves
 
-the app automatically find your saves if you use crossover/whisky
-
-### CrossOver
+### crossover
 
 ```text
 ~/Library/Application Support/CrossOver/Bottles/*/drive_c/users/*/
 AppData/Roaming/SEGA/P5R/Steam/*/savedata/
 ```
 
-### Whisky
-
-```text
-~/Library/Containers/com.isaacmarovitz.Whisky/Bottles/*/drive_c/users/*/
-AppData/Roaming/SEGA/P5R/Steam/*/savedata/
-```
-
-## Features
-
-the features are the same that the original version
-
-## Original Project and Credits
+## credits
 
 Change of Heart is originally made by j0nny DiGITAL
 go support him on ko-fi : https://ko-fi.com/j0nnydigital
 
-Persona 5 Royal is a trademark of ATLUS and SEGA. This community project is not
-affiliated with or endorsed by ATLUS or SEGA.
+## license
 
-## License
-
-This project is distributed under the [MIT License](LICENSE).
+this project is distributed under the [MIT license](LICENSE)
