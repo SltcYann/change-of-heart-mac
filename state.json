@@ -5,8 +5,8 @@
   "gate": "ready",
   "mode": "single-agent",
   "pinned_shas": {},
-  "last_session": "memory/2026-08-26-macos-readme.md",
-  "updated_at": "2026-08-26T17:18:11Z",
+  "last_session": "memory/2026-08-31-macos-icon.md",
+  "updated_at": "2026-08-31T18:23:24Z",
   "version": "v1.1.1",
   "test_command": [
     "python",

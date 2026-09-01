@@ -87,7 +87,7 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
         name='Change of Heart.app',
-        icon=None,
+        icon=str(SPEC_DIR / 'change_of_heart.icns'),
         bundle_identifier='com.j0nnydigital.changeofheart',
         info_plist={
             'CFBundleDisplayName': 'Change of Heart',

@@ -1,7 +1,7 @@
 # STATUS.md — P5R Save Editor (Change of Heart)
 
 > Human-readable current state. Synced from state.json on every exit.
-> Updated: 2026-08-26 19:18 CEST
+> Updated: 2026-08-31 20:23 CEST
 
 ## Current State
 - **Phase:** implementation
@@ -9,6 +9,8 @@
 - **Mode:** single-agent
 
 ## Last Completed
+- 2026-08-31: Added the existing logo as change_of_heart.icns and wired it into the macOS bundle. Rebuild passes 173 tests (22 skipped); bundled icon and CFBundleIconFile verified, icon rendered for inspection, ad-hoc signature valid.
+- 2026-08-31: macOS arm64 rebuild using the existing build script. 173 tests discovered (22 skipped), no failures; invariants, JavaScript syntax and context lint pass. Ad-hoc signature, packaged API, native UI heartbeat and Origin guard verified. No application source changes.
 - 2026-08-26: English README rewritten end-to-end for the macOS edition — clearly identifies the verified Apple Silicon `arm64` build, Intel status, Cocoa/WebKit architecture, CrossOver/Whisky discovery, build instructions, Gatekeeper behavior and current limitations.
 - 2026-08-26: Native macOS Apple Silicon build — `Change of Heart.app` now uses Cocoa/WebKit, bundles Python 3.14 and all dependencies, detects Steam/CrossOver/Whisky saves, passes 173 tests, validates its ad-hoc signature, and passed a live UI heartbeat + API discovery smoke test.
 - 2026-08-24 (later): FIXED bond-points wipe bug (zamasu2020, r/Persona5Royale) — social-stat edits were resetting ALL confidants' accumulated bond points to rank thresholds via the full-confidant re-save loop; same-rank rewrites now preserve exact points, rank-ups preserve carryover (max logic), social stats same treatment. 4 regression tests (174/174). EXE rebuilt.
@@ -37,6 +39,8 @@
 - None.
 
 ## Recent Session
+- 2026-08-31: macOS icon integration (memory/2026-08-31-macos-icon.md)
+- 2026-08-31: macOS rebuild and packaged smoke checks (memory/2026-08-31-macos-build.md)
 - 2026-08-26: complete English public README rewrite for Apple Silicon macOS
 - 2026-08-26: native macOS arm64 bundle + CrossOver/Whisky discovery
 - 2026-08-24: UI-liveness watchdog + v1.1.1 release
@@ -47,7 +51,7 @@
 - None (no upstream dependencies)
 
 ## Build
-- macOS: `dist/Change of Heart.app` (arm64, 59 MB, ad-hoc signed, built and smoke-tested 2026-08-26 CEST)
+- macOS: `dist/Change of Heart.app` (arm64, 60 MiB, ad-hoc signed, built and smoke-tested 2026-08-31 CEST; Python 3.14.7 / PyInstaller 6.22.2)
 - Latest: `dist/P5R_Save_Editor.exe` (47.9 MB, rebuilt 2026-08-24 ET — watchdog + UI fidelity pass + bond-points fix D016; sha256 prefix 3d34cc50ddf3ff1b; v1.1.1 release assets refreshed with this build)
 - PyInstaller 6.22.0 / Python 3.14.6
 - GitHub: v1.1.1 Released
